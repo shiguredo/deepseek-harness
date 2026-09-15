@@ -228,6 +228,27 @@ describe('QuestionComposer', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '正在提交…' }).disabled).toBe(true)
   })
 
+  it('renders the header lead seat above the question heading', () => {
+    const { carrier } = wait()
+    render(
+      <QuestionComposer
+        matched={carrier}
+        {...kit}
+        renderSlot={key => (key === 'conversation.question.header.lead'
+          ? <span data-testid="header-lead">⎇ main</span>
+          : null)}
+      />,
+    )
+
+    const lead = screen.getByTestId('header-lead')
+    expect(lead.closest('header')).toBeTruthy()
+    // The ambient line precedes the question the user answers.
+    const title = screen.getByRole('heading', { name: '选择候选人类型' })
+    expect(
+      lead.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
   it('renders plan detail through the shared assistant Markdown primitive', () => {
     const { carrier } = wait([{
       id: 'plan',

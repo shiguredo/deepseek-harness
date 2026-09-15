@@ -85,12 +85,28 @@ describe('workspace browser rows', () => {
       runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0, pinned: false, archived: false,
     }
     const view = render(<SessionNodeItem node={idle} currentId={undefined} now={0} onOpen={vi.fn()} flat t={t} />)
-    const title = screen.getByText('Flat Session')
-    expect(title.previousElementSibling).toBeNull()
+    // The flat title block (Workspace label + title) is the row's leading content.
+    const block = screen.getByText('Flat Session').parentElement
+    expect(block?.previousElementSibling).toBeNull()
 
     view.rerender(<SessionNodeItem node={{ ...idle, running: true }} currentId={undefined} now={0}
       onOpen={vi.fn()} flat t={t} />)
-    expect(screen.getByText('Flat Session').previousElementSibling?.querySelector('[data-state="ongoing"]')).toBeTruthy()
+    expect(screen.getByText('Flat Session').parentElement?.previousElementSibling
+      ?.querySelector('[data-state="ongoing"]')).toBeTruthy()
+  })
+
+  it('names the owning Workspace above a flat row\'s title, with the Ungrouped fallback', () => {
+    const owned: SessionNode = {
+      id: sid('owned'), title: 'Owned Session', workspace: 'Project One', blank: false, running: false,
+      runningSubagentCount: 0, completed: false, hasActiveSchedule: false, updatedAt: 0, pinned: false, archived: false,
+    }
+    const view = render(<SessionNodeItem node={owned} currentId={undefined} now={0} onOpen={vi.fn()} flat t={t} />)
+    // The label leads the two-line cell, directly above the session title.
+    expect(screen.getByText('Project One').nextElementSibling?.textContent).toBe('Owned Session')
+
+    view.rerender(<SessionNodeItem node={{ ...owned, workspace: '' }} currentId={undefined} now={0}
+      onOpen={vi.fn()} flat t={t} />)
+    expect(screen.getByText('未分组')).toBeTruthy()
   })
 
   it('renders a selected content-search row and opens only its session', () => {
@@ -351,10 +367,11 @@ describe('workspace browser rows', () => {
     )
 
     const assertIndicator = (): HTMLElement => {
-      const title = screen.getByText('Scheduled Session')
       const time = screen.getByText('刚刚')
       const indicator = screen.getByRole('img', { name: '有活动定时任务' })
-      expect(title.nextElementSibling).toBe(indicator)
+      // The flat row wraps the title in its two-line cell; both layouts keep
+      // the marker between that cell and the time.
+      expect(indicator.previousElementSibling?.textContent).toContain('Scheduled Session')
       expect(indicator.nextElementSibling).toBe(time)
       expect(indicator.getAttribute('title')).toBe('有活动定时任务')
       expect(indicator.getAttribute('tabindex')).toBeNull()

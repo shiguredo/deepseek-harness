@@ -1072,6 +1072,7 @@ describe('small branch tails', () => {
         useProjection={(key: string) => key === 'tokenUsage'
           ? { uncachedInputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 }
           : undefined}
+        renderSlot={() => null}
       />,
     )
     // The untimed counts pill renders static, so the usage pill is the only button.

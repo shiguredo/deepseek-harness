@@ -513,7 +513,9 @@ export function SearchResultItem({ result, currentId, onOpen, onUnarchive, t }: 
 /**
  * One top-level 34px session row: status dot (pending user interaction outranks
  * own or descendant activity), title, relative time or compact pending label,
- * and the row actions menu.
+ * and the row actions menu. A flat row adds the owning Workspace label above
+ * the title, because its hierarchy-free list has no group header to name the
+ * Workspace.
  * @param props.node - derived session node.
  * @param props.currentId - selected session id (row highlight).
  * @param props.now - epoch ms for relative-time formatting.
@@ -522,7 +524,7 @@ export function SearchResultItem({ result, currentId, onOpen, onUnarchive, t }: 
  * @param props.renderSlot - render the row's `sidebar.workspaces.session.menu.item` and `sidebar.workspaces.session.row.action` lists.
  * @param props.onReveal - scroll this row into view after search navigation, then acknowledge it.
  * @param props.drag - optional row-drag target wiring; blank rows cannot start a drag.
- * @param props.flat - omit the empty status slot in the hierarchy-free flat list.
+ * @param props.flat - flat-list presentation: the Workspace label above the title and no empty status slot.
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
@@ -553,6 +555,13 @@ export function SessionNodeItem({
   // move them. Pinned rows drag within the pinned block: the browser gates
   // their drop targets to fellow pinned rows.
   const draggable = drag !== undefined && !row.blank && !row.archived
+  // The flat list has no group header, so the row itself names the Workspace;
+  // an empty label means neither a Workspace nor a named directory accounts for it.
+  const workspaceLabel = !flat
+    ? undefined
+    : row.workspace === undefined || row.workspace === ''
+      ? t('group.ungrouped')
+      : row.workspace
   const [menuOpen, setMenuOpen] = useState(false)
   // The menu's open state, bound into the row entries' `useMenuOpenState` hook.
   const menuOpenState = useMemo((): MenuOpenState => [menuOpen, setMenuOpen], [menuOpen])
@@ -572,6 +581,7 @@ export function SessionNodeItem({
       className={clsx(
         css.sessionRow, selected && css.selected, menuOpen && css.menuOpen,
         row.archived && css.archived,
+        flat && css.flatSessionRow,
         flat && !showStatus && css.flatSessionRowWithoutStatus,
         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
       )}
@@ -616,15 +626,32 @@ export function SessionNodeItem({
           {!row.archived && showStatus && <SessionStatusDots statuses={statuses} />}
         </span>
       )}
-      <span
-        ref={titleRef}
-        className={css.title}
-        onDoubleClick={row.blank
-          ? undefined
-          : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
-      >
-        {title}
-      </span>
+      {workspaceLabel === undefined
+        ? (
+          <span
+            ref={titleRef}
+            className={css.title}
+            onDoubleClick={row.blank
+              ? undefined
+              : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
+          >
+            {title}
+          </span>
+        )
+        : (
+          <span className={css.flatCell}>
+            <span className={css.workspace}>{workspaceLabel}</span>
+            <span
+              ref={titleRef}
+              className={css.title}
+              onDoubleClick={row.blank
+                ? undefined
+                : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
+            >
+              {title}
+            </span>
+          </span>
+        )}
       {row.hasActiveSchedule && <ActiveScheduleIndicator t={t} />}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs

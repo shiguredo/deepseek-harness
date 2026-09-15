@@ -37,6 +37,8 @@ export const remoteDefaultResponses: RemoteTable = {
     // ui-settings-account refreshes details after a stored-grant snapshot.
     'account/getProfile': ok(null),
     'account/getBalance': ok(null),
+    // ui-git-branch composer chip for the first Session whose input bar mounts; fixture directories are not checkouts.
+    'workspaceGit/status': ok({ kind: 'none' }),
   },
   // Stream endpoints the roster opens later than boot; declared so a spec that forgets the script gets a stream miss.
   streams: [

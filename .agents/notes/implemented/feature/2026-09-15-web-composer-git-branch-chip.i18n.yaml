@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-web-composer-git-branch-chip.md
+2026-09-15-web-composer-git-branch-chip.md: 11f357cdf69772a7889c55b2fd155cf14b908674
+2026-09-15-web-composer-git-branch-chip.zh.md: 484be8193ef3513396b1c063acbfc82f23caa791

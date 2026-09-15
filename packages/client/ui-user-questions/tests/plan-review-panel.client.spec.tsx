@@ -236,6 +236,23 @@ describe('PlanReviewPanel', () => {
     expect(first.answer).not.toHaveBeenCalled()
     expect(second.answer).not.toHaveBeenCalled()
   })
+
+  it('renders the header lead seat inside the review strip', () => {
+    const { carrier } = wait()
+    render(
+      <QuestionComposer
+        matched={carrier}
+        {...kit}
+        renderSlot={key => (key === 'conversation.question.header.lead'
+          ? <span data-testid="header-lead">⎇ main</span>
+          : null)}
+      />,
+    )
+
+    const lead = screen.getByTestId('header-lead')
+    expect(screen.getByText(zh['plan.header']).parentElement?.contains(lead)).toBe(true)
+  })
+
   it('shows the plan title and summary above two review actions', () => {
     const { carrier } = wait()
     render(<QuestionComposer matched={carrier} {...kit} />)

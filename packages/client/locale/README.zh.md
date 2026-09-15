@@ -63,6 +63,8 @@ export function apply(ctx) {
 }
 ```
 
+仓库内的 [`@deepseek-ai/dsh-client-locale-ja`](../locale-ja/README.zh.md) 包是完整示例：它为每个内置命名空间提供一份类型化字典，未覆盖的内容回退到英文。
+
 外部 id 必须是非空的 ASCII BCP 47 风格标签。它的 fallback 必须已经注册，且整条链必须终止于 `en`；未知目标、重复 id 与循环会在注册时失败。查找时先在请求命名空间内遍历生效语言的 fallback 链，再在 `common` 中遍历该链，最后显示键本身。卸载语言定义会将其从选择器移除，并让生效中的选择回落到可用的浏览器语言或默认语言。
 
 ### Host 半侧做什么

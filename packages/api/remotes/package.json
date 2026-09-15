@@ -91,6 +91,7 @@
     "@deepseek-ai/dsh-scope": "workspace:^",
     "@deepseek-ai/dsh-api-session-controller": "workspace:^",
     "@deepseek-ai/dsh-api-workspace-files": "workspace:^",
+    "@deepseek-ai/dsh-api-workspace-git": "workspace:^",
     "zod": "^4.4.3",
     "@deepseek-ai/dsh-command-feedback": "workspace:^",
     "@deepseek-ai/dsh-api-terminal-controller": "workspace:^",

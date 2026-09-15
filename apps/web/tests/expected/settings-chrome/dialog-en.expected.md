@@ -18,7 +18,10 @@
   - text: Font size Only affects conversation content 14
   - button "Increase font size"
   - button "Decrease font size"
-  - text: px Work details Controls how turns and steps expand by default
+  - text: px Font Applies to UI text and code; leave empty for the browser default
+  - textbox "Font":
+    - /placeholder: e.g. "Hiragino Sans", "Noto Sans JP"
+  - text: Work details Controls how turns and steps expand by default
   - button "Compact"
   - text: Performance & usage Choose how much performance and usage information to show
   - button "Detailed"

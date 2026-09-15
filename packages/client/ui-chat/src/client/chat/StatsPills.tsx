@@ -1,14 +1,16 @@
 // Composer statistics: Compact exposes speed and cache hit as plain readings;
-// Detailed exposes counts and totals with time and token-usage dialogs.
-// Settled-node identity prevents stream-delta updates from rerendering the row.
-// Mounted on 'conversation.composer.dock' so it sticks with the composer in the
-// active conversation scrollport (see ConversationRoot data-conversation-scroll).
+// Detailed exposes counts and totals with time and token-usage dialogs. The row
+// leads with its declared lead seat, so an ambient-status occupant keeps the
+// line before the first figure exists. Settled-node identity prevents
+// stream-delta updates from rerendering the row. Mounted on
+// 'conversation.composer.dock' so it sticks with the composer in the active
+// conversation scrollport (see ConversationRoot data-conversation-scroll).
 
 import { memo, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconDatabaseOutlineRegular, IconGaugeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { UseProjection } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { InjectFace, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@deepseek-ai/dsh-session-stats/client'
 import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
@@ -125,6 +127,8 @@ export interface StatsPillsProps extends InjectFace<PerformanceUsageInjected> {
   useProjection: UseProjection
   /** The owning dock's locale seat. */
   t: ChatViewSlotProps['t']
+  /** Renderer for this row's lead seat, rendered before the figures. */
+  renderSlot: PropsRenderSlots<'conversation.composer.stats.lead'>['renderSlot']
 }
 
 function exactCount(value: number, t: ChatViewSlotProps['t']): string {
@@ -313,7 +317,7 @@ function UsagePill({ usage, t, dialog }: {
   )
 }
 
-export const StatsPills = memo(function StatsPills({ useChat, useProjection, usePerformanceUsage, t }: StatsPillsProps) {
+export const StatsPills = memo(function StatsPills({ useChat, useProjection, usePerformanceUsage, t, renderSlot }: StatsPillsProps) {
   const mode = usePerformanceUsage(value => value)
   const settledNodes = useChat(s => s.legacy.nodes)
   const usage = useProjection('tokenUsage')
@@ -334,9 +338,9 @@ export const StatsPills = memo(function StatsPills({ useChat, useProjection, use
       ? t('message.tokensPerSecond', { tps: formatTokensPerSecond(stats.decodeTokens / (stats.decodeMs / 1_000)) })
       : null
     const cacheHit = hasTokens ? cacheHitPercent(usage) : null
-    if (speed === null && cacheHit === null) return null
     return (
       <div className={css.root} data-composer-stats>
+        {renderSlot('conversation.composer.stats.lead', {})}
         {speed !== null && <span className={css.pill}><IconGaugeOutlineRegular />{speed}</span>}
         {cacheHit !== null && (
           <span className={css.pill}><IconDatabaseOutlineRegular />{t('stats.cacheHit', { percent: cacheHit })}</span>
@@ -344,9 +348,11 @@ export const StatsPills = memo(function StatsPills({ useChat, useProjection, use
       </div>
     )
   }
-  if (stats.steps === 0 && !hasTokens) return null
+  // The row mounts with the composer so a lead-seat occupant is not gated on
+  // the first closed step; CSS keeps a contentless row out of the layout.
   return (
     <div className={css.root} data-composer-stats>
+      {renderSlot('conversation.composer.stats.lead', {})}
       {stats.steps > 0 && (
         <TimePill
           stats={stats}

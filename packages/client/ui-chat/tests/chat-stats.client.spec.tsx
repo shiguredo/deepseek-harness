@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import type {
   AssistantMessageNode, ChatSnapshot, LegacyConversationSlice, ToolResultNode,
@@ -144,8 +145,15 @@ describe('StatsPills', () => {
   function props(
     source: { getSnapshot(): ChatSnapshot; subscribe(fn: () => void): () => void },
     values: Record<string, unknown> = { tokenUsage: USAGE },
+    seat = null as ReactNode,
   ): StatsPillsProps {
-    return { usePerformanceUsage: selector => selector('detailed'), useChat: bindSnapshotSelector(source), useProjection: projections(values), t: tEn }
+    return {
+      usePerformanceUsage: selector => selector('detailed'),
+      useChat: bindSnapshotSelector(source),
+      useProjection: projections(values),
+      t: tEn,
+      renderSlot: () => seat,
+    }
   }
 
   function tokenUsage(cacheReadTokens: number, uncachedInputTokens: number) {
@@ -197,6 +205,28 @@ describe('StatsPills', () => {
       contextPressure: {},
     })} />)
     expect(emptyView.container.textContent).toBe('')
+  })
+
+  it('keeps the row mounted for a lead-seat occupant and renders it before the pills', () => {
+    // No closed step yet: the seat alone holds the row, whose CSS keeps it out
+    // of the layout while neither the seat nor a pill paints a reading.
+    const empty = makeSource()
+    const seatOnly = render(<StatsPills {...props(empty.source, {}, <span>⎇ main</span>)} />)
+    const seatRow = seatOnly.container.firstElementChild as HTMLElement
+    expect(seatRow.firstElementChild?.textContent).toBe('⎇ main')
+
+    const { source } = makeSource({ nodes: [assistant(1, 1)] })
+    const view = render(<StatsPills {...props(source, { tokenUsage: USAGE }, <span>⎇ main</span>)} />)
+    const row = view.container.firstElementChild as HTMLElement
+    expect(row.firstElementChild?.textContent).toBe('⎇ main')
+
+    // Compact keeps the same lead position: the seat leads the two readings.
+    seatOnly.rerender(
+      <StatsPills {...props(empty.source, {}, <span>⎇ main</span>)} usePerformanceUsage={selector => selector('compact')} />,
+    )
+    const compactRow = seatOnly.container.firstElementChild as HTMLElement
+    expect(compactRow.firstElementChild?.textContent).toBe('⎇ main')
+    expect(compactRow.textContent).toBe('⎇ main')
   })
 
   it.each([
