@@ -524,10 +524,12 @@ export function SearchResultItem({ result, currentId, onOpen, onUnarchive, t }: 
 /**
  * One top-level 32px session row: leading 16px cell (status dot, or the
  * leading seat while the row's primary state is idle), title, relative time or
- * compact pending label, and the row actions menu. A row that owns a state dot
- * keeps that cell and renders no seat, so an ambient automation mark never
- * appears beside the row's own state dot. An archived row keeps the cell blank:
- * neither marker renders there, and its live status stays on the hover card.
+ * compact pending label, and the row actions menu. A flat row adds the owning
+ * Workspace label above the title, because its hierarchy-free list has no
+ * group header to name the Workspace. A row that owns a state dot keeps that
+ * cell and renders no seat, so an ambient automation mark never appears beside
+ * the row's own state dot. An archived row keeps the cell blank: neither
+ * marker renders there, and its live status stays on the hover card.
  * @param props.node - derived session node.
  * @param props.currentId - selected session id (row highlight).
  * @param props.now - epoch ms for relative-time formatting.
@@ -538,11 +540,12 @@ export function SearchResultItem({ result, currentId, onOpen, onUnarchive, t }: 
  * its leading decoration, and its hover-card section.
  * @param props.onReveal - scroll this row into view after search navigation, then acknowledge it.
  * @param props.drag - optional row-drag target wiring; blank rows cannot start a drag.
+ * @param props.flat - flat-list presentation: names the owning Workspace above the title.
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
 export function SessionNodeItem({
-  node, currentId, now, onOpen, onRenameRequest, renderSlot, onReveal, drag, t,
+  node, currentId, now, onOpen, onRenameRequest, renderSlot, onReveal, drag, flat = false, t,
 }: {
   node: SessionNode
   currentId: string | undefined
@@ -554,6 +557,8 @@ export function SessionNodeItem({
   onReveal?: (() => void) | undefined
   /** Present on reorderable-list rows so every row can remain a drop target. */
   drag?: RowDragProps | undefined
+  /** Flat-list presentation: renders the owning Workspace label above the title. */
+  flat?: boolean | undefined
   t: RowTranslate
 } & PropsRenderSlots<
   | 'sidebar.workspaces.session.menu.item'
@@ -571,6 +576,13 @@ export function SessionNodeItem({
   // move them. Pinned rows drag within the pinned block: the browser gates
   // their drop targets to fellow pinned rows.
   const draggable = drag !== undefined && !row.blank && !row.archived
+  // The flat list has no group header, so the row itself names the Workspace;
+  // an empty label means neither a Workspace nor a named directory accounts for it.
+  const workspaceLabel = !flat
+    ? undefined
+    : row.workspace === undefined || row.workspace === ''
+      ? t('group.ungrouped')
+      : row.workspace
   const [menuOpen, setMenuOpen] = useState(false)
   // The menu's open state, bound into the row entries' `useMenuOpenState` hook.
   const menuOpenState = useMemo((): MenuOpenState => [menuOpen, setMenuOpen], [menuOpen])
@@ -590,6 +602,7 @@ export function SessionNodeItem({
       className={clsx(
         css.sessionRow, selected && css.selected, menuOpen && css.menuOpen,
         row.archived && css.archived,
+        flat && css.flatSessionRow,
         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
       )}
       role="treeitem"
@@ -633,15 +646,32 @@ export function SessionNodeItem({
           ? <SessionStatusDots statuses={statuses} />
           : renderSlot('sidebar.session.row.leading', { sessionId: node.id }))}
       </span>
-      <span
-        ref={titleRef}
-        className={css.title}
-        onDoubleClick={row.blank
-          ? undefined
-          : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
-      >
-        {title}
-      </span>
+      {workspaceLabel === undefined
+        ? (
+          <span
+            ref={titleRef}
+            className={css.title}
+            onDoubleClick={row.blank
+              ? undefined
+              : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
+          >
+            {title}
+          </span>
+        )
+        : (
+          <span className={css.flatCell}>
+            <span className={css.workspace}>{workspaceLabel}</span>
+            <span
+              ref={titleRef}
+              className={css.title}
+              onDoubleClick={row.blank
+                ? undefined
+                : (e) => { e.stopPropagation(); onRenameRequest(node.id, row.title) }}
+            >
+              {title}
+            </span>
+          </span>
+        )}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs
           (rename/fork/archive) would all act on content that does not

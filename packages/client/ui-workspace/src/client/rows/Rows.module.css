@@ -116,6 +116,42 @@
   margin: 0 6px 0 4px;
 }
 
+/* The hierarchy-free flat list names the owning Workspace above the session
+   title, so its rows take the second line instead of the grouped cell's fixed
+   32px. */
+.flatSessionRow {
+  height: auto;
+  min-height: 45px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  box-sizing: border-box;
+}
+
+.flatCell {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0 6px 0 4px;
+}
+
+/* Inside the two-line block the title keeps its intrinsic line box; the
+   block, not the title, absorbs the row's slack. */
+.flatCell .title {
+  flex: none;
+  margin: 0;
+}
+
+.workspace {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
 .slot {
   flex: none;
   width: 16px;

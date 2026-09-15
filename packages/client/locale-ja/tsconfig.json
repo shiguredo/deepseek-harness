@@ -1,0 +1,159 @@
+{
+  "extends": "../../../tsconfig.base.client.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../ui-slots"
+    },
+    {
+      "path": "../locale/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-agent-preset"
+    },
+    {
+      "path": "../ui-approval"
+    },
+    {
+      "path": "../ui-chat/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-commands"
+    },
+    {
+      "path": "../ui-conversation/tsconfig.client.json"
+    },
+    {
+      "path": "../../extensions/ui-cordis"
+    },
+    {
+      "path": "../ui-deliverables/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-font-family/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-git-branch"
+    },
+    {
+      "path": "../ui-goal"
+    },
+    {
+      "path": "../ui-input-trigger"
+    },
+    {
+      "path": "../ui-jobs"
+    },
+    {
+      "path": "../ui-layout"
+    },
+    {
+      "path": "../ui-message-feedback"
+    },
+    {
+      "path": "../ui-model-selection"
+    },
+    {
+      "path": "../ui-open-in-app"
+    },
+    {
+      "path": "../ui-permission-presets"
+    },
+    {
+      "path": "../ui-plan"
+    },
+    {
+      "path": "../ui-plugin-manager/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-reference"
+    },
+    {
+      "path": "../ui-schedule"
+    },
+    {
+      "path": "../ui-settings-account"
+    },
+    {
+      "path": "../ui-settings-agent-loop"
+    },
+    {
+      "path": "../ui-settings-general/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-settings-models"
+    },
+    {
+      "path": "../ui-settings-plugin-inventory"
+    },
+    {
+      "path": "../ui-settings-plugins"
+    },
+    {
+      "path": "../ui-settings-shell"
+    },
+    {
+      "path": "../ui-settings-subagent"
+    },
+    {
+      "path": "../ui-settings-web-search"
+    },
+    {
+      "path": "../ui-shortcuts"
+    },
+    {
+      "path": "../ui-sidebar"
+    },
+    {
+      "path": "../ui-sidebar-browser/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-sidebar-documentpreview/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-sidebar-files"
+    },
+    {
+      "path": "../ui-sidebar-right"
+    },
+    {
+      "path": "../ui-sidebar-terminal"
+    },
+    {
+      "path": "../ui-skill"
+    },
+    {
+      "path": "../ui-subagent"
+    },
+    {
+      "path": "../ui-theme/tsconfig.client.json"
+    },
+    {
+      "path": "../ui-trajectory"
+    },
+    {
+      "path": "../ui-user-questions"
+    },
+    {
+      "path": "../ui-workflow-run"
+    },
+    {
+      "path": "../ui-workspace"
+    },
+    {
+      "path": "../../experimental/client-ui-agent-team"
+    },
+    {
+      "path": "../../session-query/session-log-export/tsconfig.client.json"
+    }
+  ]
+}

@@ -110,6 +110,11 @@ describe('web e2e: queue row actions', () => {
     await input.fill(ACTIVE_PROMPT)
     await input.press('Enter')
     await expect.poll(() => existsSync(readyFile), { timeout: 15_000 }).toBe(true)
+    // The parked hang emits its partial before the host marker is written, but
+    // the browser render trails it; wait for the streamed text the goldens
+    // below snapshot so the capture cannot race the delta.
+    await page.locator('[data-streaming="true"]').getByText('partial', { exact: true })
+      .waitFor({ timeout: 15_000 })
 
     const admitted = page.waitForResponse('**/api/session/prompt')
     const received = Promise.withResolvers<undefined>()

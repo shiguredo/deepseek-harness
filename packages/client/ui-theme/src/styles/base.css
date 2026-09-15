@@ -1,14 +1,19 @@
 /* Base variables referenced by the token sheets and component CSS but defined
  * upstream (deepsuite theme/global.css) — supplied here so the composite
- * --dsw-font-* variables resolve and motion rides the upstream curve. Code
- * font stack deliberately omits a bare `monospace` tail (Windows CJK falls
- * back to SimSun otherwise). */
+ * --dsw-font-* variables resolve and motion rides the upstream curve. Both
+ * stacks stay locale-neutral: no CJK family is pinned, so the browser picks
+ * the glyph set its page language names (Japanese text on a `ja` page takes
+ * Japanese glyph forms instead of the Chinese ones a pinned `PingFang SC` /
+ * `Microsoft YaHei` would give). The code stack deliberately omits a bare
+ * `monospace` tail (Windows CJK then falls back to SimSun) and ends in the
+ * generic sans instead. The ui-font-family plugin writes a user font-family
+ * override on body over these tokens. */
 :root {
-  --dsw-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --dsw-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
   --dsw-font-family-brand: 'Montserrat', var(--dsw-font-family);
   --ds-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
-    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+    'Liberation Mono', Menlo, Courier, sans-serif;
   --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ds-transition-duration: 0.2s;
   --ds-transition-duration-fast: 0.1s;

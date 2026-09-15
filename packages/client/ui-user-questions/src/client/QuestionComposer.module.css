@@ -77,6 +77,18 @@
   min-width: 0;
 }
 
+/* The header's ambient lead seat (the checkout chip, for one): the secondary
+   text tier above the question heading, collapsing while no occupant paints. */
+.headerLead {
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+  line-height: calc(20px + var(--dsh-content-font-delta-secondary, 0px));
+  margin-bottom: 2px;
+}
+
+.headerLead:not(:has(> [data-slot]:not(:empty))) {
+  display: none;
+}
+
 .eyebrow {
   /* Eyebrow-to-title gap widened from the figma 2px (user-tuned). */
   margin-bottom: 5px;

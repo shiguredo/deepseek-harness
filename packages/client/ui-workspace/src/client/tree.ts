@@ -45,6 +45,13 @@ export interface SessionNode {
   id: SessionId
   /** Stored display title; the renderer substitutes the localized New Session label for blank rows. */
   title: string
+  /**
+   * Owning Workspace label, or the Session directory basename when no
+   * Workspace accounts for it; present only on flat rows, whose
+   * hierarchy-free list has no group header to name the Workspace. An empty
+   * value means neither: the renderer shows the localized Ungrouped label.
+   */
+  workspace?: string
   /** The provisional blank session (renderer shows the localized New Session title). */
   blank: boolean
   /** A Session-scoped UI consumer is awaiting this user. */
@@ -498,11 +505,14 @@ export function visibleSessionIds(
 
 /**
  * Derive flat rows from the browser's complete ordered Session ids, with
- * pinned rows fronted ahead of the supplied order.
+ * pinned rows fronted ahead of the supplied order. Every row carries the
+ * owning Workspace label, because the hierarchy-free list has no group header
+ * to name it.
  * @param list - sessions list snapshot used to select the ids.
  * @param sessionIds - complete account members in the selected order, including hidden archives.
  * @param rowState - registry-global pin and archive sets plus the archived filter.
  * @param statuses - unified UI status by Session.
+ * @param workspaces - Workspace membership and display labels.
  * @returns flat rows in sectioned order with current status indicators.
  */
 export function deriveFlat(
@@ -510,10 +520,12 @@ export function deriveFlat(
   sessionIds: readonly SessionId[],
   rowState: SessionRowState,
   statuses: SessionStatuses,
+  workspaces: readonly WorkspaceView[],
 ): SessionNode[] {
   const archived = new Set(rowState.archivedSessionIds)
   const pinned = new Set(rowState.pinnedSessionIds)
   const current = mainSessionId(list)
+  const titlesBySession = workspaceTitleBySession(workspaces)
   const members = sessionIds.flatMap((id) => {
     const session = list.byId[id]
     return session !== undefined && sessionVisible(session, current, archived, rowState.archivedFilter)
@@ -521,7 +533,21 @@ export function deriveFlat(
       : []
   })
   return sectionMembers(members, pinned, archived)
-    .map(session => sessionNode(session, list, statuses, pinned, archived))
+    .map(session => ({
+      ...sessionNode(session, list, statuses, pinned, archived),
+      workspace: titlesBySession.get(session.id) ?? workspaceLabel(session.cwd),
+    }))
+}
+
+/** First Workspace title accounting for each Session, ignoring later duplicates. */
+function workspaceTitleBySession(workspaces: readonly WorkspaceView[]): ReadonlyMap<SessionId, string> {
+  const titles = new Map<SessionId, string>()
+  for (const workspace of workspaces) {
+    for (const sessionId of workspace.sessionIds) {
+      if (!titles.has(sessionId)) titles.set(sessionId, workspace.title)
+    }
+  }
+  return titles
 }
 
 /**
@@ -553,14 +579,9 @@ export function deriveSearchResults(
   const archived = new Set(archivedSessionIds)
   const current = mainSessionId(list)
 
-  const workspaceBySession = new Map<SessionId, string>()
-  for (const workspace of workspaces) {
-    for (const sessionId of workspace.sessionIds) {
-      if (!workspaceBySession.has(sessionId)) workspaceBySession.set(sessionId, workspace.title)
-    }
-  }
+  const titlesBySession = workspaceTitleBySession(workspaces)
   const labelOf = (summary: SessionSummary): string =>
-    workspaceBySession.get(summary.id) ?? workspaceLabel(summary.cwd)
+    titlesBySession.get(summary.id) ?? workspaceLabel(summary.cwd)
   const contentBySession = new Map<SessionId, SessionSearchResultItem>()
   for (const item of content.items) {
     if (!contentBySession.has(item.sessionId)) contentBySession.set(item.sessionId, item)

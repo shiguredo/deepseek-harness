@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-09-15-web-composer-git-branch-chip.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-web-composer-git-branch-chip.md
+/agent-note-web-composer-git-branch-chip:
+  en: b5aaa496d76059ff
+  zh: 849f6868ffc78144
+/agent-note-web-composer-git-branch-chip/problem:
+  en: 917626283fdae290
+  zh: c353cd4182609d77
+/agent-note-web-composer-git-branch-chip/decision:
+  en: 85cbbd4a840c2a4e
+  zh: bc312624ab724a9b
+/agent-note-web-composer-git-branch-chip/decision/the-wire-answer:
+  en: 88bf91a279c2ac1f
+  zh: 965b648b9c29e390
+/agent-note-web-composer-git-branch-chip/decision/the-chip:
+  en: 7f4794438a3ae37e
+  zh: 95990e1640e99fe6
+/agent-note-web-composer-git-branch-chip/testing:
+  en: fca90336d583b117
+  zh: 53a4c793642a628f
+/agent-note-web-composer-git-branch-chip/alternatives-considered:
+  en: 7261a6b03bfe0634
+  zh: 539522523a85a637
+/agent-note-web-composer-git-branch-chip/consequences:
+  en: 4c30278f727fdd09
+  zh: 66ea3812f935a8be

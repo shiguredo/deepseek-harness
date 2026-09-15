@@ -1,0 +1,48 @@
+/* One ambient chip leading the composer's session-stats row (ui-chat
+   StatsPills), inheriting the row's 13/20 secondary text tier and ellipsizing
+   when the row runs out of width. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-label-tertiary);
+  font: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.chip svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* A GitHub origin makes the chip a link to that repository; until then it is a
+   plain reading. */
+a.chip {
+  cursor: pointer;
+}
+
+a.chip:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+}
+
+a.chip:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-15-japanese-ui-language-pack-and-font-setting.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-japanese-ui-language-pack-and-font-setting.md
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin:
+  en: 33f8ed52c2b33689
+  zh: d0ff5eb92b943d7a
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin/problem:
+  en: 2e7aa98d6ddf81e1
+  zh: 4980e88c72220991
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin/decision:
+  en: 861c2df8148a110a
+  zh: b714d9de2ef327ef
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin/alternatives-considered:
+  en: ac36c24832bfc3ea
+  zh: bef49b0ed0fd140e
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin/consequences:
+  en: 581d61cf2a6dcc59
+  zh: a2f6fca6c85d08d8
+/agent-note-japanese-ui-support-ja-language-pack-and-font-family-plugin/testing:
+  en: e67b77c2bf96f47b
+  zh: df4c0c45d2c65c0c

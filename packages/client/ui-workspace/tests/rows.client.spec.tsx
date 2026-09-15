@@ -101,6 +101,22 @@ describe('workspace browser rows', () => {
     expect(screen.getByText('Flat Session').previousElementSibling?.querySelector('[data-state="ongoing"]')).toBeTruthy()
   })
 
+  it('names the owning Workspace above a flat row\'s title, with the Ungrouped fallback', () => {
+    const owned: SessionNode = {
+      id: sid('owned'), title: 'Owned Session', workspace: 'Project One', blank: false, running: false,
+      runningSubagentCount: 0, completed: false, updatedAt: 0, pinned: false, archived: false,
+    }
+    const view = render(<SessionNodeItem node={owned} currentId={undefined} now={0} onOpen={vi.fn()} flat t={t} />)
+    // The label leads the two-line cell, directly above the session title, and
+    // the leading status cell still precedes that block.
+    expect(screen.getByText('Project One').nextElementSibling?.textContent).toBe('Owned Session')
+    expect(screen.getByText('Project One').parentElement?.previousElementSibling?.className).toMatch(/slot/)
+
+    view.rerender(<SessionNodeItem node={{ ...owned, workspace: '' }} currentId={undefined} now={0}
+      onOpen={vi.fn()} flat t={t} />)
+    expect(screen.getByText('未分组')).toBeTruthy()
+  })
+
   it('renders a selected content-search row and opens only its session', () => {
     const onOpen = vi.fn()
     const result: SearchResultNode = {

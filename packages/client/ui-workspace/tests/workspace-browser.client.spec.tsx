@@ -213,7 +213,7 @@ describe('WorkspaceBrowser', () => {
       useWorkspaces: hook(workspaceState(mode === 'ungrouped' ? [] : [workspace('alpha', ['c', 'a', 'b'])])),
     })
     const names = () => screen.getAllByRole('treeitem').filter(row => row.getAttribute('aria-expanded') === null)
-      .map(row => row.querySelector('[class*="title"]')?.textContent)
+      .map(row => row.querySelector('[class*="_title_"]')?.textContent)
     const pick = (name: string) => {
       fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
       fireEvent.click(screen.getByRole('menuitem', { name }))
@@ -466,10 +466,12 @@ describe('WorkspaceBrowser', () => {
     expect(screen.getByRole('menuitem', { name: '按工作区' }).querySelector('svg')).toBeTruthy()
     expect(screen.getByRole('menuitem', { name: '手动排序' }).querySelector('svg')).toBeTruthy()
     fireEvent.click(screen.getByRole('menuitem', { name: '单列表' }))
-    // Store-driven flip: title changes, rows flatten newest-first, headers gone.
+    // Store-driven flip: title changes, rows flatten newest-first, group headers
+    // are gone, and each row names its owning Workspace instead.
     expect(b.store.getSnapshot().groupBy).toBe('flat')
     expect(screen.getByText('会话')).toBeTruthy()
-    expect(screen.queryByText('alpha')).toBeNull()
+    expect(screen.getAllByRole('treeitem')).toHaveLength(2)
+    expect(screen.getByText('alpha').nextElementSibling?.textContent).toBe('alpha-s')
     expect(screen.getByText('alpha-s')).toBeTruthy()
     expect(screen.getByText('beta-s')).toBeTruthy()
 
@@ -1330,7 +1332,7 @@ describe('WorkspaceBrowser', () => {
       useWorkspaces: groups(['old', 'mid']),
     })
     const names = () => screen.getAllByRole('treeitem').filter(row => row.getAttribute('aria-expanded') === null)
-      .map(row => row.querySelector('[class*="title"]')?.textContent)
+      .map(row => row.querySelector('[class*="_title_"]')?.textContent)
     const pick = (name: string) => {
       fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
       fireEvent.click(screen.getByRole('menuitem', { name }))
@@ -1647,7 +1649,9 @@ describe('WorkspaceBrowser', () => {
     expect(screen.queryByRole('tree', { name: '搜索结果' })).toBeNull()
     const targetRow = screen.getByText('Needle session').closest('[role="treeitem"]')
     expect(targetRow).toBeTruthy()
-    expect(screen.queryByText('alpha')).toBeNull()
+    // Back on the flat list: the row names its Workspace, and no group header remains.
+    expect(targetRow?.textContent).toContain('alpha')
+    expect(screen.getAllByRole('treeitem').some(row => row.getAttribute('aria-expanded') !== null)).toBe(false)
     expect(scrollIntoView.mock.instances.at(-1)).toBe(targetRow)
     expect(b.store.getSnapshot().groupExpansion).toEqual({})
   })

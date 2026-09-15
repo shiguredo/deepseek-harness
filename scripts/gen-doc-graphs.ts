@@ -309,6 +309,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Owns user terminal processes, default shell resolution and bounded screen recovery through the subprocess provider and typed Remote transport.',
   },
   {
+    key: 'workspaceGit',
+    pkg: 'api-workspace-git',
+    title: 'Host workspace git Remote service',
+    mode: 'core',
+    note: 'Answers which checkout the Session workspace directory lives in — branch or detached commit, worktree directory name, and the origin GitHub repository — through uncached git reads that treat an unavailable fact as an answer.',
+  },
+  {
     key: 'workspaceController',
     pkg: 'api-workspace-controller',
     title: 'Host Workspace Remote controller',

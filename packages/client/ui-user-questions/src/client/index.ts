@@ -1,7 +1,8 @@
 /**
  * Web question plugin, browser half: QuestionComposer registered as a
  * selector-routed entry of the conversation-declared composer chain, plus the
- * `question` dictionaries. The selector narrows the owner's currency to the
+ * `question` dictionaries and the card's `conversation.question.header.lead`
+ * seat. The selector narrows the owner's currency to the
  * question carrier (matched prop), and the whole behavior surface rides the
  * carrier (domain encoding in contract/slots.ts PendingQuestion); copy rides
  * the standard locale seat. Export discipline: packages/client/AGENTS.md.
@@ -98,7 +99,10 @@ export function apply(ctx: ClientContext): void {
         pendingInteraction instanceof PendingQuestion ? pendingInteraction : null,
       locale: NS,
       store: questionDraftStore,
-      children: { 'conversation.plan-review.actions': { kind: 'list', scope: 'session' } },
+      children: {
+        'conversation.plan-review.actions': { kind: 'list', scope: 'session' },
+        'conversation.question.header.lead': { kind: 'list', scope: 'session' },
+      },
     },
     QuestionComposer,
   ))

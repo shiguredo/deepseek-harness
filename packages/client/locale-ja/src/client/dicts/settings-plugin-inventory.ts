@@ -1,0 +1,48 @@
+/** Japanese dictionary for the `settings.pluginInventory` namespace (client/ui-settings-plugin-inventory/src/client/locales.ts). */
+import type { LocaleDictOf } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: loads the `settings.pluginInventory` key union declared by @deepseek-ai/dsh-client-ui-settings-plugin-inventory.
+import type {} from '@deepseek-ai/dsh-client-ui-settings-plugin-inventory/client'
+
+/** `settings.pluginInventory` copy in Japanese, complete against the owner's key union. */
+export const ja: LocaleDictOf<'settings.pluginInventory'> = {
+  'tab': 'プラグイン一覧',
+  'loading': 'プラグインを読み込み中…',
+  'clientSyncing': 'このページのプラグインを同期しています…',
+  'clientSyncFailed': 'このページで一部のプラグインを同期できませんでした。Host 側の有効状態は変わりません',
+  'clientSyncRetry': 'このページを再試行',
+  'error': 'プラグインを一時的に利用できません。',
+  'retry': '再試行',
+  'search': 'プラグインを検索',
+  'empty': '利用可能なプラグインはありません。',
+  'emptySearch': '一致するプラグインはありません。',
+  'presetTitle': 'セッションプラグイン',
+  'presetSubtitle': 'エージェントプリセットがセッションごとに構成します',
+  'countUnit': '個',
+  'switcherLabel': '表示するエージェントプリセットを選択',
+  'presetOptionDefault': '{name}（デフォルト）',
+  'presetOptionBroken': '{name}（読み込み失敗）',
+  'globalTitle': 'グローバルプラグイン',
+  'globalSubtitle': 'システムとすべてのセッションで共有されます',
+  'presetProvidedDetail': 'グローバルでは無効で、エージェントプリセットがセッションごとに提供します',
+  'enabledIn': '有効:',
+  'viewInPreset': 'プリセットのグループで表示',
+  'matchesInOtherPresets': '他のプリセットに {count} 件の一致：',
+  'failedCountLabel': '件の失敗',
+  'enabledTag': '有効',
+  'disabledTag': '無効',
+  'conditionalTag': '条件付き',
+  'presetEnabledTag': 'プリセットで有効',
+  'failedTag': '起動失敗',
+  'moduleLabel': 'モジュール',
+  'fromPreset': '提供元',
+  'condition': '無効になる条件',
+  'configuration': '設定状態',
+  'runtime': '実行状態',
+  'unobserved': '未実行',
+  'pending': '依存関係を待機中',
+  'loadingPhase': '読み込み中',
+  'active': '実行中',
+  'failed': '起動失敗',
+  'unloading': 'アンロード中',
+  'metadataError': 'パッケージメタデータのエラー: {error}',
+}

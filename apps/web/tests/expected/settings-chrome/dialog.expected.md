@@ -18,7 +18,10 @@
   - text: 字号大小 仅影响会话内容的字号 14
   - button "增大字号"
   - button "减小字号"
-  - text: px 工作步骤展示 选择希望看到多少工具调用细节
+  - text: px 字体 同时应用于界面文字和代码，留空则使用浏览器默认字体
+  - textbox "字体":
+    - /placeholder: 例如 "Hiragino Sans", "Noto Sans JP"
+  - text: 工作步骤展示 选择希望看到多少工具调用细节
   - button "标准"
   - text: 性能与用量 选择性能与用量信息展示的详细程度
   - button "详细"

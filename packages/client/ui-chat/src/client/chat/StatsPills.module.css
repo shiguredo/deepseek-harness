@@ -13,6 +13,14 @@
   line-height: calc(20px + var(--dsh-content-font-delta-secondary, 0px));
 }
 
+/* The lead seat's outlet anchor mounts whether or not an occupant registers,
+   so content detection looks through it: the row paints while the seat, a
+   static compact reading, or a pill contributes content, and stays out of the
+   layout otherwise. */
+.root:not(:has(> .anchor, > .pill, > [data-slot]:not(:empty))) {
+  display: none;
+}
+
 /* Dialog anchor: shrink-wraps its pill so the panel clamp measures the pill. */
 .anchor {
   display: inline-flex;

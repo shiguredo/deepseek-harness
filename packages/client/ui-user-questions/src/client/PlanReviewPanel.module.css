@@ -38,6 +38,18 @@
   line-height: 20px;
 }
 
+/* The strip's ambient lead seat (the checkout chip, for one): it sits beside
+   the header label and collapses while no occupant paints, so the tinted
+   label-only look survives without it. */
+.stripLead {
+  display: flex;
+  min-width: 0;
+}
+
+.stripLead:not(:has(> [data-slot]:not(:empty))) {
+  display: none;
+}
+
 .footer {
   display: flex;
   align-items: center;

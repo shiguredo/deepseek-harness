@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-font-family/README.md
+/:
+  en: 072f5ccdd229424d
+  zh: 59de469e84e65c28
+/deepseek-ai-dsh-client-ui-font-family:
+  en: 1048eca3cb2d9f99
+  zh: c91230a562cb8db0
+/deepseek-ai-dsh-client-ui-font-family/summary:
+  en: 2c4239ab36025bac
+  zh: 3c0a7e530abde35c
+/deepseek-ai-dsh-client-ui-font-family/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-font-family/use-this-package:
+  en: fbdb87b9b8131552
+  zh: fdc4f2bb6aad77e6
+/deepseek-ai-dsh-client-ui-font-family/use-this-package/what-to-expect:
+  en: 990d9994b1afecce
+  zh: 295b55c702b5eb68
+/deepseek-ai-dsh-client-ui-font-family/understand-the-implementation:
+  en: 42b15ac6321706aa
+  zh: cfcb757213648bd9
+/deepseek-ai-dsh-client-ui-font-family/understand-the-implementation/host-half:
+  en: 374f1949fba8626b
+  zh: 06f07b1dd540122a
+/deepseek-ai-dsh-client-ui-font-family/understand-the-implementation/browser-half:
+  en: 6bb7ec622a3b450f
+  zh: 9662c1a95a41b184
+/deepseek-ai-dsh-client-ui-font-family/further-exploration:
+  en: ba6f3ae8f125b93d
+  zh: 48b3c9104698949c
+/deepseek-ai-dsh-client-ui-font-family/model-experience:
+  en: 52dca5024a502a79
+  zh: e632cf449298c770
+/deepseek-ai-dsh-client-ui-font-family/model-experience/kv-cache-effect:
+  en: ca75c51c89c2c9b0
+  zh: c9374653cbab658d
+/deepseek-ai-dsh-client-ui-font-family/known-limitations-and-deferred-work:
+  en: 5ab3c571975ef35e
+  zh: 45d305f656698e5a
+/deepseek-ai-dsh-client-ui-font-family/known-limitations-and-deferred-work/dev-note:
+  en: 0a10c82e4e22e650
+  zh: 55dc7d3ceae40f5c

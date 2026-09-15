@@ -106,12 +106,24 @@
     # the roster rides the session control stream above.
     - id: job-controller
       name: '@deepseek-ai/dsh-api-job-controller'
-    # Workspace file service: bounded read, directory listing, and the
-    # agent-write change feed inside the session workspace root.
+
+    # Interactive user terminals: default shell, reconnect, and bounded
+    # screen recovery over Typert Remote.
     - id: terminal-controller
       name: '@deepseek-ai/dsh-api-terminal-controller'
+
+    # Workspace file service: bounded read, directory listing, and the
+    # agent-write change feed inside the session workspace root.
     - id: workspace-files
       name: '@deepseek-ai/dsh-api-workspace-files'
+
+    # Workspace git service: the checkout the session workspace directory
+    # lives in — ref, worktree directory, and origin GitHub repository — read
+    # through the composition's subprocess provider.
+    - id: workspace-git
+      name: '@deepseek-ai/dsh-api-workspace-git'
+      config:
+        timeoutMs: 5000
 
     # Durable Host-wide reminders. The Schedule service owns the task store and
     # delivers each due occurrence as a follow-up in its original Session;
@@ -230,6 +242,11 @@
     - id: ui-theme
       name: '@deepseek-ai/dsh-client-ui-theme'
 
+    # Font-family setting: applies one user-chosen family (or the built-in
+    # locale-neutral stacks) to UI text and code, bootstrapped before plugins.
+    - id: ui-font-family
+      name: '@deepseek-ai/dsh-client-ui-font-family'
+
     - id: locale
       name: '@deepseek-ai/dsh-client-locale'
 
@@ -238,6 +255,12 @@
 
     - id: ui-shortcuts
       name: '@deepseek-ai/dsh-client-ui-shortcuts'
+
+    # Japanese pack: registers the ja locale and its dictionaries over the
+    # shipped zh/en registry. Remove this entry to drop Japanese from the
+    # language selector.
+    - id: locale-ja
+      name: '@deepseek-ai/dsh-client-locale-ja'
 
     - id: ui-layout
       name: '@deepseek-ai/dsh-client-ui-layout'
@@ -307,6 +330,12 @@
 
     - id: ui-chat
       name: '@deepseek-ai/dsh-client-ui-chat'
+
+    # Ambient composer stats-row chip: the checkout the current Session
+    # workspace lives in (GitHub repository, branch, worktree directory) over
+    # the workspaceGit Remote namespace.
+    - id: ui-git-branch
+      name: '@deepseek-ai/dsh-client-ui-git-branch'
 
     # Official occupants for the generic sidebar and conversation brand slots.
     - id: ui-brand-official

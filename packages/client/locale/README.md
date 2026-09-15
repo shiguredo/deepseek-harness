@@ -63,6 +63,8 @@ export function apply(ctx) {
 }
 ```
 
+The in-tree [`@deepseek-ai/dsh-client-locale-ja`](../locale-ja/README.md) package is the complete example: it ships one typed dictionary per shipped namespace with English fallback for anything it does not carry.
+
 An external id is a non-empty ASCII BCP 47-style tag. Its fallback must already be registered, and the chain must terminate at `en`; unknown targets, duplicate ids, and cycles fail at registration. Lookup walks the fallback chain in the requested namespace, repeats it in `common`, then displays the key. Unloading a definition removes it from the selector and returns an active selection to the available browser/default locale.
 
 ### What the Host half does
