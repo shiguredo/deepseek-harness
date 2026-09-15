@@ -504,8 +504,8 @@ function SessionTree({
 
 /** The flat "In one list" body: every session is one draggable top-level row. */
 function FlatList({
-  list, sessionIds, useSessionPendingInteraction, open, forkSession, onSessionRename, onSessionArchive,
-  usePanelInfo, setSessionOrder,
+  list, sessionIds, workspaces, useSessionPendingInteraction, open, forkSession, onSessionRename,
+  onSessionArchive, usePanelInfo, setSessionOrder,
   revealSessionId, onSessionRevealed, t,
 }: Pick<
   SessionTreeProps,
@@ -522,12 +522,14 @@ function FlatList({
 > & {
   list: SessionListState
   sessionIds: readonly SessionId[]
+  /** Workspace membership and display labels, so each row can name its owner. */
+  workspaces: readonly WorkspaceView[]
 }) {
   const panelActive = usePanelInfo(info => info.activePanelId !== null)
   const pendingInteractions = useSessionPendingInteraction(s => s)
   const rows = useMemo(
-    () => deriveFlat(list, sessionIds, pendingInteractions),
-    [list, sessionIds, pendingInteractions],
+    () => deriveFlat(list, sessionIds, pendingInteractions, workspaces),
+    [list, sessionIds, pendingInteractions, workspaces],
   )
   const [drag, setDrag] = useState<DragState | null>(null)
   const dropCommitted = useRef(false)
@@ -1194,6 +1196,7 @@ export function WorkspaceBrowser({
                 usePanelInfo={usePanelInfo}
                 list={list}
                 sessionIds={orderedFlatSessionIds}
+                workspaces={orderedWorkspaces}
                 useSessionPendingInteraction={useSessionPendingInteraction}
                 open={open} forkSession={forkSession}
                 onSessionRename={onSessionRename} onSessionArchive={onSessionArchive}

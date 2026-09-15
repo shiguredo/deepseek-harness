@@ -1,5 +1,7 @@
 /** Question composer props and one pending Remote waterfall response. */
-import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+import type {
+  PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
+} from '@deepseek-ai/dsh-client-ui-slots'
 // The client module declares the conversation.composer SlotMap entry required by PropsRuntime.
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type {
@@ -11,6 +13,19 @@ declare module '@deepseek-ai/dsh-client-ui-session/client' {
   interface SessionPendingInteractionMap {
     /** Pending question or plan-review request. */
     question: PendingQuestion
+  }
+}
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    /**
+     * Ambient lead seat at the top of the question card's header. The composer
+     * takeover hides the composer bar, so a feature hanging context on the
+     * composer (the workspace's checked-out ref, say) keeps it visible here
+     * while the user answers; the header collapses the seat while it paints
+     * nothing.
+     */
+    'conversation.question.header.lead': { kind: 'list'; scope: 'session' }
   }
 }
 
@@ -220,5 +235,6 @@ export type QuestionWait = PendingQuestion
 export type QuestionComposerProps =
   PropsRuntime<'conversation.composer'>
   & PropsStore<ReturnType<typeof createQuestionDraftStore>>
+  & PropsRenderSlots<'conversation.question.header.lead'>
   & { matched: QuestionWait }
   & PropsLocale<'question'>

@@ -3,9 +3,9 @@ import { Button, IconEditOutline16, MarkdownText } from '@deepseek-ai/dsh-client
 import type { PendingQuestion, PlanReview, QuestionComposerProps } from './contract/slots.ts'
 import css from './PlanReviewPanel.module.css'
 
-/** The panel's own props: the question domain face, the narrowed review, and the locale seat. */
+/** The panel's own props: the question domain face, the narrowed review, the locale seat, and the header lead seat. */
 export type PlanReviewPanelProps =
-  { pending: PendingQuestion; review: PlanReview } & Pick<QuestionComposerProps, 't'>
+  { pending: PendingQuestion; review: PlanReview } & Pick<QuestionComposerProps, 't' | 'renderSlot'>
 
 /**
  * Optional-prop spread for a decision button's tooltip: `title` is optional on
@@ -21,10 +21,10 @@ function tooltip(description: string | undefined): { title?: string } {
 /**
  * Render a plan review as a decision card.
  *
- * @param props - the question domain face, the narrowed plan review, and `t`.
+ * @param props - the question domain face, the narrowed plan review, `t`, and the header lead seat.
  * @returns The plan-review takeover for this request.
  */
-export function PlanReviewPanel({ pending, review, t }: PlanReviewPanelProps) {
+export function PlanReviewPanel({ pending, review, t, renderSlot }: PlanReviewPanelProps) {
   const markdownLabels = useMemo(() => ({
     code: { copyLabel: t('copy'), copiedLabel: t('copied') },
     footnotes: t('markdown.footnotes'),
@@ -52,6 +52,9 @@ export function PlanReviewPanel({ pending, review, t }: PlanReviewPanelProps) {
         <div className={css.strip}>
           <span className={css.dot} />
           {t('plan.header')}
+          <div className={css.stripLead}>
+            {renderSlot('conversation.question.header.lead', {})}
+          </div>
         </div>
         <div className={css.body} data-plan-review-scroll>
           <MarkdownText text={review.plan} labels={markdownLabels} />

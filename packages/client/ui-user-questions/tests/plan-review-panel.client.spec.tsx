@@ -114,6 +114,7 @@ const kit: Omit<QuestionComposerProps, 'matched'> = {
   sessionId: SID,
   session: undefined,
   pendingInteraction: undefined,
+  SessionProvider: ({ children }) => children,
   useSession: selector => selector(sessionState),
   useSessions: selector => selector(sessionList),
   usePanelInfo, useResource,
@@ -133,6 +134,7 @@ const kit: Omit<QuestionComposerProps, 'matched'> = {
   },
   useStore: selector => selector(questionDraftStore.getSnapshot()),
   actions: questionDraftStore.actions,
+  renderSlot: () => null,
   t: seatOver(zh, commonZh),
 }
 
@@ -205,6 +207,22 @@ describe('planReviewOf', () => {
 })
 
 describe('PlanReviewPanel', () => {
+  it('renders the header lead seat inside the review strip', () => {
+    const { carrier } = wait()
+    render(
+      <QuestionComposer
+        matched={carrier}
+        {...kit}
+        renderSlot={key => (key === 'conversation.question.header.lead'
+          ? <span data-testid="header-lead">⎇ main</span>
+          : null)}
+      />,
+    )
+
+    const lead = screen.getByTestId('header-lead')
+    expect(screen.getByText(zh['plan.header']).parentElement?.contains(lead)).toBe(true)
+  })
+
   it('renders the plan under a review strip, with none of the quiz affordances', () => {
     const { carrier } = wait()
     render(<QuestionComposer matched={carrier} {...kit} />)

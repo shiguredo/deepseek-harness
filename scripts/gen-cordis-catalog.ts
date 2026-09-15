@@ -129,6 +129,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceController: 'workspace.md',
   workspaceFiles: 'workspace.md',
   terminalController: 'workspace.md',
+  workspaceGit: 'workspace.md',
   directoryPickerController: 'workspace.md',
 }
 
@@ -800,6 +801,9 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   TerminalAttachmentId: 'Browser terminal input ownership is owned by packages/api/terminal-controller/README.md',
   TerminalFrame: 'Browser terminal stream frames are owned by packages/api/terminal-controller/README.md',
   WebTerminalId: 'Browser terminal identity is owned by packages/api/terminal-controller/README.md',
+  WorkspaceGitScope: 'Host workspace git lookup contract is owned by packages/api/workspace-git/README.md',
+  WorkspaceGitStatus: 'Host workspace git endpoint contract is owned by packages/api/workspace-git/README.md',
+  WorkspaceGitGithub: 'Host workspace git endpoint contract is owned by packages/api/workspace-git/README.md',
 }
 
 /** Repository data policy consumed by the Cordis catalog projector. */

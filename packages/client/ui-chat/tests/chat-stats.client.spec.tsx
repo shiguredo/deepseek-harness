@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import type {
   AssistantMessageNode, ChatSnapshot, LegacyConversationSlice, ToolResultNode,
@@ -144,8 +145,14 @@ describe('StatsPills', () => {
   function props(
     source: { getSnapshot(): ChatSnapshot; subscribe(fn: () => void): () => void },
     values: Record<string, unknown> = { tokenUsage: USAGE },
+    seat = null as ReactNode,
   ): StatsPillsProps {
-    return { useChat: bindSnapshotSelector(source), useProjection: projections(values), t: tEn }
+    return {
+      useChat: bindSnapshotSelector(source),
+      useProjection: projections(values),
+      t: tEn,
+      renderSlot: () => seat,
+    }
   }
 
   function tokenUsage(cacheReadTokens: number, uncachedInputTokens: number) {
@@ -180,6 +187,21 @@ describe('StatsPills', () => {
     })} />)
     expect(emptyView.container.textContent).toBe('')
     expect(emptyView.container.querySelector('[data-composer-stats]')).toBeNull()
+  })
+
+  it('keeps the row mounted for a lead-seat occupant and renders it before the pills', () => {
+    // No closed step yet: the seat alone holds the row, and the clearance
+    // attribute stays absent because no pill draws a reading.
+    const empty = makeSource()
+    const seatOnly = render(<StatsPills {...props(empty.source, {}, <span>⎇ main</span>)} />)
+    expect(seatOnly.getByText('⎇ main')).toBeTruthy()
+    expect(seatOnly.container.querySelector('[data-composer-stats]')).toBeNull()
+
+    const { source } = makeSource({ nodes: [assistant(1, 1)] })
+    const view = render(<StatsPills {...props(source, { tokenUsage: USAGE }, <span>⎇ main</span>)} />)
+    const row = view.container.firstElementChild as HTMLElement
+    expect(view.container.querySelector('[data-composer-stats]')).toBe(row)
+    expect(row.firstElementChild?.textContent).toBe('⎇ main')
   })
 
   it.each([

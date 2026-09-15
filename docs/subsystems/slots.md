@@ -148,7 +148,8 @@ root
 │     │  ├─ conversation.session.header.utilities
 │     │  └─ conversation.session.header.corner
 │     ├─ conversation.composer
-│     │  └─ conversation.approval.detail
+│     │  ├─ conversation.approval.detail
+│     │  └─ conversation.question.header.lead
 │     ├─ conversation.composer.bar
 │     │  ├─ conversation.input.attachments
 │     │  ├─ conversation.input.permission
@@ -157,6 +158,7 @@ root
 │     ├─ conversation.input.overlay
 │     ├─ conversation.input.dock
 │     ├─ conversation.composer.dock
+│     │  └─ conversation.composer.stats.lead
 │     ├─ conversation.input.left
 │     ├─ conversation.input.right
 │     ├─ conversation.hero.brand.mark

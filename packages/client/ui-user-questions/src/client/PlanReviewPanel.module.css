@@ -54,6 +54,19 @@
   background: var(--dsw-alias-state-warn-primary);
 }
 
+/* The strip's ambient lead seat (the checkout chip, for one): pushed to the
+   strip's right end and collapsed while no occupant paints, so the tinted
+   label-only look survives without it. */
+.stripLead {
+  display: flex;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.stripLead:not(:has(> [data-slot]:not(:empty))) {
+  display: none;
+}
+
 /* The plan is the panel's message: it takes the whole body and the scroll. */
 .body {
   flex: 1 1 auto;

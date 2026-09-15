@@ -113,6 +113,7 @@ const kitBase: Omit<QuestionComposerProps, 'matched' | 'useStore' | 'actions'> =
   session: undefined,
   sessionId: SID,
   pendingInteraction: undefined,
+  SessionProvider: ({ children }) => children,
   useSession: selector => selector(sessionState),
   useSessions: selector => selector(sessionList),
   usePanelInfo, useResource,
@@ -130,6 +131,7 @@ const kitBase: Omit<QuestionComposerProps, 'matched' | 'useStore' | 'actions'> =
     pruneAttachments: () => { throw new Error('unused') },
     submit: () => { throw new Error('unused') },
   },
+  renderSlot: () => null,
   // The seat's key domain is question ∪ common.
   t: seatOver(zh, commonZh),
 }
@@ -223,6 +225,27 @@ describe('QuestionComposer', () => {
       { id: 'signals', selected: ['系统设计', '代码质量', '产品判断'], custom: '沟通能力' },
     ]))
     expect(screen.getByRole<HTMLButtonElement>('button', { name: '正在提交…' }).disabled).toBe(true)
+  })
+
+  it('renders the header lead seat above the question heading', () => {
+    const { carrier } = wait()
+    render(
+      <QuestionComposer
+        matched={carrier}
+        {...kit}
+        renderSlot={key => (key === 'conversation.question.header.lead'
+          ? <span data-testid="header-lead">⎇ main</span>
+          : null)}
+      />,
+    )
+
+    const lead = screen.getByTestId('header-lead')
+    expect(lead.closest('header')).toBeTruthy()
+    // The ambient line precedes the question the user answers.
+    const title = screen.getByRole('heading', { name: '选择候选人类型' })
+    expect(
+      lead.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   it('renders plan detail through the shared assistant Markdown primitive', () => {

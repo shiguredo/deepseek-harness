@@ -27,6 +27,8 @@ This package lets users browse grouped or flat Session lists, choose a Workspace
 
 Use the sidebar to browse Workspaces and their Sessions, reorder them, and start new ones; use the picker in the Session Intent hero to choose a Workspace for a new session. An open Workspace shows five non-blank Sessions by default and keeps the selected blank **New Session** as one provisional extra row until its first prompt. **Show more** reveals the hidden remainder; closing and reopening the Workspace restores this folded projection.
 
+Grouped browsing names each Workspace with its own header. Switching **Group by** to the flat **In one list** mode draws one list instead, so each row carries its owning Workspace label above the session title; a Session outside every Workspace shows its directory name, or the localized **Ungrouped** when neither names it.
+
 ### Reordering and view options
 
 **Last updated** orders ordinary Sessions by their latest user prompt or steer time, newest first, in both grouped and flat views. **Manual** freezes the current displayed order and holds positions when activity changes; newly discovered ordinary Sessions append to the end, newest first when several arrive together. Returning to Last updated discards every manual position, and entering Manual again freezes the then-current recency order. The browser defaults to Last updated and remembers the selected mode across reloads. Dragging an ordinary Session applies the move locally and selects Manual. The selected blank **New Session** is always pinned first and cannot be dragged; after its first prompt it becomes an ordinary draggable row, retaining its first position in Manual or following its current timestamp in Last updated. In a collapsed group, drag boundaries follow rendered rows and place the source before intervening hidden rows, so a drag cannot hide its source. Session display orders for real Workspaces, Ungrouped, and the flat list are browser-local; Workspace group drag order remains Host-durable.
@@ -103,11 +105,12 @@ None; this package neither assembles nor sends a provider request.
 <a id="known-limitations-and-deferred-work"></a>
 
 
-These limits define the search depth, the archive surface, and the picking carrier; they are current package constraints.
+These limits define the search depth, the archive surface, the flat-row presentation, and the picking carrier; they are current package constraints.
 
 - **No fuzzy content search or event deep links** — the content backend uses literal token/phrase matching, and selecting a result opens the Session rather than the matching event.
 - **No Session deletion, and unarchive lives in Settings** — sessions can be archived but never deleted; the archived-sessions Settings page ([ui-settings-unarchive-sessions](../ui-settings-unarchive-sessions/README.md)) owns viewing and restoring them, and Workspace registration deletion does not delete Sessions.
 - **Pending user interaction is not aggregated into collapsed groups** — a waiting row inside a collapsed group lights no group-header indicator and becomes visible only after that group is expanded.
+- **Flat rows are taller** — the Workspace label line gives every flat row a 45px minimum against the grouped cell's 32px, so a flat list shows fewer Sessions at once.
 - **Native folder selection depends on the local Host carrier** — under the `-native` composition, in-process or remote browser deployments cannot open a local operating-system dialog; remote-capable picking is the `-browse` composition's in-app flow.
 
 <a id="dev-note"></a>

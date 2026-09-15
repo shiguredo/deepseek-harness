@@ -1,0 +1,45 @@
+/** Japanese dictionary for the `deliverables` namespace (client/ui-deliverables/src/client/locales.ts). */
+import type { LocaleDictOf } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: loads the `deliverables` key union declared by @deepseek-ai/dsh-client-ui-deliverables.
+import type {} from '@deepseek-ai/dsh-client-ui-deliverables/client'
+
+/** `deliverables` copy in Japanese, complete against the owner's key union. */
+export const ja: LocaleDictOf<'deliverables'> = {
+  'presented.nativeUnavailable': 'このファイルには利用可能な Host パスがありません。サイドバーでプレビューしてください',
+  'presented.revealError': 'ファイルマネージャーに表示できませんでした。再試行してください',
+  'presented.directoryError': '格納先フォルダを開けませんでした。再試行してください',
+  'presented.directoryOpening': '格納先フォルダを開いています…',
+  'presented.directoryOpened': '格納先フォルダを開くようリクエストしました',
+  'presented.revealed': 'ファイルマネージャーに表示するようリクエストしました',
+  'presented.revealing': 'ファイルマネージャーに表示しています…',
+  'presented.unavailable': 'この Host にはデスクトップがないため、ファイルやフォルダを開けません',
+  'presented.retry': '再試行',
+  'presented.hostError': 'Host のデスクトップ情報を読み取れませんでした',
+  'presented.directory': '格納先フォルダを開く',
+  'presented.explorer': 'エクスプローラーに表示',
+  'presented.finder': 'Finder に表示',
+  'presented.defaultApp': 'デフォルトのアプリで開く',
+  'presented.more': '{name} のその他のファイル操作',
+  'presented.action': '開く',
+  'presented.preview': 'サイドバーでプレビュー',
+  'presented.previewButton': 'サイドバーで {name} を開く',
+  'presented.previewCard': 'サイドバーで {name} をプレビュー',
+  'presented.all': '全 {count} 件のファイル',
+  'presented.expandAria': '全 {count} 件の成果物ファイルを表示',
+  'presented.collapse': '折りたたむ',
+  'presented.collapseAria': '成果物ファイルを折りたたむ',
+  'presented.opening': '開いています…',
+  'presented.opened': 'デフォルトのアプリで開きました',
+  'presented.error': '開けませんでした。クリックして再試行',
+  'presented.file': 'ファイル',
+  'row.title': '成果物ファイル',
+  'row.running': '提示中',
+  'row.ok': '提示済み',
+  'row.error': '提示に失敗',
+  'row.stopped': '中断',
+  'row.inspect': '呼び出しを表示',
+  'produced.label': '今回変更されたファイル',
+  'produced.moreOne': '+1 ファイル',
+  'produced.more': '+{count} ファイル',
+  'produced.open': '{name} を開く',
+}

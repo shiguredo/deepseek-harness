@@ -49,6 +49,8 @@ The generic question flow keeps its current page, selected labels, custom text, 
 
 The package is one ownership rule: rendering a question is a host UI capability, having the tool is an agent capability, so the `tool-ask-user` row belongs to the presets that want it (and to the TUI composition, which has no presets).
 
+The card header declares the `conversation.question.header.lead` list seat, because the takeover hides the composer bar and everything hanging on it; a plugin keeps ambient composer context (the workspace's checked-out ref, for one) visible there, and the header collapses the line while the seat paints nothing.
+
 ### Intent surface election
 
 The card claims a request only when it can send every answer that request allows: one question, the intent declared, the plan present as `detail`, the named approve label offered, and a binary single choice (at most one option besides approve, not multi-select). Anything else stays on the generic flow, which can express it. An intent changes the layout, never which answers are reachable.
