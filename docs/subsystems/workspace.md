@@ -473,6 +473,25 @@ Host Remote file reads and workspace directory observations over the composed fi
 
 Source: [`packages/api/workspace-files/src/index.ts`](../../packages/api/workspace-files/src/index.ts)
 
+<a id="ctxworkspacegit--workspacegit"></a>
+
+### `ctx.workspaceGit` — `WorkspaceGit`
+
+Host reader of the checkout one Session workspace lives in.
+
+```ts cordis-catalog
+/**
+ * Read the checkout one Session workspace lives in.
+ * @param workspaceGitScope - header-derived workspace directory for the Session identity on the wire.
+ * @param signal - caller cancellation.
+ * @returns the checked-out branch or detached short commit id, together with the worktree
+ * directory name and GitHub repository the checkout carries, or `none` outside a repository.
+ */
+@Remote async status(workspaceGitScope: WorkspaceGitScope, signal: AbortSignal): Promise<WorkspaceGitStatus>
+```
+
+Source: [`packages/api/workspace-git/src/index.ts`](../../packages/api/workspace-git/src/index.ts)
+
 <a id="ctxworkspaceregistry--workspaceregistry"></a>
 
 ### `ctx.workspaceRegistry` — `WorkspaceRegistry`

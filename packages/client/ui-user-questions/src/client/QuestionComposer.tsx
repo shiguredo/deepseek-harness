@@ -120,15 +120,25 @@ export function QuestionComposer(props: QuestionComposerProps) {
         t={props.t}
         useStore={props.useStore}
         actions={props.actions}
+        renderSlot={props.renderSlot}
       />
     )
-    : <PlanReviewPanel key={question.key} pending={question} review={review} t={props.t} renderSlot={props.renderSlot} />
+    : (
+      <PlanReviewPanel
+        key={question.key}
+        pending={question}
+        review={review}
+        t={props.t}
+        renderSlot={props.renderSlot}
+      />
+    )
 }
 
 type QuestionFlowProps =
-  { pending: PendingQuestion } & Pick<QuestionComposerProps, 't' | 'useStore' | 'actions'>
+  { pending: PendingQuestion }
+  & Pick<QuestionComposerProps, 't' | 'useStore' | 'actions' | 'renderSlot'>
 
-function QuestionFlow({ pending, t, useStore, actions }: QuestionFlowProps) {
+function QuestionFlow({ pending, t, useStore, actions, renderSlot }: QuestionFlowProps) {
   const questions = pending.questions
   const markdownLabels = useMemo(() => ({
     code: { copyLabel: t('copy'), copiedLabel: t('copied'), toolbarLabels: { codeLabel: t('codeBlock.title'), wrapLabel: t('codeBlock.wrap'), unwrapLabel: t('codeBlock.unwrap') } },
@@ -282,6 +292,9 @@ function QuestionFlow({ pending, t, useStore, actions }: QuestionFlowProps) {
       >
         <header className={css.header}>
           <div className={css.headingBlock}>
+            <div className={css.headerLead}>
+              {renderSlot('conversation.question.header.lead', {})}
+            </div>
             {question.header !== undefined && <div className={css.eyebrow}>{question.header}</div>}
             <h2 className={css.title} id={`question-${pending.key}-${String(index)}`}>
               {question.question}

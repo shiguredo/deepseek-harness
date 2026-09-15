@@ -11,12 +11,10 @@ body,
 body {
   font-family: var(
     --dsw-font-family,
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
-    'PingFang SC',
-    'Hiragino Sans GB',
-    'Microsoft YaHei',
     'Helvetica Neue',
     Helvetica,
     Arial,

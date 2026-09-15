@@ -34,6 +34,7 @@ The packages below provide the Remote layer; the package READMEs own the exhaust
 | [`workspace-controller/`](workspace-controller/README.md) | Owns Workspace mutations and the complete Client Workspace projection. | `ctx.workspaceController` / `ctx.remote.workspace` |
 | [`terminal-controller/`](terminal-controller/README.md) | Session-owned interactive shells, screen recovery and browser terminal control. | `ctx.terminalController` / `ctx.remote.terminal` |
 | [`workspace-files/`](workspace-files/README.md) | Owns bounded workspace file access — `stat`, paged `read`, `list`, and the instrumented-operation `changes` feed — and the Client `file` resource provider over it. | `ctx.workspaceFiles` / `ctx.remote.workspaceFiles` |
+| [`workspace-git/`](workspace-git/README.md) | Owns the session workspace's checkout — ref, worktree directory, and GitHub repository — over the `workspaceGit` Remote namespace. | `ctx.workspaceGit` / `ctx.remote.workspaceGit` |
 
 Remote calls run Client → Host over the application's shared Connection; stream items flow Host → Client on the Gateway mux, and a stream's uplink items flow Client → Host on the same logical stream. API Gateway owns Remote transport, while the controller packages own Session, configuration-surface, and Workspace behavior. Feature packages register exact Connection Fetch routes for responses that do not fit Remote invocation, such as streamed downloads.
 

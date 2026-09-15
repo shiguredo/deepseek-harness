@@ -5,7 +5,7 @@ import {
 import type { PendingQuestion, PlanReview, QuestionComposerProps } from './contract/slots.ts'
 import css from './PlanReviewPanel.module.css'
 
-/** The panel's own props: the question domain face, the narrowed review, and the locale seat. */
+/** The panel's own props: the question domain face, the narrowed review, the locale seat, and the strip's render seats. */
 export type PlanReviewPanelProps =
   { pending: PendingQuestion; review: PlanReview } & Pick<QuestionComposerProps, 't' | 'renderSlot'>
 
@@ -23,7 +23,7 @@ function tooltip(description: string | undefined): { title?: string } {
 /**
  * Render plan review controls; the submitted document opens in the sidebar.
  *
- * @param props - the question domain face, the narrowed plan review, and `t`.
+ * @param props - the question domain face, the narrowed plan review, `t`, and the strip's render seats.
  * @returns The plan-review takeover for this request.
  */
 export function PlanReviewPanel({ pending, review, t, renderSlot }: PlanReviewPanelProps) {
@@ -54,6 +54,9 @@ export function PlanReviewPanel({ pending, review, t, renderSlot }: PlanReviewPa
         <div className={css.strip}>
           <StateDot state={busy ? 'ongoing' : 'warning'} />
           {t('plan.header')}
+          <div className={css.stripLead}>
+            {renderSlot('conversation.question.header.lead', {})}
+          </div>
           <div className={css.previewActions}>
             {renderSlot('conversation.plan-review.actions', { review, requestKey: pending.key })}
           </div>

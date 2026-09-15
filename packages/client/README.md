@@ -40,6 +40,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-slots/`](ui-slots/README.md) | Defines typed extension Slots and reusable Component Factories | — |
 | [`ui-session/`](ui-session/README.md) | Adapts Session Controller state into standard Slot sources and hooks | — |
 | [`ui-theme/`](ui-theme/README.md) | Applies the selected color theme | — |
+| [`ui-font-family/`](ui-font-family/README.md) | Owns the font-family setting and applies it to UI text and code | — |
 | [`ui-primitives/`](ui-primitives/README.md) | Provides shared React controls, icons, and content renderers | — |
 | [`ui-attachment/`](ui-attachment/README.md) | Registers composer and message-image attachment presentation | — |
 | [`ui-layout/`](ui-layout/README.md) | Arranges the main application regions | — |
@@ -54,6 +55,7 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-workspace/`](ui-workspace/README.md) | Provides workspace selection and creation surfaces | — |
 | [`ui-conversation/`](ui-conversation/README.md) | Presents the active conversation and its input surface | — |
 | [`ui-chat/`](ui-chat/README.md) | Projects and renders the Chat conversation target | — |
+| [`ui-git-branch/`](ui-git-branch/README.md) | Shows the current Session workspace's checked-out git branch in the composer dock | — |
 | [`ui-approval/`](ui-approval/README.md) | Presents approval requests and returns user decisions | — |
 | [`ui-tool/`](ui-tool/README.md) | Composes Tool call trees and keyed per-Tool views | — |
 | [`ui-workflow-run/`](ui-workflow-run/README.md) | Replays durable workflow runs as nested chat disclosures | — |

@@ -49,6 +49,8 @@ kind: "package-reference"
 
 本包是一条归属规则：渲染提问是宿主的 UI 能力，拥有该工具则是 agent 的能力，因此 `tool-ask-user` 行属于需要它的各个 preset（以及没有 preset 的 TUI 组装）。
 
+问题卡片头部声明 `conversation.question.header.lead` list 席位，因为 takeover 会连带隐藏 composer 栏；插件可在此继续显示 composer 的环境信息（例如工作区所在的检出），而席位没有绘制任何内容时该行会收起。
+
 ### 意图界面选择
 
 卡片接管声明了意图、以 `detail` 携带计划、提供了被指名的批准标签的单个问题，要求除批准外最多一个选项，且非多选。次要操作返回编辑器供用户提出修改要求。更多选项或多选问题仍由通用流程处理。
