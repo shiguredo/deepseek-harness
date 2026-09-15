@@ -48,6 +48,13 @@ export interface SessionNode {
   id: SessionId
   /** Stored display title; the renderer substitutes the localized New Session label for blank rows. */
   title: string
+  /**
+   * Owning Workspace label, or the Session directory basename when no
+   * Workspace accounts for it; present only on flat rows, whose
+   * hierarchy-free list has no group header to name the Workspace. An empty
+   * value means neither: the renderer shows the localized Ungrouped label.
+   */
+  workspace?: string
   /** The provisional blank session (renderer shows the localized New Session title). */
   blank: boolean
   /** A Session-scoped UI consumer is awaiting this user. */
@@ -400,20 +407,42 @@ export function visibleSessionIds(
 }
 
 /**
- * Derive flat rows from the browser's ordered visible Session ids.
+ * Derive flat rows from the browser's ordered visible Session ids. Every row
+ * carries the owning Workspace label, because the hierarchy-free list has no
+ * group header to name it.
  * @param list - sessions list snapshot used to select the ids.
  * @param sessionIds - known visible members in render order, including any pinned blank.
  * @param statuses - unified UI status by Session.
+ * @param workspaces - Workspace membership and display labels.
  * @returns flat rows in the supplied order with current status indicators.
  */
 export function deriveFlat(
   list: SessionListState,
   sessionIds: readonly SessionId[],
   statuses: SessionStatuses,
+  workspaces: readonly WorkspaceView[],
 ): SessionNode[] {
   const descendants = indexSubagentDescendants(list.byId)
+  const workspaceTitles = workspaceTitleBySession(workspaces)
   return sessionIds
-    .map(id => sessionNode(list.byId[id] as SessionSummary, descendants, statuses))
+    .map((id) => {
+      const summary = list.byId[id] as SessionSummary
+      return {
+        ...sessionNode(summary, descendants, statuses),
+        workspace: workspaceTitles.get(id) ?? workspaceLabel(summary.cwd),
+      }
+    })
+}
+
+/** First Workspace title accounting for each Session, ignoring later duplicates. */
+function workspaceTitleBySession(workspaces: readonly WorkspaceView[]): ReadonlyMap<SessionId, string> {
+  const titles = new Map<SessionId, string>()
+  for (const workspace of workspaces) {
+    for (const sessionId of workspace.sessionIds) {
+      if (!titles.has(sessionId)) titles.set(sessionId, workspace.title)
+    }
+  }
+  return titles
 }
 
 /**
@@ -444,12 +473,7 @@ export function deriveSearchResults(
   const descendants = indexSubagentDescendants(list.byId)
   const current = mainSessionId(list)
 
-  const workspaceBySession = new Map<SessionId, string>()
-  for (const workspace of workspaces) {
-    for (const sessionId of workspace.sessionIds) {
-      if (!workspaceBySession.has(sessionId)) workspaceBySession.set(sessionId, workspace.title)
-    }
-  }
+  const workspaceBySession = workspaceTitleBySession(workspaces)
   const labelOf = (summary: SessionSummary): string =>
     workspaceBySession.get(summary.id) ?? workspaceLabel(summary.cwd)
   const contentBySession = new Map<SessionId, SessionSearchResultItem>()

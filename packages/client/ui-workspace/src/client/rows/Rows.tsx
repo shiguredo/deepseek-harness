@@ -388,8 +388,10 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
 }
 
 /**
- * One top-level 34px session row: status dot (pending user interaction outranks
+ * One top-level session row: status dot (pending user interaction outranks
  * own or descendant activity), title, relative time, and the row actions menu.
+ * A flat row adds the owning Workspace label above the title, because its
+ * hierarchy-free list has no group header to name the Workspace.
  * @param props.node - derived session node.
  * @param props.currentId - selected session id (row highlight).
  * @param props.now - epoch ms for relative-time formatting.
@@ -399,7 +401,7 @@ export function SearchResultItem({ result, currentId, onOpen, t }: {
  * @param props.onArchive - archive a session by id.
  * @param props.onReveal - scroll this row into view after search navigation, then acknowledge it.
  * @param props.drag - optional row-drag target wiring; blank rows cannot start a drag.
- * @param props.flat - omit the empty status slot in the hierarchy-free flat list.
+ * @param props.flat - flat-list presentation: the Workspace label above the title and no empty status slot.
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
@@ -430,6 +432,13 @@ export function SessionNodeItem({
   const statuses = sessionStatuses(node, t)
   const primaryStatus = statuses[0]
   const showStatus = primaryStatus.state !== 'done' || row.completed
+  // The flat list has no group header, so the row itself names the Workspace;
+  // an empty label means neither a Workspace nor a named directory accounts for it.
+  const workspaceLabel = !flat
+    ? undefined
+    : row.workspace === undefined || row.workspace === ''
+      ? t('group.ungrouped')
+      : row.workspace
   const draggable = drag !== undefined && !row.blank
   const [menuOpen, setMenuOpen] = useState(false)
   const rowRef = useRef<HTMLDivElement>(null)
@@ -454,6 +463,7 @@ export function SessionNodeItem({
       ref={rowRef}
       className={clsx(
         css.sessionRow, selected && css.selected, menuOpen && css.menuOpen,
+        flat && css.flatSessionRow,
         flat && !showStatus && css.flatSessionRowWithoutStatus,
         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
       )}
@@ -495,7 +505,14 @@ export function SessionNodeItem({
           {showStatus && <SessionStatusDots statuses={statuses} />}
         </span>
       )}
-      <span ref={titleRef} className={css.title}>{title}</span>
+      {workspaceLabel === undefined
+        ? <span ref={titleRef} className={css.title}>{title}</span>
+        : (
+          <span className={css.flatTitleBlock}>
+            <span className={css.workspace}>{workspaceLabel}</span>
+            <span ref={titleRef} className={css.title}>{title}</span>
+          </span>
+        )}
       {row.hasActiveSchedule && <ActiveScheduleIndicator t={t} />}
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs

@@ -43,7 +43,10 @@
     - img
   - button "Decrease font size":
     - img
-  - text: px Conversation display Controls process content in completed turns
+  - text: px Font Applies to UI text and code; leave empty for the browser default
+  - textbox "Font":
+    - /placeholder: e.g. "Hiragino Sans", "Noto Sans JP"
+  - text: Conversation display Controls process content in completed turns
   - button "Compact":
     - text: Compact
     - img

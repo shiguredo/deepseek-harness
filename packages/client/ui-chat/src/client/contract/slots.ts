@@ -217,5 +217,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * that entry. With no entries, the standard action row remains unchanged.
      */
     'conversation.chat.assistant-actions': { kind: 'list'; scope: 'session'; owner: AssistantActionOwnerProps }
+    /**
+     * Lead seat of the composer's session-stats row, rendered before the
+     * figures. A feature hangs ambient status (the workspace's checked-out ref,
+     * say) on the stats line; the row holds its place while this seat has
+     * content, so an occupant is not gated on the first closed step.
+     */
+    'conversation.composer.stats.lead': { kind: 'list'; scope: 'session' }
   }
 }

@@ -1,15 +1,17 @@
 // Session stats under the composer, split into two icon pills: a gauge pill
 // (turn/step counts + output speed) opening the time-and-speed dialog, and a
-// database pill (total tokens + cache hit) opening the token-usage dialog.
-// Settled-node identity prevents stream-delta updates from rerendering the row.
-// Mounted on 'conversation.composer.dock' so it sticks with the composer in the
-// active conversation scrollport (see ConversationRoot data-conversation-scroll).
+// database pill (total tokens + cache hit) opening the token-usage dialog. The
+// row leads with its declared lead seat, so an ambient-status occupant keeps
+// the line before the first figure exists. Settled-node identity prevents
+// stream-delta updates from rerendering the row. Mounted on
+// 'conversation.composer.dock' so it sticks with the composer in the active
+// conversation scrollport (see ConversationRoot data-conversation-scroll).
 
 import { memo, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { IconDatabaseOutline16, IconGaugeOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { UseProjection } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SnapshotSelectorHook, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@deepseek-ai/dsh-session-stats/client'
 import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
@@ -126,6 +128,8 @@ export interface StatsPillsProps {
   useProjection: UseProjection
   /** The owning dock's locale seat. */
   t: ChatViewSlotProps['t']
+  /** Renderer for this row's lead seat, rendered before the figures. */
+  renderSlot: PropsRenderSlots<'conversation.composer.stats.lead'>['renderSlot']
 }
 
 function exactCount(value: number, t: ChatViewSlotProps['t']): string {
@@ -314,7 +318,7 @@ function UsagePill({ usage, t, dialog }: {
   )
 }
 
-export const StatsPills = memo(function StatsPills({ useChat, useProjection, t }: StatsPillsProps) {
+export const StatsPills = memo(function StatsPills({ useChat, useProjection, t, renderSlot }: StatsPillsProps) {
   const settledNodes = useChat(s => s.legacy.nodes)
   const usage = useProjection('tokenUsage')
   // One exclusive slot for both dialogs: opening either pill closes the other.
@@ -329,9 +333,11 @@ export const StatsPills = memo(function StatsPills({ useChat, useProjection, t }
   // billing (e.g. every request failed) shows its counts without a usage pill.
   const hasTokens = usage !== undefined
     && (billedInputTokens(usage) > 0 || usage.outputTokens > 0)
-  if (stats.steps === 0 && !hasTokens) return null
+  // The row mounts with the composer so a lead-seat occupant is not gated on
+  // the first closed step; CSS keeps a contentless row out of the layout.
   return (
     <div className={css.root}>
+      {renderSlot('conversation.composer.stats.lead', {})}
       {stats.steps > 0 && (
         <TimePill
           stats={stats}

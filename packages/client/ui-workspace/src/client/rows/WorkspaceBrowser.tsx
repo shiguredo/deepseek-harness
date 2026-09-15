@@ -566,7 +566,7 @@ function SessionTree({
 
 /** The flat "In one list" body: every session is one draggable top-level row. */
 function FlatList({
-  list, sessionIds, useSessionStatus, open, forkSession, onSessionRename, onSessionArchive,
+  list, sessionIds, workspaces, useSessionStatus, open, forkSession, onSessionRename, onSessionArchive,
   usePanelInfo, setSessionOrder,
   revealSessionId, onSessionRevealed, t,
 }: Pick<
@@ -584,12 +584,14 @@ function FlatList({
 > & {
   list: SessionListState
   sessionIds: readonly SessionId[]
+  /** Workspace membership and display labels, so each row can name its owner. */
+  workspaces: readonly WorkspaceView[]
 }) {
   const panelActive = usePanelInfo(info => info.activePanelId !== null)
   const statuses = useSessionStatus(s => s)
   const rows = useMemo(
-    () => deriveFlat(list, sessionIds, statuses),
-    [list, sessionIds, statuses],
+    () => deriveFlat(list, sessionIds, statuses, workspaces),
+    [list, sessionIds, statuses, workspaces],
   )
   const [drag, setDrag] = useState<DragState | null>(null)
   const dropCommitted = useRef(false)
@@ -1264,6 +1266,7 @@ export function WorkspaceBrowser({
                 usePanelInfo={usePanelInfo}
                 list={list}
                 sessionIds={orderedFlatSessionIds}
+                workspaces={orderedWorkspaces}
                 useSessionStatus={useSessionStatus}
                 open={open} forkSession={forkSession}
                 onSessionRename={onSessionRename} onSessionArchive={onSessionArchive}

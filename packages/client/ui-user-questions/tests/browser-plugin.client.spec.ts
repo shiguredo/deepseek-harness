@@ -123,6 +123,10 @@ describe('apply', () => {
     expect(entry.component).toBe(QuestionComposer)
     expect(entry.inject).toBeUndefined()
     expect(entry.locale).toBe('question')
+    expect(entry.children).toEqual({
+      'conversation.plan-review.actions': { kind: 'list', scope: 'session' },
+      'conversation.question.header.lead': { kind: 'list', scope: 'session' },
+    })
     const store = entry.store as ReturnType<typeof createQuestionDraftStore>
     expect(store.create(SESSION_ID).getSnapshot()).toEqual({
       progress: { index: 0, drafts: [] },

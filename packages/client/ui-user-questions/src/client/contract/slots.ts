@@ -19,6 +19,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /** Actions for the exact plan under review; approval remains with the question composer. */
     'conversation.plan-review.actions': { kind: 'list'; scope: 'session'; owner: { review: PlanReview; requestKey: PendingQuestion['key'] } }
+    /**
+     * Ambient lead seat at the top of the question card's header. The composer
+     * takeover hides the composer bar, so a feature hanging context on the
+     * composer (the workspace's checked-out ref, say) keeps it visible here
+     * while the user answers; the header collapses the seat while it paints
+     * nothing.
+     */
+    'conversation.question.header.lead': { kind: 'list'; scope: 'session' }
   }
 }
 
@@ -225,6 +233,6 @@ export type QuestionWait = PendingQuestion
 export type QuestionComposerProps =
   PropsRuntime<'conversation.composer'>
   & PropsStore<ReturnType<typeof createQuestionDraftStore>>
-  & PropsRenderSlots<'conversation.plan-review.actions'>
+  & PropsRenderSlots<'conversation.plan-review.actions' | 'conversation.question.header.lead'>
   & { matched: QuestionWait }
   & PropsLocale<'question'>

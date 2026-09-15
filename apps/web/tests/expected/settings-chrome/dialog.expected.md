@@ -43,7 +43,10 @@
     - img
   - button "减小字号":
     - img
-  - text: px 对话显示 控制已完成轮次的过程内容
+  - text: px 字体 同时应用于界面文字和代码，留空则使用浏览器默认字体
+  - textbox "字体":
+    - /placeholder: 例如 "Hiragino Sans", "Noto Sans JP"
+  - text: 对话显示 控制已完成轮次的过程内容
   - button "紧凑":
     - text: 紧凑
     - img

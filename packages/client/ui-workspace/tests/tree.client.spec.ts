@@ -108,7 +108,7 @@ describe('deriveGroups', () => {
       sessions, [workspace('project', ['awaiting'])], noArchive, attention, view(['project']),
     )
     expect(grouped[0]!.sessions[0]).toMatchObject({ pendingInteraction: 'plan-review', running: true })
-    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), attention)[0])
+    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), attention, [])[0])
       .toMatchObject({ pendingInteraction: 'plan-review', running: true })
   })
 
@@ -121,7 +121,7 @@ describe('deriveGroups', () => {
         status({ key: `${kind}:1`, kind, sessionId: awaiting.id } as SessionPendingInteraction),
       ]])
 
-      expect(deriveFlat(list(awaiting), [awaiting.id], attention)[0]?.pendingInteraction).toBe(kind)
+      expect(deriveFlat(list(awaiting), [awaiting.id], attention, [])[0]?.pendingInteraction).toBe(kind)
     },
   )
 
@@ -185,7 +185,7 @@ describe('deriveGroups', () => {
     const plainNode = groups[0]!.sessions.find(session => session.id === plain.id)!
     expect(doneNode.completed).toBe(true)
     expect(plainNode.completed).toBe(false)
-    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), statuses)
+    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), statuses, [])
       .find(node => node.id === done.id)!.completed).toBe(true)
     const search = deriveSearchResults(
       sessions, [workspace('first', ['done', 'plain'])], 'done', noArchive,
@@ -217,7 +217,7 @@ describe('deriveGroups', () => {
     expect(deriveGroups(
       sessions, workspaces, noArchive, noAttention, view(['project']),
     )[0]!.sessions.map(node => [node.id, node.hasActiveSchedule])).toEqual(expected)
-    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention)
+    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention, [])
       .map(node => [node.id, node.hasActiveSchedule])).toEqual(expected)
     expect(deriveSearchResults(
       sessions, workspaces, 'project', noArchive, noAttention, { items: [], hasMore: false }, 10,
@@ -249,7 +249,7 @@ describe('deriveGroups', () => {
     expect(groups[0]!.sessionCount).toBe(2)
     expect(groups[0]!.sessions[0]).toMatchObject({ running: false, runningSubagentCount: 2 })
     expect(groups[0]!.sessions[1]).toMatchObject({ running: false, runningSubagentCount: 1 })
-    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention)
+    expect(deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention, [])
       .map(node => [node.id, node.runningSubagentCount])).toEqual([
       [parent.id, 2], [fork.id, 1],
     ])
@@ -334,12 +334,36 @@ describe('deriveGroups', () => {
 })
 
 describe('deriveFlat', () => {
+  it('names each row\'s owning Workspace, falling back to the directory then to Ungrouped', () => {
+    const owned = summary('owned', 4)
+    const twice = summary('twice', 3)
+    const loose = summary('loose', 2, '/projects/other')
+    const bare = summary('bare', 1)
+    const rows = deriveFlat(
+      list(owned, twice, loose, bare),
+      [owned.id, twice.id, loose.id, bare.id],
+      noAttention,
+      [
+        workspace('first', ['owned', 'twice'], 'First Project'),
+        workspace('second', ['twice'], 'Second Project'),
+      ],
+    )
+    // An empty label is the renderer's localized Ungrouped fallback; a Session
+    // accounted for by several Workspaces takes the first title.
+    expect(rows.map(row => [row.id, row.workspace])).toEqual([
+      [owned.id, 'First Project'],
+      [twice.id, 'First Project'],
+      [loose.id, 'other'],
+      [bare.id, ''],
+    ])
+  })
+
   it('renders ordinary forks in the supplied order regardless of timestamps', () => {
     const parent = summary('parent', 10)
     const child = { ...summary('child', 30), parentId: parent.id }
     const tieB = summary('tie-b', 20)
     const tieA = summary('tie-a', 20)
-    const rows = deriveFlat(list(parent, child, tieB, tieA), [parent.id, tieA.id, child.id, tieB.id], noAttention)
+    const rows = deriveFlat(list(parent, child, tieB, tieA), [parent.id, tieA.id, child.id, tieB.id], noAttention, [])
     expect(rows.map(row => row.id)).toEqual([parent.id, tieA.id, child.id, tieB.id])
   })
 
@@ -360,7 +384,7 @@ describe('deriveFlat', () => {
     const currentBlank = { ...summary('current-blank', 9), blank: true, retainedBy: { mainView: 1 } }
     const staleBlank = { ...summary('stale-blank', 8), blank: true }
     const sessions = list(currentBlank, summary('real', 1), staleBlank)
-    const rows = deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention)
+    const rows = deriveFlat(sessions, visibleSessionIds(sessions, noArchive), noAttention, [])
     expect(rows.map(row => row.id)).toEqual([currentBlank.id, sid('real')])
     expect(rows.map(row => row.title)).toEqual(['', 'real'])
     expect(rows.map(row => row.blank)).toEqual([true, false])
