@@ -13,10 +13,11 @@ import { RunningStatus } from './RunningStatus.tsx'
 export const ChatFlow = memo(function ChatFlow({
   entries, pendingInputs, lastInputTurn, deferCollapse,
   useSession, useChat, useChatNode, useChatNodeBottom, useChatNodeProcess, useChatGroup, usePresentation,
-  useStore, actions, renderSlot, t, useGroupAction, useGroupHeaderAction,
+  useStore, actions, renderSlot, t, useGroupAction, useGroupHeaderAction, useClockTimeZone,
   cwd, openFile, openSkill, inspectCall, forkAt, loadImage, fileMentions,
 }: ChatFlowSlotProps) {
   const nodeStore = useChat(snapshot => snapshot.nodes)
+  const clockTimeZone = useClockTimeZone(zone => zone)
   const running = useSession(snapshot => snapshot.running)
   const latestTurnAnchor = useChat(snapshot => snapshot.navigation.items().at(-1)?.anchorKey)
   const runningStartTime = useChatNode(latestTurnAnchor ?? '', (node) => {
@@ -32,7 +33,7 @@ export const ChatFlow = memo(function ChatFlow({
   const seatProps = {
     nodeStore, useChatNode, useChatNodeBottom, useChatNodeProcess, usePresentation,
     useStore, actions, renderSlot, t, useGroupAction, deferCollapse,
-    cwd, openFile, openSkill, inspectCall, forkAt, loadImage, renderMessageImages, fileMentions,
+    cwd, clockTimeZone, openFile, openSkill, inspectCall, forkAt, loadImage, renderMessageImages, fileMentions,
   }
   const rows = entries.map((entry) => {
     switch (entry.kind) {
@@ -47,7 +48,7 @@ export const ChatFlow = memo(function ChatFlow({
     }
   })
   const pendingRows = pendingInputs.map(item => 'requestId' in item ? (
-    <PendingSubmissionBubble key={item.requestId} submission={item}
+    <PendingSubmissionBubble key={item.requestId} submission={item} clockTimeZone={clockTimeZone}
       renderMessageImages={renderMessageImages} t={t} />
   ) : (
     <PendingSteeringBubble key={item.id} content={item.content}

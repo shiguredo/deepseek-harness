@@ -60,12 +60,18 @@ it.each(['turn-tail-actions', 'goal-multi-turn-actions', 'present'] as const)(
           const root = grid.parentElement
           const tail = root?.closest('[data-turn-tail]')
           const actions = tail?.querySelector('button[aria-label="Copy"]')?.parentElement
-          if (root === null || actions == null) throw new Error('presented files have no Turn footer')
+          const clock = tail?.querySelector('[data-message-clock]')
+          if (root === null || actions == null || clock == null) throw new Error('presented files have no Turn footer')
           return { top: root.getBoundingClientRect().top, bottom: root.getBoundingClientRect().bottom,
-            actionsTop: actions.getBoundingClientRect().top }
+            actionsTop: actions.getBoundingClientRect().top,
+            clockTop: clock.getBoundingClientRect().top, clockBottom: clock.getBoundingClientRect().bottom }
         })
         expect(geometry.top - answerBounds.bottom).toBeCloseTo(16, 1)
-        expect(geometry.actionsTop - geometry.bottom).toBeCloseTo(20, 1)
+        // The footer places its clock caption between the files row and the
+        // action row: the root gap separates the files row from the caption,
+        // and the caption hugs the action row at its 2px step.
+        expect(geometry.clockTop - geometry.bottom).toBeCloseTo(16, 1)
+        expect(geometry.actionsTop - geometry.clockBottom).toBeCloseTo(2, 1)
       }
     }
     expect(console.pageErrors).toEqual([])

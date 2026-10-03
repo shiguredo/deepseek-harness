@@ -1,22 +1,19 @@
-// Shared IconActions chrome for user and assistant messages: copy
-// live, optional branch wiring, and an optional date-aware clock.
+// Shared IconActions chrome for user and assistant messages: copy, optional
+// branch wiring, and optional plugin actions. The message clock renders as a
+// sibling line above this row.
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import {
   IconBranchOutlineRegular, IconCheckOutlineRegular, IconCopyOutlineRegular, Tooltip, writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
-import { formatMessageClock } from './message-chrome.ts'
-import { useCalendarDay } from './use-calendar-day.ts'
 import css from './MessageIconActions.module.css'
 
 export interface MessageIconActionsProps {
   /** Plain text the copy action writes. */
   text: string
-  /** Unix epoch ms for the clock label; omitted for transient messages. */
-  time?: number | undefined
-  /** Clock before icons (user) or after (assistant). */
-  clock: 'start' | 'end'
+  /** Row whose glyphs it sizes: the user bubble or the assistant completion row. */
+  variant: 'user' | 'assistant'
   /** Fork the session at this message; omission hides the branch action. */
   onBranch?: (() => void) | undefined
   /** The message is not a completed transcript tail, so branch stays visible but unavailable. */
@@ -38,15 +35,16 @@ export interface MessageIconActionsProps {
 }
 
 /**
- * Copy / branch (/ clock) IconActions row shared by user and assistant chrome.
- * @param props - Copy text, event time, clock side, branch callback, className.
+ * Copy / branch (/ usage) IconActions row shared by user and assistant chrome.
+ * The row keeps its space with opacity while hidden, so the clock line above
+ * never shifts when the icons appear.
+ * @param props - Copy text, row variant, branch callback, className.
  * @returns The actions row element.
  */
 export function MessageIconActions({
-  text, time, clock, onBranch, branchUnavailable = false, className,
+  text, variant, onBranch, branchUnavailable = false, className,
   extraActions, usageAction, t,
 }: MessageIconActionsProps) {
-  const day = useCalendarDay()
   const reasonId = useId()
   // Same success chrome as CodeBlock: a short check swap after the write,
   // gated so re-clicks during the window neither re-copy nor stack timers.
@@ -74,14 +72,8 @@ export function MessageIconActions({
       }, 1000)
     })
   }, [copied, text])
-  const clockEl = time === undefined ? null : (
-    <span className={clock === 'start' ? css.timeStart : css.timeEnd}>
-      {formatMessageClock(time, t, day)}
-    </span>
-  )
   return (
-    <div className={className === undefined ? css.actions : `${css.actions} ${className}`} data-clock={clock}>
-      {clock === 'start' ? clockEl : null}
+    <div className={className === undefined ? css.actions : `${css.actions} ${className}`} data-variant={variant}>
       <Tooltip label={copied ? t('copied') : t('copy')} side="bottom">
         <button type="button" className={css.action} aria-label={copied ? t('copied') : t('copy')} onClick={onCopy}>
           {copied ? <IconCheckOutlineRegular /> : <IconCopyOutlineRegular />}
@@ -107,9 +99,7 @@ export function MessageIconActions({
       {onBranch !== undefined && branchUnavailable && (
         <span id={reasonId} className={css.visuallyHidden}>{t('message.branchUnavailable')}</span>
       )}
-      {clock === 'end'
-        ? <span className={css.endInfo}>{usageAction}{clockEl}</span>
-        : usageAction}
+      {usageAction}
     </div>
   )
 }

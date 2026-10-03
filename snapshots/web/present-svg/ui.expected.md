@@ -34,10 +34,9 @@
 - button "查看 von-neumann.svg 的改动": 已编辑 von-neumann.svg +83 -0
 - text: 此主机没有可用的桌面，无法使用外部程序打开文件或文件夹；文件仍可在侧边栏预览
 - button "在侧边栏预览 {{cwd}}/workspace/von-neumann.svg"
-- text: von-neumann.svg 冯诺依曼架构示意图 SVG
+- text: von-neumann.svg 冯诺依曼架构示意图 SVG {{clock}}
 - button "复制"
 - button "好的回答"
 - button "有问题的回答"
 - button "在新对话中分支"
 - button "用量 32K tok"
-- text: {{clock}}

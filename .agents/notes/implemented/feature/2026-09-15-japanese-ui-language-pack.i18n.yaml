@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-15-japanese-ui-language-pack.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-japanese-ui-language-pack.md
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks:
+  en: 1a22c2658d89b475
+  zh: 23231d380a4c4802
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks/problem:
+  en: 6e646d9df038a171
+  zh: cc735b47c3568e03
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks/decision:
+  en: a0b8a09f5058f715
+  zh: 876056b09ce9ef22
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks/alternatives-considered:
+  en: 218d07bc781274c7
+  zh: 02f1ebe416c0a590
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks/consequences:
+  en: fc6a8347a71faf6e
+  zh: 94348d0435251027
+/agent-note-japanese-ui-support-ja-language-pack-and-locale-neutral-stacks/testing:
+  en: 906ccf6505f60f1e
+  zh: 231726b05265a84e

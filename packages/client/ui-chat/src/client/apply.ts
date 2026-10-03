@@ -31,12 +31,14 @@ import { ApprovalCommand } from './chat/ApprovalCommand.tsx'
 import { ChatView } from './chat/ChatView.tsx'
 import { ChatFlow } from './chat/ChatFlow.tsx'
 import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
-import { ActivityPill, UsagePill } from './chat/StatsPills.tsx'
+import { StatsPills } from './chat/StatsPills.tsx'
 import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { QuotaNoticeHost } from './chat/QuotaNoticeHost.tsx'
 import { en, NS, zh } from './locale.ts'
+import { ClockTimeZoneRow, type ClockTimeZoneRowInjected } from './settings/ClockTimeZoneRow.tsx'
 import { TranscriptViewRow, type TranscriptViewRowInjected } from './settings/TranscriptViewRow.tsx'
 import { createChatStore } from './stores.ts'
+import { ClockTimeZonePolicy } from './clock-time-zone.ts'
 import { TranscriptViewPolicy } from './transcript-view.ts'
 import { derivePresentationPolicy } from './presentation-policy.ts'
 import { CHAT_SETTINGS_NAMESPACE, DEFAULT_LINK_OPENING, DEFAULT_TRANSCRIPT_VIEW_MODE, type ChatSettings } from '../chat-settings.ts'
@@ -166,9 +168,26 @@ export function apply(ctx: Context): void {
   const transcriptView = new TranscriptViewPolicy(chatSettings, 'dshDesktop' in globalThis ? 'standard' : DEFAULT_TRANSCRIPT_VIEW_MODE)
   const presentation = derivePresentationPolicy(transcriptView.mode, transcriptView.collapseTiming)
   const performancePolicy = new PerformanceUsagePolicy(chatSettings)
-  ctx.effect(() => () => { transcriptView.dispose(); performancePolicy.dispose() })
+  const clockTimeZonePolicy = new ClockTimeZonePolicy(chatSettings)
+  ctx.effect(() => () => {
+    transcriptView.dispose()
+    performancePolicy.dispose()
+    clockTimeZonePolicy.dispose()
+  })
   const performanceUsage = performancePolicy.mode
+  const clockTimeZone = clockTimeZonePolicy.zone
   registerChatNodeRenderers(ctx, performanceUsage, presentation)
+
+  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
+    name: 'settings.general.item',
+    id: 'clock-time-zone',
+    order: 18,
+    locale: NS,
+    inject: (): ClockTimeZoneRowInjected => ({
+      hooks: { clockTimeZone },
+      setClockTimeZone: (zone) => { clockTimeZonePolicy.setZone(zone) },
+    }),
+  }, ClockTimeZoneRow))
 
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item',
@@ -197,7 +216,7 @@ export function apply(ctx: Context): void {
     const chat = chatSource(binding)
     const conversation = ctx.uiConversation.binding(binding)
     return {
-      hooks: { presentation },
+      hooks: { presentation, clockTimeZone },
       keyedHooks: {
         chatNode: key => chat.getSnapshot().nodes.source(key),
         chatNodeBottom: key => chat.getSnapshot().nodes.bottomSource(key),
@@ -319,16 +338,15 @@ export function apply(ctx: Context): void {
     }),
   }, QuotaNoticeHost))
 
-  // One dock entry per pill, so a plugin replaces or adds a single pill by id.
-  const statPillInject = () => ({ hooks: { performanceUsage } })
-  ctx.slots.inject('conversation.composer.dock', function* () {
-    yield ctx.slots.register({
-      name: 'conversation.composer.dock', id: 'activity', order: 0, locale: NS, inject: statPillInject,
-    }, ActivityPill)
-    yield ctx.slots.register({
-      name: 'conversation.composer.dock', id: 'usage', order: 1, locale: NS, inject: statPillInject,
-    }, UsagePill)
-  })
+  ctx.slots.inject('conversation.composer.dock', () =>
+    ctx.slots.register({
+      name: 'conversation.composer.dock',
+      id: 'stats',
+      order: 0,
+      locale: NS,
+      children: { 'conversation.composer.stats.lead': { kind: 'list', scope: 'session' } },
+      inject: () => ({ hooks: { performanceUsage } }),
+    }, StatsPills))
 
   ctx.slots.inject('conversation.approval.detail', () =>
     ctx.slots.register({ name: 'conversation.approval.detail' }, ApprovalCommand))

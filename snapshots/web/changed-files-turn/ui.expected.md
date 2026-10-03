@@ -86,10 +86,9 @@
 - button "在侧边栏预览 {{cwd}}/workspace/app.local"
 - text: app.local 新增配置文件，内容 mode=demo
 - button "在侧边栏预览 {{cwd}}/workspace/notes.txt"
-- text: notes.txt 末尾追加了 done 一行
+- text: notes.txt 末尾追加了 done 一行 {{clock}}
 - button "复制"
 - button "好的回答"
 - button "有问题的回答"
 - button "在新对话中分支"
 - button "用量 36.2K tok"
-- text: {{clock}}

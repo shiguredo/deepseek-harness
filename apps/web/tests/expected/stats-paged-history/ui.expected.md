@@ -34,263 +34,290 @@
   - button "Jump to turn 26"
   - button "Jump to turn 27"
   - button "Jump to turn 28"
-- text: m1 7/25 {{clock}}
+- text: m1 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r1
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m2 7/25 {{clock}}
+- text: m2 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r2
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m3 7/25 {{clock}}
+- text: m3 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r3
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m4 7/25 {{clock}}
+- text: m4 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r4
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m5 7/25 {{clock}}
+- text: m5 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r5
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m6 7/25 {{clock}}
+- text: m6 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r6
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m7 7/25 {{clock}}
+- text: m7 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r7
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m8 7/25 {{clock}}
+- text: m8 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r8
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m9 7/25 {{clock}}
+- text: m9 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r9
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m10 7/25 {{clock}}
+- text: m10 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r10
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m11 7/25 {{clock}}
+- text: m11 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r11
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m12 7/25 {{clock}}
+- text: m12 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r12
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m13 7/25 {{clock}}
+- text: m13 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r13
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m14 7/25 {{clock}}
+- text: m14 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r14
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m15 7/25 {{clock}}
+- text: m15 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r15
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m16 7/25 {{clock}}
+- text: m16 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r16
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m17 7/25 {{clock}}
+- text: m17 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r17
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m18 7/25 {{clock}}
+- text: m18 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r18
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m19 7/25 {{clock}}
+- text: m19 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r19
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m20 7/25 {{clock}}
+- text: m20 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r20
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m21 7/25 {{clock}}
+- text: m21 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r21
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m22 7/25 {{clock}}
+- text: m22 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r22
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m23 7/25 {{clock}}
+- text: m23 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r23
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m24 7/25 {{clock}}
+- text: m24 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r24
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m25 7/25 {{clock}}
+- text: m25 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r25
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m26 7/25 {{clock}}
+- text: m26 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r26
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m27 7/25 {{clock}}
+- text: m27 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r27
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}} m28 7/25 {{clock}}
+- text: m28 {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: r28
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/25 {{clock}}
 - button "Back to bottom"
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "28 turns 28 steps"

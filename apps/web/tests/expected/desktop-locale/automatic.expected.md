@@ -1,38 +1,40 @@
-- dialog "设置":
+- dialog "設定":
   - navigation:
-    - text: 设置
-    - button "通用设置"
-    - button "模型"
-    - button "内置插件"
-    - button "Agent 预设"
-  - button "打开配置文件"
-  - button "关闭"
-  - text: 权限 选择新会话的默认权限模式
-  - button "工作区内修改"
-  - text: 语言
-  - button "中文"
-  - text: 外观
-  - button "浅色"
-  - button "深色"
-  - button "跟随系统" [pressed]
-  - text: 字号大小 仅影响会话内容的字号 14
-  - button "增大字号"
-  - button "减小字号"
+    - text: 設定
+    - button "一般"
+    - button "モデル"
+    - button "組み込みプラグイン"
+    - button "Agent プリセット"
+  - button "設定ファイルを開く"
+  - button "閉じる"
+  - text: 権限 新規セッションのデフォルト権限モードを選択します
+  - button "ワークスペース内の変更"
+  - text: 言語
+  - button "日本語"
+  - text: 外観
+  - button "ライト"
+  - button "ダーク"
+  - button "システム" [pressed]
+  - text: フォントサイズ 会話の内容にのみ影響します 14
+  - button "フォントサイズを大きくする"
+  - button "フォントサイズを小さくする"
   - text: px
-  - button "更多字体设置"
-  - text: 工作步骤展示 选择希望看到多少工具调用细节
-  - button "标准"
-  - text: 工作步骤收起时机 选择何时自动收起工作步骤
-  - button "回答结束后"
-  - text: 显示代码工作视图 开启后，显示轨迹、本轮代码差异，可选择完整的 Agent 预设切换
-  - switch "显示代码工作视图" [checked]
-  - text: 快捷键
-  - paragraph: 查看和编辑当前可用的快捷键和输入操作
-  - button "编辑快捷键"
-  - text: 繁忙时的发送行为 智能体运行时 Enter 键和发送按钮的行为；Cmd/Ctrl+Enter 使用另一行为
-  - button "排队发送"
-  - text: 性能与用量 选择性能与用量信息展示的详细程度
-  - button "详细"
-  - text: 在使用官方模型 API 时上传 Session Log 帮助改进 DeepSeek 模型与产品
-  - switch "在使用官方模型 API 时上传 Session Log"
-  - text: 当前版本：{{version}}
+  - button "フォント設定をさらに表示"
+  - text: 作業ステップの表示 ツール呼び出しの詳細をどこまで表示するか選択します
+  - button "標準"
+  - text: 作業ステップをたたむタイミング 作業ステップを自動でたたむタイミングを選択します
+  - button "回答終了時"
+  - text: コード作業ツール 軌跡、このターンのコード差分、新しい会話での Agent プリセット切り替えを表示します
+  - switch "コード作業ツール" [checked]
+  - text: キーボードショートカット
+  - paragraph: 利用可能なショートカットと入力操作を表示・編集します
+  - button "ショートカットを編集"
+  - text: タイムスタンプのタイムゾーン メッセージのタイムスタンプが使うタイムゾーン
+  - button "端末のタイムゾーン"
+  - text: 実行中の送信動作 エージェント実行中に Enter キーと送信ボタンが行う動作。Cmd/Ctrl+Enter ではもう一方の動作
+  - button "キュー送信"
+  - text: パフォーマンスと使用量 パフォーマンスと使用量の情報をどの程度表示するか選択します
+  - button "詳細"
+  - text: Upload Session Log when using the official model API Help improve DeepSeek models and products.
+  - switch "Upload Session Log when using the official model API"
+  - text: "現在のバージョン: {{version}}"

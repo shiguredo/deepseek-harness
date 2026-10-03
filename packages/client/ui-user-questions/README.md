@@ -67,6 +67,8 @@ Settled question replies remain compact in chat history. A caret marks the bubbl
 
 The package is one ownership rule: rendering a question is a host UI capability, having the tool is an agent capability, so the `tool-ask-user` row belongs to the presets that want it (and to the TUI composition, which has no presets).
 
+The card header declares the `conversation.question.header.lead` list seat, because the takeover hides the composer bar and everything hanging on it; a plugin keeps ambient composer context (the workspace's checked-out ref, for one) visible there, and the header collapses the line while the seat paints nothing.
+
 ### Reopening a panel
 
 This package fills `userQuestionPanels`, the optional capability `dsh-client-ui-tool` declares for its `ask_user_question` row. `reveal(sessionId, callId)` republishes that call's card as the last equal-precedence pending interaction, so the composer seat shows it again, and returns `false` when this Client holds no card for the call — a legacy unkeyed request, another browser's question, or a card the projection already closed. Whether a question still takes an answer comes from the `userQuestions` Session projection, which the row reads directly, so the capability carries no state of its own.

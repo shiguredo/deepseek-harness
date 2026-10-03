@@ -25,7 +25,7 @@ import type {
   ChatNodeProcessSource, ChatNodeSource, ChatSnapshot, ChatTurnProcessPresentation,
 } from './snapshot.ts'
 import type { TurnProcessSpec } from './turn-process.ts'
-import type { PerformanceUsageMode } from '../../chat-settings.ts'
+import type { ClockTimeZone, PerformanceUsageMode } from '../../chat-settings.ts'
 
 /** Selector hook over the current Conversation binding's Chat target. */
 export type UseChat = SnapshotSelectorHook<ChatSnapshot>
@@ -209,6 +209,11 @@ export interface ChatNodeOwnerProps {
   /** Renderer-owned Node portion selected by the grouping Definition. */
   groupPart?: string
   cwd?: string | undefined
+  /**
+   * Zone the message clocks read, selected in Settings. A Node that dates
+   * itself from the Session log renders it directly; `local` follows the device.
+   */
+  clockTimeZone: ClockTimeZone
   /** Open the current source file of a skill referenced by a sent message. */
   openSkill: (name: string) => void
   openFile: (path: string, options?: OpenFileOptions) => void
@@ -281,6 +286,8 @@ export interface ChatViewInjected {
   hooks: {
     /** Live presentation policy derived from the accepted work-details mode. */
     presentation: ObservableSnapshot<ChatPresentationPolicy>
+    /** Live zone the message clocks read. */
+    clockTimeZone: ObservableSnapshot<ClockTimeZone>
   }
   keyedHooks: {
     /** Resolve the stable source for one Chat Node key. */
@@ -412,6 +419,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * that entry. With no entries, the standard action row remains unchanged.
      */
     'conversation.chat.assistant-actions': { kind: 'list'; scope: 'session'; owner: AssistantActionOwnerProps }
+    /**
+     * Lead seat of the composer's session-stats row, rendered before the
+     * figures. A feature hangs ambient status (the workspace's checked-out ref,
+     * say) on the stats line; the row holds its place while this seat has
+     * content, so an occupant is not gated on the first closed step.
+     */
+    'conversation.composer.stats.lead': { kind: 'list'; scope: 'session' }
     /**
      * Frame-wide quota notice chain. The Chat-owned host in `shell.overlay`
      * offers the one live notice; the first entry whose selector claims its

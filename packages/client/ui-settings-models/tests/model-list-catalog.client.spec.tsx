@@ -18,6 +18,39 @@ function operations(discoverModels: ModelsOperations['discoverModels']): ModelsO
   }
 }
 
+it('shows a catalog-described model its own capacity as the placeholder', async () => {
+  render(<ModelListEditor
+    models={[{ id: 'kimi-k3' }]} onChange={vi.fn()} catalogProvider="ollama"
+    probe={{ settingsNs: 'llm-pi-ai', provider: 'ollama' }} disabled={false} t={key => en[key]} onBusyChange={() => {}}
+    operations={operations(() => Promise.resolve({
+      kind: 'found',
+      models: [{ id: 'kimi-k3', contextWindow: 1_048_576, maxTokens: 1_048_576 }],
+    }))}
+  />)
+  fireEvent.click(screen.getByRole('button', { name: `${en.modelAdvanced} 1` }))
+
+  // A blank field keeps the adapter's catalog count, so the placeholder states
+  // it rather than the generic route fallback.
+  await waitFor(() => {
+    expect(screen.getByLabelText<HTMLInputElement>(`${en.contextWindow} 1`).placeholder).toBe('1048576')
+  })
+  expect(screen.getByLabelText<HTMLInputElement>(`${en.maxTokens} 1`).placeholder).toBe('1048576')
+})
+
+it('keeps the adapter magnitude as the placeholder for a model no catalog describes', async () => {
+  render(<ModelListEditor
+    models={[{ id: 'custom' }]} onChange={vi.fn()} catalogProvider="openai"
+    probe={{ settingsNs: 'llm-pi-ai', provider: 'openai' }} disabled={false} t={key => en[key]} onBusyChange={() => {}}
+    operations={operations(() => Promise.resolve({ kind: 'found', models: [] }))}
+  />)
+  fireEvent.click(screen.getByRole('button', { name: `${en.modelAdvanced} 1` }))
+
+  await waitFor(() => {
+    expect(screen.getByLabelText<HTMLInputElement>(`${en.contextWindow} 1`).placeholder).toBe('256K')
+  })
+  expect(screen.getByLabelText<HTMLInputElement>(`${en.maxTokens} 1`).placeholder).toBe('32K')
+})
+
 it('ignores a late catalog response after the provider changes', async () => {
   const oldCatalog = Promise.withResolvers<ModelDiscoveryOutcome>()
   const newCatalog = Promise.withResolvers<ModelDiscoveryOutcome>()

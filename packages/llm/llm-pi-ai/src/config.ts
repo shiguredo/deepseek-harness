@@ -42,6 +42,7 @@ import type {
   RouteCatalog,
 } from './catalog.ts'
 import { buildProvider, supportedProtocols } from './provider.ts'
+import { bundledProvider } from './bundled-catalog.ts'
 
 /** Default maximum idle interval while an adapter stream read is outstanding. */
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
@@ -458,15 +459,24 @@ export function resolveProfiles(
     // The route key, not the installed provider's own name: the directory has
     // always shown route keys, and a catalog route must not silently rename
     // itself on every configuration surface just because it gained a profile.
-    const displayName = source.displayName ?? provider
+    // A bundled route is the exception, because this build ships the product
+    // name a selector should show and nothing else supplies it.
+    const bundled = bundledProvider(provider)
+    const displayName = source.displayName ?? bundled?.name ?? provider
+    // A bundled route defaults its endpoint and protocol from the bundle, so a
+    // profile that only names a credential serves it. A profile naming either
+    // field wins: repointing a bundled route at a proxy is exactly what that
+    // field is for, and the bundled models follow the endpoint they resolve to.
+    const api = source.api ?? bundled?.api
+    const baseURL = source.baseURL ?? bundled?.baseURL
     let catalog: RouteCatalog | undefined
     let piProvider: Provider | undefined
     let catalogError: string | undefined
     try {
       catalog = resolveRouteModels({
         provider,
-        ...source.api === undefined ? {} : { api: source.api },
-        ...source.baseURL === undefined ? {} : { baseURL: source.baseURL },
+        ...api === undefined ? {} : { api },
+        ...baseURL === undefined ? {} : { baseURL },
         ...source.models === undefined ? {} : { models: source.models },
         ...source.modelOverrides === undefined ? {} : { modelOverrides: source.modelOverrides },
         ...source.compat === undefined ? {} : { compat: source.compat },
@@ -478,8 +488,8 @@ export function resolveProfiles(
       piProvider = buildProvider({
         provider,
         displayName,
-        ...source.api === undefined ? {} : { api: source.api },
-        ...source.baseURL === undefined ? {} : { baseURL: source.baseURL },
+        ...api === undefined ? {} : { api },
+        ...baseURL === undefined ? {} : { baseURL },
         models: catalog.models,
         namesCredential: source.apiKeyEnv !== undefined,
       })
@@ -492,6 +502,8 @@ export function resolveProfiles(
       ...rest,
       provider,
       displayName,
+      ...api === undefined ? {} : { api },
+      ...baseURL === undefined ? {} : { baseURL },
       ...apiKeyEnv === undefined ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },
       streamIdleTimeoutMs,
       maxRequestImageBytes,

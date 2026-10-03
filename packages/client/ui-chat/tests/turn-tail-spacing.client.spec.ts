@@ -13,4 +13,14 @@ describe('completed-turn spacing', () => {
     expect(tail).toMatch(/\.root\s*\{[^}]*gap:\s*16px/s)
     expect(tail).toMatch(/\.actions\s*\{[^}]*margin-top:\s*4px/s)
   })
+
+  it('keeps the timestamp line against the action row it dates', () => {
+    // The root gap still separates the footer from the content above; the
+    // clock cancels all but 2px so the two metadata lines read as one unit,
+    // matching the user bubble's own step.
+    const tail = read('TurnTailNodeView.module.css')
+    expect(tail).toMatch(/\.clock\s*\{[^}]*margin-bottom:\s*-18px/s)
+    // The user bubble dates itself below the stack, so its line pulls up instead.
+    expect(read('MessageItem.module.css')).toMatch(/\.clock\s*\{[^}]*margin-top:\s*-4px/s)
+  })
 })

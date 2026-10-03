@@ -56,12 +56,11 @@ const PINNED_CLOCK_STEP_MS = 250
 /**
  * Pin the Host clock to the shared fixture day for one scenario suite.
  *
- * A rendered message clock gains a `clock.md` / `clock.ymd` date prefix as soon
- * as the message's local day differs from the renderer's, so a scenario whose
+ * A rendered message clock names its own date and time, so a scenario whose
  * message times are stamped by the Host wall clock — a live composer send, or a
  * seed anchored from `Date.now()` — renders a different aria line once the run
- * spans `Asia/Shanghai` midnight. Reading the fixture day on both clocks makes
- * that calendar fact part of the scenario rather than of the run.
+ * crosses the date the golden recorded. Reading the fixture day on both clocks
+ * makes that calendar fact part of the scenario rather than of the run.
  *
  * The pinned clock advances with real elapsed time, so turn deadlines, session
  * ordering, and durations keep running.
@@ -331,10 +330,11 @@ export function conversationContextKey(kind: string, id: string): string {
  * @param page - browser page with the mounted sidebar.
  * @param locale - current UI language.
  */
-export async function openSettings(page: Page, locale: 'en' | 'zh'): Promise<void> {
-  const label = locale === 'zh' ? '设置' : 'Settings'
+export async function openSettings(page: Page, locale: 'en' | 'ja' | 'zh'): Promise<void> {
+  const label = locale === 'zh' ? '设置' : locale === 'ja' ? '設定' : 'Settings'
   if (await page.evaluate(() => 'dshDesktop' in globalThis)) {
-    await page.getByRole('button', { name: locale === 'zh' ? '账号菜单' : 'Account menu', exact: true }).click()
+    const accountMenu = locale === 'zh' ? '账号菜单' : locale === 'ja' ? 'アカウントメニュー' : 'Account menu'
+    await page.getByRole('button', { name: accountMenu, exact: true }).click()
     await page.getByRole('menuitem', { name: label, exact: true }).click()
   } else {
     await page.getByRole('button', { name: label, exact: true }).click()

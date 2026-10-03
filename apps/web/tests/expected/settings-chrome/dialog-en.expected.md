@@ -29,6 +29,8 @@
   - text: Keyboard shortcuts
   - paragraph: View and edit available shortcuts and input actions
   - button "Edit shortcuts"
+  - text: Timestamp time zone Time zone the message timestamps use
+  - button "Device time zone"
   - text: Send behavior while busy What Enter and the Send button do while the agent is running; Cmd/Ctrl+Enter uses the other behavior
   - button "Queue"
   - text: Performance & usage Choose how much performance and usage information to show

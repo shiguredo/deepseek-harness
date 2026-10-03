@@ -45,6 +45,9 @@ it.skipIf(webSnapshotMode() === 'record')('persists the upload switch and omits 
     await expect.poll(() => toggle.getAttribute('aria-checked')).toBe(String(enabled))
     await expect.poll(async () => {
       const patches = yaml.load(await readFile(join(scaffold.harnessHome, 'profiles/scaffold/cordis.patch.yml'), 'utf8')) as { id: string; config?: { enabled?: boolean } }[]
+      // The scaffold overlay pins `enabled: true`, so an unset profile key
+      // leaves that inherited value in force; the switch unsets rather than
+      // rewriting a value the layer beneath already carries.
       return patches.find(patch => patch.id === 'session-log-deepseek')?.config?.enabled ?? true
     }).toBe(enabled)
     await page.keyboard.press('Escape')

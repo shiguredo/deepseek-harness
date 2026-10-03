@@ -1560,9 +1560,12 @@ function normalizeAria(snapshot: string, workspaceCwd: string, age: boolean): st
     // Seeded compaction prices realized file paths, whose length differs
     // between local worktrees and CI scratch directories.
     .replace(/(Compacted \d+ history items \(~)\d+( tokens\))/g, '$1{{tokens}}$2')
-    // Session summaries and Message IconActions clocks cross calendar
-    // boundaries; collapse every shape so goldens stay stable across them.
+    // Session summaries and message clocks cross calendar boundaries; collapse
+    // every shape so goldens stay stable across them. The message clock always
+    // names its full date, so the ISO shape is the one it renders; the
+    // parenthesised zone name rides along with the clock it belongs to.
     .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, '{{timestamp}}')
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?: \((?:JST|UTC)\))?/g, '{{clock}}')
     .replace(/\d{4}年\d{1,2}月\d{1,2}日 \d{2}:\d{2}/g, '{{clock}}')
     .replace(/\d{1,2}月\d{1,2}日 \d{2}:\d{2}/g, '{{clock}}')
     .replace(/(?<!\d)\d{1,2}:\d{2}:\d{2}(?:\.\d+)?(?:\s*[AP]M)?(?!\d)/gi, '{{clock}}')

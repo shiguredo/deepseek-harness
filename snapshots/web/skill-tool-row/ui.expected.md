@@ -5,7 +5,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- text: Load the editing-cordis-compositions skill with the skill tool, then reply DONE. {{date}} {{clock}}
+- text: Load the editing-cordis-compositions skill with the skill tool, then reply DONE. {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
@@ -16,15 +16,15 @@
 - button "Inspect"
 - button "Think The skill is loaded."
 - paragraph: DONE
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{date}} {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Full access"': Full access
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "1 turns 2 steps"
 - button "310 tok · Cache hit 0%": 310 tokCache hit 0%

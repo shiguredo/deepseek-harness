@@ -102,7 +102,7 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     await page.reload({ waitUntil: 'load' })
     await page.locator('[data-composer-input]').first().waitFor({ timeout: 15_000 })
     await page.getByRole('button', { name: 'Standard mode', exact: true }).waitFor({ timeout: 15_000 })
-    await page.getByRole('button', { name: 'Select model, current DeepSeek-V4-Flash' }).waitFor({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Select model, current DeepSeek · DeepSeek-V4-Flash' }).waitFor({ timeout: 15_000 })
     await expect.poll(() => page.evaluate(() => localStorage.getItem('dsh.sessions.current'))).toBe(beforeReload)
     if (MODE !== 'record') {
       await compareOrRefreshGolden(BLANK_EXPECTED,
@@ -290,7 +290,7 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     await expect(page.getByRole('textbox').first().isVisible()).resolves.toBe(true)
     expect(await page.getByText('WEB_E2E_OK', { exact: false }).count()).toBeGreaterThanOrEqual(1)
     await page.getByRole('button', {
-      name: 'Select model, current DeepSeek-V4-Flash',
+      name: 'Select model, current DeepSeek · DeepSeek-V4-Flash',
     }).waitFor({ timeout: 10_000 })
     const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)

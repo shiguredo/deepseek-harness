@@ -9,8 +9,8 @@
   en: 33763dd0a848143d
   zh: 82743942bc6df660
 /deepseek-ai-dsh-llm-pi-ai/summary:
-  en: ee82d88fee1332d6
-  zh: 3e66b494e4844f97
+  en: 0606cb8887888a90
+  zh: 0c28b98beba8550a
 /deepseek-ai-dsh-llm-pi-ai/table-of-contents:
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
@@ -20,6 +20,9 @@
 /deepseek-ai-dsh-llm-pi-ai/use-this-package/when-to-choose-it:
   en: f3b761c7c7ecb82f
   zh: e10d999aa348ef86
+/deepseek-ai-dsh-llm-pi-ai/use-this-package/routes-this-build-bundles:
+  en: 4bcc0ce1f2b8575a
+  zh: c45c138c4996ff81
 /deepseek-ai-dsh-llm-pi-ai/use-this-package/configure-provider-routes:
   en: c5d28300fa2cfc6f
   zh: c162855dcb54b65b
@@ -36,11 +39,11 @@
   en: 92f554e1718614ca
   zh: f17ed3ad3e5d28e2
 /deepseek-ai-dsh-llm-pi-ai/use-this-package/discover-models-from-endpoints:
-  en: 6619e8cfe7555c73
-  zh: b2f80c25acb81cf8
+  en: d84241101ac31886
+  zh: b7d1f5aeaf9b783d
 /deepseek-ai-dsh-llm-pi-ai/use-this-package/failures-and-recovery:
-  en: 65bcc3b0db3f98e5
-  zh: 3c994e74894bea52
+  en: e7b87c136ca8f918
+  zh: 2c1cd44bc9a0014a
 /deepseek-ai-dsh-llm-pi-ai/understand-the-implementation:
   en: 1598ac8a8bb9b6bf
   zh: fdd089c5ae7722cd
@@ -48,11 +51,11 @@
   en: 8aba1113937b368a
   zh: 804a4ca672a776df
 /deepseek-ai-dsh-llm-pi-ai/understand-the-implementation/source-map:
-  en: 20afee7bbfb332ca
-  zh: b080cf4e97094366
+  en: 22dc925271d58f30
+  zh: d8440f137966c172
 /deepseek-ai-dsh-llm-pi-ai/understand-the-implementation/registration-and-directory:
-  en: 3e12da237dea76da
-  zh: f4d917343e822d2d
+  en: 26f8564248f24df4
+  zh: 1c474770985f1ebc
 /deepseek-ai-dsh-llm-pi-ai/understand-the-implementation/replay-and-vocabulary:
   en: 36e0c59a0f9f5980
   zh: 90a62c4a9cd23429
@@ -87,8 +90,8 @@
   en: b6bd570c0159ba08
   zh: 7d2d91eea6a8d830
 /deepseek-ai-dsh-llm-pi-ai/known-limitations-and-deferred-work:
-  en: 552281e47ba3980f
-  zh: 4af4dff3d9fa52d5
+  en: dd19542a57beffa0
+  zh: a76017d46e964a98
 /deepseek-ai-dsh-llm-pi-ai/known-limitations-and-deferred-work/dev-note:
   en: 3678dd0f6642c2a5
   zh: 75cbdd064cc64282

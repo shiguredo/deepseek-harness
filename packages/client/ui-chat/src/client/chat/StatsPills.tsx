@@ -1,14 +1,14 @@
-// Composer statistics pills, each its own 'conversation.composer.dock' list
-// entry (activity, usage) so a plugin can replace or add one pill by id.
-// Compact keeps speed and cache hit as plain readings; Detailed adds counts,
-// token totals, and click-open dialogs. Settled-node identity prevents
-// stream-delta updates from rerendering the pills.
+// Composer statistics row, one 'conversation.composer.dock' entry leading with
+// its declared lead seat so an ambient-status occupant keeps the line before
+// the first figure exists. Compact keeps speed and cache hit as plain readings;
+// Detailed adds counts, token totals, and click-open dialogs. Settled-node
+// identity prevents stream-delta updates from rerendering the pills.
 
 import { memo, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { IconDatabaseOutlineRegular, IconGaugeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { UseProjection } from '@deepseek-ai/dsh-api-session-controller/client'
-import type { InjectFace, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: merges the sessionStats key into SessionProjectionMap for useProjection.
 import type {} from '@deepseek-ai/dsh-session-stats/client'
 import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
@@ -330,5 +330,26 @@ export const UsagePill = memo(function UsagePill({ useProjection, usePerformance
       </dl>
       {/* jscpd:ignore-end */}
     </DialogPill>
+  )
+})
+
+/** The whole stats row: the shared pill props plus its lead seat renderer. */
+export interface StatsPillsProps extends StatPillProps {
+  /** Renderer for this row's lead seat, rendered before the pills. */
+  renderSlot: PropsRenderSlots<'conversation.composer.stats.lead'>['renderSlot']
+}
+
+/**
+ * The composer stats row. It mounts with the composer so a lead-seat occupant
+ * is not gated on the first closed step; CSS keeps a contentless row out of
+ * the layout.
+ */
+export const StatsPills = memo(function StatsPills({ renderSlot, ...pillProps }: StatsPillsProps) {
+  return (
+    <div className={css.root} data-composer-stats>
+      {renderSlot('conversation.composer.stats.lead', {})}
+      <ActivityPill {...pillProps} />
+      <UsagePill {...pillProps} />
+    </div>
   )
 })

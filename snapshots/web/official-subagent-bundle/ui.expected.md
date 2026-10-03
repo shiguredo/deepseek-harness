@@ -6,19 +6,19 @@
 - button "Code Delegate through the official Claude bundle"
 - button "Tool call subagent_claude_code · Read the fixture response"
 - paragraph: Waiting for the child result.
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
 - button "Subtask status updated {{clock}}":
   - text: Subtask status updated
   - time: {{clock}}
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: DONE
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}

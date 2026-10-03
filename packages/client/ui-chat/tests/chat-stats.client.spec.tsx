@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import type {
   AssistantMessageNode, ChatSnapshot, LegacyConversationSlice, ToolResultNode,
@@ -9,23 +10,13 @@ import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-tes
 import { en as commonEn } from '@deepseek-ai/dsh-client-locale/src/locales/en.ts'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
 import { PartialArguments } from '@deepseek-ai/dsh-util-values'
-import { ActivityPill, UsagePill, deriveStats, formatDuration, type StatPillProps } from '../src/client/chat/StatsPills.tsx'
+import { StatsPills, deriveStats, formatDuration, type StatPillProps, type StatsPillsProps } from '../src/client/chat/StatsPills.tsx'
 import { formatTokens } from '../src/client/chat/token-format.ts'
 import { en, zh } from '../src/client/locale.ts'
 import { chatSnapshotFixture } from './chat-snapshot-fixture.client.ts'
 
 const t: StatPillProps['t'] = makeTranslate(zh, commonZh)
 const tEn: StatPillProps['t'] = makeTranslate(en, commonEn)
-
-/** Both composer-dock entries in their registered order, as the dock renders them. */
-function StatsPills(props: StatPillProps) {
-  return (
-    <>
-      <ActivityPill {...props} />
-      <UsagePill {...props} />
-    </>
-  )
-}
 
 afterEach(() => {
   cleanup()
@@ -157,8 +148,15 @@ describe('composer stats pills', () => {
   function props(
     source: { getSnapshot(): ChatSnapshot; subscribe(fn: () => void): () => void },
     values: Record<string, unknown> = { tokenUsage: USAGE },
-  ): StatPillProps {
-    return { usePerformanceUsage: selector => selector('detailed'), useChat: bindSnapshotSelector(source), useProjection: projections(values), t: tEn }
+    seat = null as ReactNode,
+  ): StatsPillsProps {
+    return {
+      usePerformanceUsage: selector => selector('detailed'),
+      useChat: bindSnapshotSelector(source),
+      useProjection: projections(values),
+      t: tEn,
+      renderSlot: () => seat,
+    }
   }
 
   function tokenUsage(cacheReadTokens: number, uncachedInputTokens: number) {
@@ -210,6 +208,28 @@ describe('composer stats pills', () => {
       contextPressure: {},
     })} />)
     expect(emptyView.container.textContent).toBe('')
+  })
+
+  it('keeps the row mounted for a lead-seat occupant and renders it before the pills', () => {
+    // No closed step yet: the seat alone holds the row, whose CSS keeps it out
+    // of the layout while neither the seat nor a pill paints a reading.
+    const empty = makeSource()
+    const seatOnly = render(<StatsPills {...props(empty.source, {}, <span>⎇ main</span>)} />)
+    const seatRow = seatOnly.container.firstElementChild as HTMLElement
+    expect(seatRow.firstElementChild?.textContent).toBe('⎇ main')
+
+    const { source } = makeSource({ nodes: [assistant(1, 1)] })
+    const view = render(<StatsPills {...props(source, { tokenUsage: USAGE }, <span>⎇ main</span>)} />)
+    const row = view.container.firstElementChild as HTMLElement
+    expect(row.firstElementChild?.textContent).toBe('⎇ main')
+
+    // Compact keeps the same lead position: the seat leads the two readings.
+    seatOnly.rerender(
+      <StatsPills {...props(empty.source, {}, <span>⎇ main</span>)} usePerformanceUsage={selector => selector('compact')} />,
+    )
+    const compactRow = seatOnly.container.firstElementChild as HTMLElement
+    expect(compactRow.firstElementChild?.textContent).toBe('⎇ main')
+    expect(compactRow.textContent).toBe('⎇ main')
   })
 
   it.each([
@@ -494,7 +514,7 @@ describe('composer stats pills', () => {
   it('renders ZERO times during streaming chunk frames (RFC hard acceptance)', () => {
     const { set, source } = makeSource({ nodes: [assistant(1, 1)] })
     let renders = 0
-    function Counting(p: StatPillProps) {
+    function Counting(p: StatsPillsProps) {
       renders += 1
       return <StatsPills {...p} />
     }

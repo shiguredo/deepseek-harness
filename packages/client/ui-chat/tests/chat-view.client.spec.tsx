@@ -12,7 +12,7 @@ import type {
   ChatViewSlotProps, CommandNode, CompactionSummaryNode, ContextMessageNode, ConversationNode,
   LegacyConversationSlice, ModelRetryNode, StartedToolCall, SteeringMessageNode,
   ToolCallBlock, ToolResultNode, TurnErrorNode, TurnMaxTokensNode,
-  TranscriptViewMode, UserMessageNode,
+  ClockTimeZone, TranscriptViewMode, UserMessageNode,
 } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {
   SessionListState, SessionSnapshot,
@@ -410,6 +410,7 @@ function makeHarness(
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
   const collapseTiming = createSnapshotStore<CollapseTiming>('completion')
   const performanceUsage = createSnapshotStore<'compact' | 'detailed'>('detailed')
+  const clockTimeZone = createSnapshotStore<ClockTimeZone>('local')
   const t = makeTranslate(zh, commonZh)
   const toolOwners: ToolOwner[] = []
   const usePerformanceUsage = bindSnapshotSelector(performanceUsage)
@@ -479,6 +480,7 @@ function makeHarness(
     useStore: bindSnapshotSelector(chat),
     actions: chat.actions,
     usePresentation: bindSnapshotSelector(derivePresentationPolicy(transcriptView, collapseTiming)),
+    useClockTimeZone: bindSnapshotSelector(clockTimeZone),
     // The fixture implements the concrete flow dispatch behind the generic slot signature.
     renderSlot: renderSlot as ChatViewSlotProps['renderSlot'],
     SessionProvider: SessionProviderStub,
@@ -528,6 +530,7 @@ function makeHarness(
     },
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
     setCollapseTiming: (timing: CollapseTiming) => { collapseTiming.set(timing) },
+    setClockTimeZone: (zone: ClockTimeZone) => { clockTimeZone.set(zone) },
     setNodeRenderer: (renderer: NodeRenderer) => { nodeSlotOverride = renderer },
     setImageRenderer: (renderer: ImageRenderer) => { imageSlotOverride = renderer },
   }

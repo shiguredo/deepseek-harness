@@ -17,12 +17,12 @@
 - status: Stopped
 - button "Stopped" [disabled]
 - paragraph: partial
-- text: Stopped
+- text: Stopped {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Keep working until I stop you again. {{clock}}
+- text: Keep working until I stop you again. {{clock}}
 - button "Copy"
 - paragraph: partial
 - status: Deep diving

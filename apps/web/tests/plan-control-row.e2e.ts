@@ -84,7 +84,7 @@ async function selectModel(page: Page, name: string): Promise<void> {
   await trigger.click()
   await page.getByRole('menuitem', { name: /^Model/ }).click()
   await page.getByRole('menuitemradio', { name, exact: true }).click()
-  await expect.poll(() => trigger.getAttribute('title')).toMatch(new RegExp(`^${name}(?: ·|$)`))
+  await expect.poll(() => trigger.getAttribute('title')).toMatch(new RegExp(`(?:^| · )${name}(?: ·|$)`))
 }
 
 /** A compact decision must remain stable across observer deliveries and paints. */

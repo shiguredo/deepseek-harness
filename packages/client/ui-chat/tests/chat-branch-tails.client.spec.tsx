@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -8,9 +8,7 @@ import type {
   ChatConversationViewNode, ConversationNode,
 } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ChatNodeViewProps } from '../src/client/contract/slots.ts'
-import {
-  formatMessageClock, msUntilNextLocalMidnight, startOfLocalDay,
-} from '../src/client/chat/message-chrome.ts'
+import { formatMessageClock } from '../src/client/chat/message-chrome.ts'
 import {
   CompactionNodeView, ContextMessageNodeView, RetryNodeView, UnknownNodeView,
   UserMessageNodeView,
@@ -19,7 +17,7 @@ import { AssistantMarkdown, type AssistantMarkdownProps } from '../src/client/ch
 import { useDetailedPresentation } from './presentation-fixture.client.ts'
 import { useDisclosure } from '../src/client/chat/use-disclosure.ts'
 import { useSearchableHidden } from '../src/client/chat/searchable-hidden.ts'
-import { ActivityPill, UsagePill, type StatPillProps } from '../src/client/chat/StatsPills.tsx'
+import { StatsPills } from '../src/client/chat/StatsPills.tsx'
 import { zh } from '../src/client/locale.ts'
 import { chatSnapshotFixture } from './chat-snapshot-fixture.client.ts'
 
@@ -42,12 +40,13 @@ const useDetachedChat: ChatNodeViewProps['useChat'] = bindSnapshotSelector({
 interface MessageItemProps {
   readonly node: ConversationNode
   readonly t: ChatNodeViewProps['t']
+  readonly clockTimeZone?: ChatNodeViewProps['clockTimeZone']
   readonly referenceLabels?: readonly string[]
   readonly skillNames?: readonly string[]
 }
 
 /** Legacy-node fixture adapter for the independently registered renderers. */
-function MessageItem({ node, t: translate, referenceLabels, skillNames }: MessageItemProps) {
+function MessageItem({ node, t: translate, clockTimeZone = 'local', referenceLabels, skillNames }: MessageItemProps) {
   const kind = node.kind === 'assistant' ? 'assistant-step' : node.kind
   const viewNode: ChatConversationViewNode = {
     key: `fixture:${node.kind}:${node.seq}`,
@@ -70,18 +69,19 @@ function MessageItem({ node, t: translate, referenceLabels, skillNames }: Messag
   const props = {
     node: viewNode, t: translate, renderMessageImages, openFile: vi.fn(), openSkill: vi.fn(), useChat: useDetachedChat,
   } as unknown as ChatNodeViewProps
+  const nodeProps = { ...props, clockTimeZone }
   switch (node.kind) {
     case 'user':
     case 'steering':
-      return <UserMessageNodeView {...props as ChatNodeViewProps<'user' | 'steering'>} />
+      return <UserMessageNodeView {...nodeProps as ChatNodeViewProps<'user' | 'steering'>} />
     case 'context':
-      return <ContextMessageNodeView {...props as ChatNodeViewProps<'context'>} />
+      return <ContextMessageNodeView {...nodeProps as ChatNodeViewProps<'context'>} />
     case 'compaction':
-      return <CompactionNodeView {...props as ChatNodeViewProps<'compaction'>} />
+      return <CompactionNodeView {...nodeProps as ChatNodeViewProps<'compaction'>} />
     case 'model-retry':
-      return <RetryNodeView {...props as ChatNodeViewProps<'model-retry'>} />
+      return <RetryNodeView {...nodeProps as ChatNodeViewProps<'model-retry'>} />
     case 'unknown':
-      return <UnknownNodeView {...props as ChatNodeViewProps<'unknown'>} />
+      return <UnknownNodeView {...nodeProps as ChatNodeViewProps<'unknown'>} />
     default:
       throw new Error(`unsupported MessageItem fixture kind: ${node.kind}`)
   }
@@ -165,18 +165,16 @@ describe('MessageItem arms', () => {
       configurable: true,
       value: { writeText },
     })
-    // Same-day clock: construct "today at 14:24" so the label stays `HH:mm`.
-    const now = new Date()
-    const time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 24).getTime()
+    const time = new Date(2026, 6, 29, 14, 24, 10).getTime()
     render(
-      <MessageItem t={t} node={{
+      <MessageItem t={t} clockTimeZone="local" node={{
         kind: 'user', seq: 1, time,
         content: [{ type: 'text', text: 'hello bubble' }] as never,
         source: null,
       }}
       />,
     )
-    expect(screen.getByText('14:24')).toBeTruthy()
+    expect(screen.getByText('2026-07-29T14:24:10')).toBeTruthy()
     expect(screen.getByRole('button', { name: '复制' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: '在新对话中分支' })).toBeNull()
     expect(screen.queryByRole('button', { name: '编辑' })).toBeNull()
@@ -994,52 +992,71 @@ describe('MessageItem arms', () => {
 })
 
 describe('formatMessageClock', () => {
-  const now = new Date(2026, 6, 29, 10, 0).getTime()
-
-  it('keeps HH:mm on the same calendar day', () => {
-    expect(formatMessageClock(new Date(2026, 6, 29, 14, 24).getTime(), t, now)).toBe('14:24')
+  it('names every field of the date and clock in the device zone', () => {
+    const time = new Date(2026, 6, 29, 14, 24, 10).getTime()
+    expect(formatMessageClock(time, t)).toBe('2026-07-29T14:24:10')
   })
 
-  it('prefixes month and day across days in the same year', () => {
-    expect(formatMessageClock(new Date(2026, 0, 1, 14, 24).getTime(), t, now)).toBe('1月1日 14:24')
+  it('reads a pinned zone regardless of the device zone, named in parentheses', () => {
+    // 2026-07-29T05:24:10Z is 05:24:10 UTC and 14:24:10 JST.
+    const instant = Date.UTC(2026, 6, 29, 5, 24, 10)
+    expect(formatMessageClock(instant, t, 'utc')).toBe('2026-07-29T05:24:10 (UTC)')
+    expect(formatMessageClock(instant, t, 'jst')).toBe('2026-07-29T14:24:10 (JST)')
   })
 
-  it('prefixes year, month, and day across years', () => {
-    expect(formatMessageClock(new Date(2025, 11, 31, 9, 5).getTime(), t, now)).toBe('2025年12月31日 09:05')
-  })
-
-  it('arms the next local midnight from an in-day instant', () => {
-    const noon = new Date(2026, 6, 29, 12, 0).getTime()
-    expect(startOfLocalDay(noon)).toBe(new Date(2026, 6, 29).getTime())
-    expect(msUntilNextLocalMidnight(noon)).toBe(12 * 3_600_000)
+  it('dates in the pinned zone, not the device zone', () => {
+    // 2026-07-29T16:00:05Z is 2026-07-30 01:00:05 JST: the JST date rolls over.
+    const instant = Date.UTC(2026, 6, 29, 16, 0, 5)
+    expect(formatMessageClock(instant, t, 'jst')).toBe('2026-07-30T01:00:05 (JST)')
   })
 })
 
-describe('useCalendarDay boundary refresh', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('widens a same-day user clock after local midnight', () => {
-    const dayStart = new Date(2026, 6, 29, 23, 50).getTime()
-    vi.setSystemTime(dayStart)
-    const time = new Date(2026, 6, 29, 14, 24).getTime()
+describe('message clock rendering', () => {
+  it('stamps a user bubble with its zone-labelled timestamp', () => {
+    const time = Date.UTC(2026, 6, 29, 5, 24, 10)
     render(
-      <MessageItem t={t} node={{
+      <MessageItem t={t} clockTimeZone="jst" node={{
         kind: 'user', seq: 1, time,
-        content: [{ type: 'text', text: 'night bubble' }] as never,
+        content: [{ type: 'text', text: 'pinned bubble' }] as never,
         source: null,
       }}
       />,
     )
-    expect(screen.getByText('14:24')).toBeTruthy()
-    act(() => {
-      vi.advanceTimersByTime(msUntilNextLocalMidnight(dayStart) + 1)
-    })
-    expect(screen.getByText('7月29日 14:24')).toBeTruthy()
+    expect(screen.getByText('2026-07-29T14:24:10 (JST)')).toBeTruthy()
+  })
+
+  it('orders the user row as content, then clock, then actions', () => {
+    // The clock dates the message it sits under; the icon row stays last so
+    // revealing it on hover never moves the timestamp.
+    const time = new Date(2026, 6, 29, 14, 24, 10).getTime()
+    const view = render(<MessageItem t={t} clockTimeZone="local" node={{
+      kind: 'user', seq: 1, time,
+      content: [{ type: 'text', text: 'ordered bubble' }] as never,
+      source: null,
+    }}
+    />)
+    const clock = view.container.querySelector<HTMLElement>('[data-message-clock]')!
+    const children = [...(clock.parentElement as HTMLElement).children] as HTMLElement[]
+    const clockIndex = children.indexOf(clock)
+    const stack = children.findIndex(child => child.contains(view.getByText('ordered bubble')))
+    const actions = children.findIndex(child => child.getAttribute('data-variant') === 'user')
+    expect(stack).toBeGreaterThanOrEqual(0)
+    expect(actions).toBeGreaterThanOrEqual(0)
+    expect(stack).toBeLessThan(clockIndex)
+    expect(clockIndex).toBeLessThan(actions)
+  })
+
+  it('follows a zone change without remounting the row', () => {
+    const time = new Date(2026, 6, 29, 14, 24, 10).getTime()
+    const node = {
+      kind: 'user', seq: 1, time,
+      content: [{ type: 'text', text: 'local bubble' }] as never,
+      source: null,
+    } as const
+    const view = render(<MessageItem t={t} clockTimeZone="local" node={node} />)
+    expect(view.getByText('2026-07-29T14:24:10')).toBeTruthy()
+    view.rerender(<MessageItem t={t} clockTimeZone="utc" node={node} />)
+    expect(view.getByText('2026-07-29T05:24:10 (UTC)')).toBeTruthy()
   })
 })
 
@@ -1065,19 +1082,16 @@ describe('small branch tails', () => {
     }] as const
     const snap = chatSnapshotFixture({ nodes })
     const source = { getSnapshot: () => snap, subscribe: () => () => {} }
-    const pillProps: StatPillProps = {
-      usePerformanceUsage: selector => selector('detailed'),
-      t,
-      useChat: bindSnapshotSelector(source),
-      useProjection: (key: string) => key === 'tokenUsage'
-        ? { uncachedInputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 }
-        : undefined,
-    }
     const view = render(
-      <>
-        <ActivityPill {...pillProps} />
-        <UsagePill {...pillProps} />
-      </>,
+      <StatsPills
+        usePerformanceUsage={selector => selector('detailed')}
+        t={t}
+        useChat={bindSnapshotSelector(source)}
+        useProjection={(key: string) => key === 'tokenUsage'
+          ? { uncachedInputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 }
+          : undefined}
+        renderSlot={() => null}
+      />,
     )
     // The untimed counts pill renders static, so the usage pill is the only button.
     const [usagePill] = [...view.getAllByRole('button')] as [HTMLElement]

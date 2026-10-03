@@ -93,7 +93,7 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     const trigger = screen.getByRole('button', {
-      name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
+      name: '选择模型，当前 DeepSeek · DeepSeek-V4-Flash，推理等级 High',
     })
     fireEvent.click(trigger)
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
@@ -108,9 +108,27 @@ describe('ModelSelect reasoning effort', () => {
         model: 'deepseek-v4-flash',
         reasoningEffort: 'max',
       })
-      expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 DeepSeek-V4-Flash，推理等级 Max')
+      expect(trigger.getAttribute('aria-label')).toBe('选择模型，当前 DeepSeek · DeepSeek-V4-Flash，推理等级 Max')
       expect(document.activeElement).toBe(trigger)
     })
+  })
+
+  it('leads the model with its provider name in the trigger and lists the provider above the root cells', () => {
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={createSnapshotStore<ModelDirectoryState>(state())}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue({ ok: true, value: undefined })}
+      t={t}
+    />)
+
+    const trigger = screen.getByRole('button', { name: /选择模型，当前/ })
+    expect(trigger.textContent).toBe('DeepSeek · DeepSeek-V4-FlashHigh')
+    fireEvent.click(trigger)
+    expect(screen.getByText('提供商').parentElement?.textContent).toBe('提供商DeepSeek')
+    expect(screen.getByRole('menuitem', { name: /^模型/ }).textContent).toBe('模型DeepSeek-V4-Flash')
+    expect(screen.getByRole('menuitem', { name: /推理等级/ }).textContent).toBe('推理等级High')
   })
 
   it('offers provider default only when the adapter does not configure a model default', () => {
@@ -136,7 +154,7 @@ describe('ModelSelect reasoning effort', () => {
     />)
 
     fireEvent.click(screen.getByRole('button', {
-      name: '选择模型，当前 Model，推理等级 Default',
+      name: '选择模型，当前 Provider · Model，推理等级 Default',
     }))
     fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
     expect(screen.getAllByRole('menuitemradio').map(item => item.textContent))
@@ -160,6 +178,7 @@ describe('ModelSelect reasoning effort', () => {
     const trigger = screen.getByRole('button', { name: '请选择模型' })
     expect(trigger.textContent).toBe('请选择模型')
     fireEvent.click(trigger)
+    expect(screen.queryByText('提供商')).toBeNull()
     expect(screen.queryByRole('menuitem', { name: /推理等级/ })).toBeNull()
     expect(screen.queryByRole('menuitem', { name: /模型/ })).toBeNull()
     expect(screen.queryByRole('menuitemradio', { name: 'removed-model' })).toBeNull()
@@ -209,7 +228,7 @@ describe('ModelSelect reasoning effort', () => {
     directory.set(state())
     await waitFor(() => {
       expect(screen.getByRole('button', {
-        name: '选择模型，当前 DeepSeek-V4-Flash，推理等级 High',
+        name: '选择模型，当前 DeepSeek · DeepSeek-V4-Flash，推理等级 High',
       })).toBeTruthy()
     })
   })
@@ -911,10 +930,10 @@ it('restores the account model name after login without changing the saved route
   const selected = { provider: 'deepseek-account', model: 'deepseek-flash', reasoningEffort: 'high' }
   const directory = createSnapshotStore(state({ current: selected, groups, retainedEffort: 'High' }))
   render(<ModelSelect locked={false} available directory={directory} load={vi.fn()} select={vi.fn()} t={t} />)
-  expect(screen.getByRole('button', { name: /选择模型，当前/ }).textContent).toBe('DeepSeek FlashHigh')
+  expect(screen.getByRole('button', { name: /选择模型，当前/ }).textContent).toBe('DeepSeek 账号 · DeepSeek FlashHigh')
   act(() => { directory.update((snapshot) => { snapshot.groups = []; snapshot.routable = false }) })
   expect(screen.getByRole('button', { name: '请选择模型' }).textContent).toBe('请选择模型')
   act(() => { directory.update((snapshot) => { snapshot.groups = groups; snapshot.routable = true }) })
-  expect(screen.getByRole('button', { name: /选择模型，当前/ }).textContent).toBe('DeepSeek FlashHigh')
+  expect(screen.getByRole('button', { name: /选择模型，当前/ }).textContent).toBe('DeepSeek 账号 · DeepSeek FlashHigh')
   expect(directory.getSnapshot().current).toEqual(selected)
 })

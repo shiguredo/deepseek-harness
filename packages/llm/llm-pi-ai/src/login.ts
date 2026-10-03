@@ -132,9 +132,10 @@ export function registerPiAiFlows(ctx: Context, auth: PiAiAuthInjection): void {
   for (const providerId of catalogProviderIds()) {
     const provider = catalogProvider(providerId)
     const [first, ...rest] = loginMethods(provider)
-    /* v8 ignore next 3 -- every id here names an installed provider and every
-       installed provider ships a login, so no entry is skipped; the guard
-       is what keeps that from becoming a crash if either stops being true. */
+    // A bundled route (or, defensively, an installed provider that ships no
+    // login) has nothing to sign into: it authenticates through `apiKeyEnv` or
+    // the process environment, which is a settings-page action rather than a
+    // flow, so it contributes no entry here.
     if (provider === undefined || first === undefined) continue
     /* v8 ignore next 7 -- every installed catalog id is a lowercase
        hyphenated identifier; the guard keeps a future upstream id outside the

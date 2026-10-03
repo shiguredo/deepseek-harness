@@ -18,38 +18,39 @@
 - status: Stopped
 - button "Stopped" [disabled]
 - paragraph: partial
-- text: Stopped
+- text: Stopped {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Queue item to remove {{clock}}
+- text: Queue item to remove {{clock}}
 - button "Copy"
 - status: Stopped
 - button "Stopped" [disabled]
 - paragraph: partial
-- text: Stopped
+- text: Stopped {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Wake the preserved queue {{clock}}
+- text: Wake the preserved queue {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}"
 - paragraph: Event sourcing is a pattern where all changes to an application's state are stored as an immutable, append-only sequence of events, rather than persisting only the current state, enabling full auditability, temporal queries, and event-driven architectures.
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Inactive Goal Keep working after Stop
+- text: Inactive Goal Keep working after Stop
 - button "Resume goal"
 - button "Edit goal"
 - button "Clear goal"
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "3 turns 3 steps · {{throughput}} tok/s": 3 turns 3 steps{{throughput}} tok/s
 - button "7.9K tok · Cache hit 99%": 7.9K tokCache hit 99%

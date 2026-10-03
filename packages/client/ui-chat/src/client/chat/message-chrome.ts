@@ -1,41 +1,63 @@
-// Shared time-label helpers for user/assistant IconActions rows.
+// Shared time-label helpers for user/assistant message chrome.
 
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ClockTimeZone } from '../../chat-settings.ts'
 
-/** The date-template share of the conversation dictionary the clock consumes. */
-export type ClockTranslate = Translate<'clock.md' | 'clock.ymd'>
+/** The clock and zone-label share of the conversation dictionary the clock consumes. */
+export type ClockTranslate = Translate<'clock.zoned' | 'clock.zone.jst' | 'clock.zone.utc'>
 
-/** The elapsed-duration share of the conversation dictionary. */
+/** Elapsed-duration share of the conversation dictionary. */
 export type RunDurationTranslate =
   Translate<'duration.secondUnit' | 'duration.minuteUnit' | 'duration.hourUnit'>
 
 /** Refresh interval for whole-second live run clocks. */
 export const LIVE_RUN_CLOCK_INTERVAL_MS = 1000
 
+/** Japan Standard Time offset from UTC; the zone has no daylight saving. */
+const JST_OFFSET_MS = 9 * 3_600_000
+
+/** Dictionary key naming a pinned zone; the device zone appends no label. */
+const ZONE_LABEL_KEY = {
+  local: undefined,
+  jst: 'clock.zone.jst',
+  utc: 'clock.zone.utc',
+} as const satisfies Record<ClockTimeZone, string | undefined>
+
 function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-/**
- * Local calendar-day epoch (ms at local midnight) for an instant.
- * @param ms - Unix epoch ms.
- * @returns Midnight of that local calendar day.
- */
-export function startOfLocalDay(ms: number): number {
-  const d = new Date(ms)
-  d.setHours(0, 0, 0, 0)
-  return d.getTime()
+/** Calendar and clock fields of one instant as the selected zone reads them. */
+interface ClockFields {
+  readonly year: number
+  readonly month: number
+  readonly day: number
+  readonly hour: number
+  readonly minute: number
+  readonly second: number
 }
 
 /**
- * Delay until the next local midnight after `ms` (at least 1ms).
+ * Read one instant in the selected zone. `jst` and `utc` are fixed offsets, so
+ * the UTC getters of a shifted instant name their wall clock exactly; `local`
+ * reads the runtime's own calendar because its offset moves with DST.
  * @param ms - Unix epoch ms.
- * @returns Milliseconds until the following local midnight.
+ * @param zone - Zone the clock reads.
+ * @returns That zone's calendar and clock fields.
  */
-export function msUntilNextLocalMidnight(ms: number): number {
-  const next = new Date(ms)
-  next.setHours(24, 0, 0, 0)
-  return Math.max(next.getTime() - ms, 1)
+function fieldsIn(ms: number, zone: ClockTimeZone): ClockFields {
+  if (zone === 'local') {
+    const d = new Date(ms)
+    return {
+      year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
+      hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds(),
+    }
+  }
+  const d = new Date(ms + (zone === 'jst' ? JST_OFFSET_MS : 0))
+  return {
+    year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(),
+    hour: d.getUTCHours(), minute: d.getUTCMinutes(), second: d.getUTCSeconds(),
+  }
 }
 
 /** One numeric value or localized unit in an elapsed-time label. */
@@ -74,27 +96,23 @@ export function formatTokensPerSecond(tps: number): string {
 }
 
 /**
- * Compact local timestamp for message IconActions. Same calendar day →
- * `HH:mm`; earlier this year → the `clock.md` date template + clock; other
- * years → the `clock.ymd` template + clock. Pure: the date templates arrive
- * through the caller's locale seat.
+ * Message timestamp in the selected zone as `YYYY-MM-DDTHH:mm:ss`, with the
+ * zone named in parentheses when it is pinned rather than the device's. Every
+ * field comes from `time` alone, so the text needs no reference instant and no
+ * re-render when a date boundary passes.
  * @param time - Unix epoch ms from the source session event.
- * @param t - translate seat supplying the `clock.md` / `clock.ymd` templates.
- * @param now - Reference instant for the day/year cut (defaults to wall clock).
- * @returns Date-aware clock string (24-hour, zero-padded time).
+ * @param t - translate seat supplying the zoned template and zone labels.
+ * @param zone - Zone the clock reads; `local` follows the device.
+ * @returns Zoned clock string (24-hour, zero-padded fields).
  */
-export function formatMessageClock(time: number, t: ClockTranslate, now: number = Date.now()): string {
-  const d = new Date(time)
-  const n = new Date(now)
-  const clock = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
-  if (
-    d.getFullYear() === n.getFullYear()
-    && d.getMonth() === n.getMonth()
-    && d.getDate() === n.getDate()
-  ) {
-    return clock
-  }
-  const params = { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() }
-  const md = d.getFullYear() === n.getFullYear() ? t('clock.md', params) : t('clock.ymd', params)
-  return `${md} ${clock}`
+export function formatMessageClock(
+  time: number,
+  t: ClockTranslate,
+  zone: ClockTimeZone = 'local',
+): string {
+  const at = fieldsIn(time, zone)
+  const clock = `${at.year}-${pad2(at.month)}-${pad2(at.day)}`
+    + `T${pad2(at.hour)}:${pad2(at.minute)}:${pad2(at.second)}`
+  const labelKey = ZONE_LABEL_KEY[zone]
+  return labelKey === undefined ? clock : t('clock.zoned', { time: clock, zone: t(labelKey) })
 }

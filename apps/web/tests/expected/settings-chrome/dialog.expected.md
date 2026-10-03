@@ -29,6 +29,8 @@
   - text: 快捷键
   - paragraph: 查看和编辑当前可用的快捷键和输入操作
   - button "编辑快捷键"
+  - text: 时间戳时区 消息时间戳使用的时区
+  - button "设备时区"
   - text: 繁忙时的发送行为 智能体运行时 Enter 键和发送按钮的行为；Cmd/Ctrl+Enter 使用另一行为
   - button "排队发送"
   - text: 性能与用量 选择性能与用量信息展示的详细程度

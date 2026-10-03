@@ -49,6 +49,18 @@
   white-space: nowrap;
 }
 
+/* Provider name leading the model name (same 13/20/400 as the label, caption
+   tone). Adaptive priority: it absorbs deficit after the effort has gone to
+   zero and before the model name gives up a pixel. */
+.triggerProvider {
+  flex-shrink: 100;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-caption);
+}
+
 /* Effort value beside the model name (mock's 'High': same 13/20/400, caption
    tone). Adaptive priority: the huge shrink factor makes the effort absorb
    all deficit first — it ellipsizes away to nothing before the model name
@@ -71,6 +83,7 @@
 /* The composer measures expanded row demand and owns these display variables.
    Outside a composer, the trigger retains its text. */
 .triggerLabel,
+.triggerProvider,
 .triggerEffort {
   display: var(--dsh-composer-model-text-display, block);
 }
@@ -306,6 +319,16 @@
 .cell:hover,
 .cell:focus-visible {
   background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* Read-only root row (the current provider): the cells' rhythm without their
+   hover affordance, focus treatment, or chevron. */
+.cellStatic {
+  cursor: default;
+}
+
+.cellStatic:hover {
+  background: transparent;
 }
 
 .cellLabel {

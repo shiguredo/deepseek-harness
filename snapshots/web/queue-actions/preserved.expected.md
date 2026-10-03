@@ -11,12 +11,11 @@
 - status: Stopped
 - button "Stopped" [disabled]
 - paragraph: partial
-- text: Stopped
+- text: Stopped {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
 - button "2 queued messages" [expanded]
 - list:
   - listitem:
@@ -32,6 +31,6 @@
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "1 turns 1 steps"

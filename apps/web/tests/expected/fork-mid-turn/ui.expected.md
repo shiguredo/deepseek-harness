@@ -7,8 +7,8 @@
 - status: Completed
 - button "Completed in {{duration}}"
 - paragraph: FORK_BRANCH_FIRST this branch has no read results, so I would check what the parent completed before retrying. FORK_BRANCH_DONE.
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
