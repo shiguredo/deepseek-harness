@@ -1,0 +1,47 @@
+/** Japanese dictionary for the `job` namespace (client/ui-jobs/src/client/locales.ts). */
+import type { LocaleDictOf } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: loads the `job` key union declared by @deepseek-ai/dsh-client-ui-jobs.
+import type {} from '@deepseek-ai/dsh-client-ui-jobs/client'
+
+/** `job` copy in Japanese, complete against the owner's key union. */
+export const ja: LocaleDictOf<'job'> = {
+  'count.live.one': '{count} 件のバックグラウンドジョブを実行中',
+  'count.live.other': '{count} 件のバックグラウンドジョブを実行中',
+  'count.idle.one': '{count} 件のバックグラウンドジョブ',
+  'count.idle.other': '{count} 件のバックグラウンドジョブ',
+  'list.aria': 'バックグラウンドジョブ',
+  'status.running': '実行中',
+  'status.stopping': '停止中',
+  'status.completed': '完了',
+  'status.killed': 'キャンセル済み',
+  'status.failed': '失敗',
+  'duration.seconds': '{seconds}秒',
+  'duration.minutes': '{minutes}分{seconds}秒',
+  'duration.hours': '{hours}時間{minutes}分',
+  'duration.title.live': '実行時間 {duration}',
+  'duration.title.done': '所要時間 {duration}',
+  'section.live': '実行中',
+  'section.settledCount': '終了 {count} 件',
+  'section.clear': 'クリア',
+  'row.expandAria': '{label} のライブ出力を表示',
+  'row.collapseAria': '{label} のライブ出力を隠す',
+  'kill.stop': 'タスク {label} を停止',
+  'kill.confirm': 'もう一度クリックして確定',
+  'kill.confirmAction': '停止を確定',
+  'kill.failed': '停止に失敗しました',
+  'output.gap': '… 以前の出力は破棄されました …',
+  'output.error': 'ライブ出力ストリームが中断されました: {error}',
+  'terminal.signal': 'シグナル {signal}',
+  'terminal.exitCode': '終了コード {code}',
+  'terminal.noExitCode': '終了コードなし',
+  'terminal.running': '実行中',
+  'terminal.failed': '失敗',
+  'terminal.done': '完了',
+  'terminal.copy': 'コピー',
+  'terminal.copied': 'コピーしました',
+  'terminal.noOutput': '（出力なし）',
+  'terminal.collapse': '折りたたむ',
+  'terminal.collapseAria': '出力を折りたたむ',
+  'terminal.expand': '残り {n} 行を表示',
+  'terminal.expandAria': '折りたたまれた出力 {n} 行を展開',
+}

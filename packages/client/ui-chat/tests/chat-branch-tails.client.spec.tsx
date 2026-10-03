@@ -18,7 +18,7 @@ import {
 import { AssistantMarkdown, type AssistantMarkdownProps } from '../src/client/chat/AssistantMarkdown.tsx'
 import { useDetailedPresentation } from './presentation-fixture.client.ts'
 import { useDisclosure } from '../src/client/chat/use-disclosure.ts'
-import { ActivityPill, UsagePill, type StatPillProps } from '../src/client/chat/StatsPills.tsx'
+import { StatsPills } from '../src/client/chat/StatsPills.tsx'
 import { zh } from '../src/client/locale.ts'
 import { chatSnapshotFixture } from './chat-snapshot-fixture.client.ts'
 
@@ -1064,19 +1064,16 @@ describe('small branch tails', () => {
     }] as const
     const snap = chatSnapshotFixture({ nodes })
     const source = { getSnapshot: () => snap, subscribe: () => () => {} }
-    const pillProps: StatPillProps = {
-      usePerformanceUsage: selector => selector('detailed'),
-      t,
-      useChat: bindSnapshotSelector(source),
-      useProjection: (key: string) => key === 'tokenUsage'
-        ? { uncachedInputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 }
-        : undefined,
-    }
     const view = render(
-      <>
-        <ActivityPill {...pillProps} />
-        <UsagePill {...pillProps} />
-      </>,
+      <StatsPills
+        usePerformanceUsage={selector => selector('detailed')}
+        t={t}
+        useChat={bindSnapshotSelector(source)}
+        useProjection={(key: string) => key === 'tokenUsage'
+          ? { uncachedInputTokens: 0, outputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 }
+          : undefined}
+        renderSlot={() => null}
+      />,
     )
     // The untimed counts pill renders static, so the usage pill is the only button.
     const [usagePill] = [...view.getAllByRole('button')] as [HTMLElement]

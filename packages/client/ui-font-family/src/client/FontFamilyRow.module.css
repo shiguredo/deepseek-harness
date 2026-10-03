@@ -1,0 +1,44 @@
+/* Font-family row: title + description on the left, a single-line input on the
+ * right; same cell rhythm as the Appearance, Language, and font-size rows
+ * (gap 8, pad 16/0, hairline separator; the section column strips the
+ * separator on its last child). */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 48px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.desc {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.input {
+  width: 260px;
+  max-width: 45%;
+}
+
+.input:has(input[aria-invalid='true']) {
+  border-color: var(--dsw-alias-state-error-primary);
+}

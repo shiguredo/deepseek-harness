@@ -103,15 +103,17 @@ export interface ModelListEditorProps {
 type CapacityField = 'contextWindow' | 'maxTokens'
 
 /**
- * What an empty capacity field is worth, shown as its placeholder so a row left
- * blank does not read as a model with no capacity at all.
+ * What an empty capacity field is worth when neither the model's own entry nor
+ * the route's catalog sizes it, shown as its placeholder so a row left blank
+ * does not read as a model with no capacity at all.
  *
- * The magnitudes are the adapter's own route-level fallbacks (`llm-pi-ai`'s
+ * These magnitudes are the adapter's own route-level fallbacks (`llm-pi-ai`'s
  * `defaultContextWindow` and `defaultMaxTokens`), spelled the way a person
  * would say them. They are a hint, not a mirror: this page counts `K` as 1000,
  * so typing `256K` stores 256000 while leaving the field blank keeps the
- * adapter's 262144. A deployment that overrides those defaults is not
- * reflected here — nothing on this page can read them.
+ * adapter's 262144. A model the route's catalog describes shows that entry's
+ * own count instead, which is the capacity a blank field actually leaves in
+ * force.
  */
 const CAPACITY_HINT: Readonly<Record<CapacityField, string>> = {
   contextWindow: '256K',
@@ -166,7 +168,17 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
     return () => { current = false }
   }, [catalogProvider, operations, probe.settingsNs])
   const catalog = inheritedCatalog?.provider === catalogProvider ? inheritedCatalog?.models : undefined
-  const inputDefaults = useMemo(() => new Map(catalog?.map(model => [model.id, model.inputModalities])), [catalog])
+  const catalogById = useMemo(() => new Map(catalog?.map(model => [model.id, model])), [catalog])
+  /**
+   * The count an empty capacity field leaves in force, spelled for the field.
+   * A model the route's catalog describes inherits that entry's own count, so
+   * the placeholder states it; a model nothing describes inherits the
+   * adapter's route fallback, whose magnitude is the static hint.
+   */
+  const capacityPlaceholder = (id: string, field: CapacityField): string => {
+    const described = id.length === 0 ? undefined : catalogById.get(id)?.[field]
+    return described === undefined ? CAPACITY_HINT[field] : formatCapacity(described)
+  }
   const [candidates, setCandidates] = useState<readonly LlmDiscoveredModel[] | undefined>(undefined)
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
   const [candidateQuery, setCandidateQuery] = useState('')
@@ -360,19 +372,19 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
             model={model}
             position={index + 1}
             inputField="input"
-            inputFallback={inputDefaults.get(textOf(model, 'id')) ?? props.defaultInput}
+            inputFallback={catalogById.get(textOf(model, 'id'))?.inputModalities ?? props.defaultInput}
             inputLoading={catalogProvider !== undefined && catalog === undefined}
             expanded={expanded.has(index)}
             disabled={disabled}
             t={t}
             contextWindow={{
               value: capacityText(model, index, 'contextWindow'),
-              placeholder: CAPACITY_HINT.contextWindow,
+              placeholder: capacityPlaceholder(textOf(model, 'id'), 'contextWindow'),
               onChange: (text) => { editCapacity(index, 'contextWindow', text) },
             }}
             maxTokens={{
               value: capacityText(model, index, 'maxTokens'),
-              placeholder: CAPACITY_HINT.maxTokens,
+              placeholder: capacityPlaceholder(textOf(model, 'id'), 'maxTokens'),
               onChange: (text) => { editCapacity(index, 'maxTokens', text) },
             }}
             onFieldChange={(field, value) => { patch(index, { [field]: value }) }}

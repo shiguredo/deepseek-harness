@@ -30,6 +30,6 @@
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Read Only"': Read Only
-- button "Select model, current github-webhook-review-test/reply": github-webhook-review-test/reply
+- button "Select model, current github-webhook-review-test · github-webhook-review-test/reply": github-webhook-review-test · github-webhook-review-test/reply
 - button "Send message" [disabled]
 - button "1 turns 1 steps"

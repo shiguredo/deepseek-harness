@@ -1,10 +1,12 @@
 /**
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
- * Two-level selection per figma 496:26454's MenuDropdown: the root menu is
- * the Model / Effort row pair (label + current value + a right chevron),
- * each drilling into its own list — the provider-grouped model list over
- * the shared directory, and the effort levels. The trigger (313:14108's
- * ToggleButton) shows both: model name + effort in the caption tone.
+ * Two-level selection per figma 496:26454's MenuDropdown: the root menu lists
+ * the current provider above the Model / Effort row pair (label + current
+ * value + a right chevron), the two rows drilling into the provider-grouped
+ * model list over the shared directory and the effort levels. The provider
+ * row shows its value without a chevron and is not selectable. The trigger
+ * (313:14108's ToggleButton) shows the provider name, model name, and
+ * effort: the provider and effort use the caption tone.
  * Model catalogs above four entries show search, which retains focus while
  * ↑/↓ cycle the highlighted result; Enter and Tab accept it. Smaller model
  * catalogs, root panes, and effort panes move focus between rows. Escape and Shift+Tab leave a drilled pane first and otherwise close
@@ -411,19 +413,27 @@ export function ModelSelect(
     submit(selection)
   }
 
+  /** Provider display name; the account route owns localized copy. */
+  const providerName = (provider: { readonly id: string; readonly name: string }): string =>
+    provider.id === 'deepseek-account' ? t('provider.account') : provider.name
   const waiting = state.current === null && state.status === 'loading'
   const modelLabel = waiting
     ? t('trigger.loading')
     : currentChoice?.model.name
       ?? (state.current === null ? t('trigger.fallback') : `${state.current.provider}/${state.current.model}`)
-  const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} · ${effortLabel}`
+  // The trigger leads the model with its provider whenever the catalog still
+  // names it; a selection the catalog no longer resolves keeps the combined
+  // `provider/model` fallback and hides the root pane's provider row.
+  const providerLabel = currentChoice === undefined ? undefined : providerName(currentChoice.group)
+  const modelValue = providerLabel === undefined ? modelLabel : `${providerLabel} · ${modelLabel}`
+  const triggerLabel = effortLabel === undefined ? modelValue : `${modelValue} · ${effortLabel}`
   const triggerAria = waiting
     ? t('trigger.loading')
     : state.current === null
       ? t('trigger.selectAria')
       : effortLabel === undefined
-        ? t('trigger.aria', { model: modelLabel })
-        : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
+        ? t('trigger.aria', { model: modelValue })
+        : t('trigger.ariaEffort', { model: modelValue, effort: effortLabel })
   itemRefs.current = []
   let itemIndex = 0
   let modelIndex = 0
@@ -465,6 +475,7 @@ export function ModelSelect(
         }}
       >
         <IconDataOutlineRegular className={css.triggerIcon} size={16} />
+        {providerLabel !== undefined && <span className={css.triggerProvider}>{`${providerLabel} · `}</span>}
         <span className={css.triggerLabel}>{modelLabel}</span>
         {effortLabel !== undefined && <span className={css.triggerEffort}>{effortLabel}</span>}
         {busy
@@ -487,6 +498,12 @@ export function ModelSelect(
         >
           {pane === 'root' && (
             <>
+              {providerLabel !== undefined && (
+                <div className={clsx(css.cell, css.cellStatic)}>
+                  <span className={css.cellLabel}>{t('menu.provider')}</span>
+                  <span className={css.cellValue}>{providerLabel}</span>
+                </div>
+              )}
               <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { drill('model') }}>
                 <span className={css.cellLabel}>{t('menu.model')}</span>
                 <span className={css.cellValue}>{modelLabel}</span>
@@ -544,7 +561,7 @@ export function ModelSelect(
               )}
               {state.failures.map(failure => (
                 <div className={css.warning} key={failure.id}>
-                  <span>{t('warning.groupLoad', { name: failure.id === 'deepseek-account' ? t('provider.account') : failure.name, message: failure.message })}</span>
+                  <span>{t('warning.groupLoad', { name: providerName(failure), message: failure.message })}</span>
                   <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
                 </div>
               ))}
@@ -558,7 +575,7 @@ export function ModelSelect(
               >
                 {filteredGroups.map((group) => {
                   return (
-                    <MenuGroup key={group.id} label={group.id === 'deepseek-account' ? t('provider.account') : group.name}>
+                    <MenuGroup key={group.id} label={providerName(group)}>
                       {group.models.map((model) => {
                         const index = modelIndex++
                         const selected = state.current?.provider === group.id && state.current.model === model.id

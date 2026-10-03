@@ -138,6 +138,9 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/extensions/ui-cordis/src/client/CordisPreparingRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisRunRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/locales.ts', upstream: ['cordis'] },
+  // The language pack carries the same UI locale namespace id in its dictionary.
+  { file: 'packages/client/locale-ja/src/client/dicts/cordis.ts', upstream: ['cordis'] },
+  { file: 'packages/client/locale-ja/src/client/dicts/index.ts', upstream: ['cordis'] },
 ]
 
 /** A string that must appear exactly `count` times once the rescope has run. */

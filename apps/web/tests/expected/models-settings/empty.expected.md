@@ -40,6 +40,7 @@
       - option "moonshotai"
       - option "moonshotai-cn"
       - option "nvidia"
+      - option "ollama-cloud"
       - option "openai"
       - option "openai-codex"
       - option "opencode"

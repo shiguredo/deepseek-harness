@@ -67,6 +67,8 @@ Web 客户端在聊天输入框旁显示 agent（智能体）的提问。用户�
 
 本包是一条归属规则：渲染提问是宿主的 UI 能力，拥有该工具则是 agent 的能力，因此 `tool-ask-user` 行属于需要它的各个 preset（以及没有 preset 的 TUI 组装）。
 
+问题卡片头部声明 `conversation.question.header.lead` list 席位，因为 takeover 会连带隐藏 composer 栏；插件可在此继续显示 composer 的环境信息（例如工作区所在的检出），而席位没有绘制任何内容时该行会收起。
+
 ### 重新打开面板
 
 本包填充 `userQuestionPanels`——`dsh-client-ui-tool` 为其 `ask_user_question` 行声明的可选能力。`reveal(sessionId, callId)` 把该调用的卡片重新发布为同优先级中最后一个待处理交互，编辑器位置于是再次显示它；当本客户端没有该调用的卡片时返回 `false`——例如旧版未命名的请求、另一个浏览器的问题，或投影已关闭的卡片。问题是否仍可回答取自 `userQuestions` 会话投影，由该行直接读取，因此这项能力自身不携带状态。

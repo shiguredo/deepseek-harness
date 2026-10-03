@@ -1,9 +1,10 @@
 /**
- * Materialization of one provider route's model catalog. The installed pi-ai
- * catalog supplies defaults keyed by model id, and a profile's own model
- * entries override them field by field, so a route naming a catalog provider
- * stays configuration-free while a route pi-ai has never heard of is fully
- * describable from `cordis.patch.yml`.
+ * Materialization of one provider route's model catalog. The described
+ * defaults — pi-ai's installed catalog entries, or this build's bundled ones
+ * for a route pi-ai does not ship — supply values keyed by model id, and a
+ * profile's own model entries override them field by field, so a route naming a
+ * described provider stays configuration-free while a route nothing describes
+ * is fully describable from `cordis.patch.yml`.
  *
  * Strict resolution rejects unserviceable models before settings writes.
  * Deferred resolution retains their diagnostics so stored catalog drift does
@@ -14,6 +15,7 @@
 
 import { builtinProviders, getBuiltinModels, getBuiltinProviders } from '@earendil-works/pi-ai/providers/all'
 import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
+import { bundledModel, bundledProvider, BUNDLED_PROVIDERS } from './bundled-catalog.ts'
 import type {
   AnthropicMessagesCompat,
   Api,
@@ -169,7 +171,7 @@ let providerIndex: Map<string, Provider> | undefined
  * Installed catalog providers by id, constructed once. Each entry owns the API
  * implementations for its own models, which is why a catalog route reuses this
  * provider instead of being rebuilt from parts.
- * @returns the catalog provider index.
+ * @returns the installed catalog provider index.
  */
 function catalogProviders(): Map<string, Provider> {
   providerIndex ??= new Map(builtinProviders().map(provider => [provider.id, provider]))
@@ -177,28 +179,40 @@ function catalogProviders(): Map<string, Provider> {
 }
 
 /**
- * The installed catalog provider for one route, when pi-ai ships one.
+ * The installed pi-ai provider for one route, when pi-ai ships one. A bundled
+ * route answers `undefined` here: this returns a provider that can serve
+ * requests, and a bundle carries data rather than a protocol implementation.
  * @param provider - provider route key.
- * @returns the catalog provider, or `undefined` for a route pi-ai does not ship.
+ * @returns the catalog provider, or `undefined` when pi-ai does not ship the route.
  */
 export function catalogProvider(provider: string): Provider | undefined {
   return catalogProviders().get(provider)
 }
 
 /**
- * Every provider route the installed pi-ai catalog ships.
+ * Every provider route this build describes, in the order configuration
+ * surfaces offer them: what pi-ai ships, then the bundled routes above.
+ *
+ * The merged list is sorted because the installed catalog is already in that
+ * order and a bundled route belongs where its name reads, not appended after
+ * every installed one — this list is what a provider picker renders.
  * @returns the catalog provider ids.
  */
 export function catalogProviderIds(): readonly string[] {
-  return getBuiltinProviders()
+  return [...getBuiltinProviders(), ...BUNDLED_PROVIDERS.map(bundle => bundle.id)].sort()
 }
 
 /**
- * The installed catalog models for one route, indexed by model id.
+ * The described models for one route, indexed by model id: the installed
+ * catalog's entries where pi-ai ships the route, else the bundled ones.
  * @param provider - provider route key.
- * @returns catalog models by id; empty for a route pi-ai does not ship.
+ * @returns described models by id; empty for a route nothing describes.
  */
 export function catalogModels(provider: string): Map<string, Model<Api>> {
+  const bundle = bundledProvider(provider)
+  if (bundle !== undefined) {
+    return new Map(bundle.models.map(entry => [entry.id, bundledModel(provider, bundle, entry)]))
+  }
   if (!catalogProviders().has(provider)) return new Map()
   const models = getBuiltinModels(provider as BuiltinProvider) as Model<Api>[]
   return new Map(models.map(model => [model.id, model]))
@@ -844,7 +858,7 @@ export function resolveRouteModels(
 ): RouteCatalog {
   const { provider } = request
   const defaults = catalogModels(provider)
-  const providerBaseUrl = catalogProvider(provider)?.baseUrl
+  const providerBaseUrl = catalogProvider(provider)?.baseUrl ?? bundledProvider(provider)?.baseURL
   // An absent `models` key and an empty one are the same request: the config
   // schema materializes `[]` for the absent case, and an empty catalog could
   // serve no request anyway, so both mean "serve the installed catalog".

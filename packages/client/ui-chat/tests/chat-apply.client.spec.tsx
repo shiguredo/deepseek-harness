@@ -26,7 +26,7 @@ import type {
 import type { QuotaNoticeInjected } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { PerformanceUsageRowInjected } from '../src/client/settings/PerformanceUsageRow.tsx'
 import { CHAT_SETTINGS_NAMESPACE, type ChatSettings } from '../src/chat-settings.ts'
-import { ActivityPill, UsagePill } from '../src/client/chat/StatsPills.tsx'
+import { StatsPills } from '../src/client/chat/StatsPills.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
   interface ConversationTurnDataMap {
@@ -128,26 +128,26 @@ describe('Chat apply wiring', () => {
     expect(b.runtime.slots.spec('conversation.chat.node'))
       .toMatchObject({ kind: 'keyed', scope: 'session' })
     expect(b.runtime.slots.entries('conversation.composer.dock').map(row => row.options.id))
-      .toEqual(['activity', 'usage'])
+      .toEqual(['stats'])
     expect(b.runtime.slots.entries('settings.general.item').map(row => row.options.id))
       .toEqual(['transcript-view', 'link-opening', 'composer-enter', 'performance-usage'])
     await b.runtime.dispose()
   })
 
-  it('lets another registrant replace one composer stats pill by id', async () => {
+  it('lets another registrant replace the composer stats row by id', async () => {
     const b = await bench()
     onTestFinished(() => b.runtime.dispose())
-    function PluginActivity() { return null }
+    function PluginStats() { return null }
     const dispose = b.runtime.ctx.slots.register({
-      name: 'conversation.composer.dock', id: 'activity', order: 0, priority: -1,
-    }, PluginActivity)
+      name: 'conversation.composer.dock', id: 'stats', order: 0, priority: -1,
+    }, PluginStats)
     const winners = (): Record<string, unknown> => Object.fromEntries(
       b.runtime.slots.entriesOfSlot('conversation.composer.dock')
         .map((entry): [string, unknown] => [entry.options.id ?? '', entry.component]),
     )
-    expect(winners()).toEqual({ activity: PluginActivity, usage: UsagePill })
+    expect(winners()).toEqual({ stats: PluginStats })
     dispose()
-    expect(winners()).toEqual({ activity: ActivityPill, usage: UsagePill })
+    expect(winners()).toEqual({ stats: StatsPills })
   })
 
   it.each([

@@ -367,6 +367,10 @@ describe('apply', () => {
     const entry = b.slots.entries('conversation.composer')[0]!
     expect(entry.component).toBe(QuestionComposer)
     expect(entry.locale).toBe('question')
+    expect(entry.children).toEqual({
+      'conversation.plan-review.actions': { kind: 'list', scope: 'session' },
+      'conversation.question.header.lead': { kind: 'list', scope: 'session' },
+    })
     const store = entry.store as ReturnType<typeof createQuestionDraftStore>
     expect(store.create(SESSION_ID).getSnapshot()).toEqual({ progressByRequest: {} })
     const pending = b.pending.getSnapshot()[0]!

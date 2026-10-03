@@ -1,6 +1,26 @@
-/* Icon pills under the composer, each one composer-dock entry laid out by the
-   dock's flex row; 12/20 tertiary text tier with a hover-pill affordance; each
-   pill's click-open panel wears the shared stat-dialog.module.css skin. */
+/* The composer stats row, one composer-dock entry leading with its seat; 12/20
+   tertiary text tier with a hover-pill affordance; each pill's click-open panel
+   wears the shared stat-dialog.module.css skin. */
+
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: calc(var(--dsh-content-font-size-secondary, 13px) - 1px);
+  line-height: calc(20px + var(--dsh-content-font-delta-secondary, 0px));
+}
+
+/* The lead seat's outlet anchor mounts whether or not an occupant registers,
+   so content detection looks through it: the row paints while the seat, a
+   static compact reading, or a pill contributes content, and stays out of the
+   layout otherwise. */
+.root:not(:has(> .anchor, > .pill, > [data-slot]:not(:empty))) {
+  display: none;
+}
 
 /* Entry root and dialog anchor: shrink-wraps its pill so the panel clamp
    measures the pill. */

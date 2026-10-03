@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for 2026-09-14-bundled-pi-ai-provider-catalog.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-14-bundled-pi-ai-provider-catalog.md
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship:
+  en: 37a4de0ab0f49769
+  zh: 3cbc6cb065b8fbc6
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/problem:
+  en: a9d7a4308767609f
+  zh: 2d31ebcd5e943b1c
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/decision:
+  en: 56ec21e57d8e7e26
+  zh: e3a6b3f21cb3e93e
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/decision/reasoning-levels-are-part-of-the-catalog-not-configuration:
+  en: 2c2fbf9efe01dde6
+  zh: 6f1fb98d3cfe4e72
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/decision/values-are-read-from-the-service:
+  en: 9b56cf57c0d8e93a
+  zh: 37cb0efea0f4c9dd
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/alternatives-considered:
+  en: 99f981d6365b9ad1
+  zh: 0eec66bc0c84d6e8
+/agent-note-bundle-provider-routes-pi-ai-does-not-ship/consequences:
+  en: 81f1bbc551483f31
+  zh: bd2f94f92ca9e1e2

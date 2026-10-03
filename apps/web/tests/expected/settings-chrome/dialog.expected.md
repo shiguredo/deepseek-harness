@@ -18,7 +18,10 @@
   - text: 字号大小 仅影响会话内容的字号 14
   - button "增大字号"
   - button "减小字号"
-  - text: px 工作步骤展示 选择希望看到多少工具调用细节
+  - text: px 字体 同时应用于界面文字和代码，留空则使用浏览器默认字体
+  - textbox "字体":
+    - /placeholder: 例如 "Hiragino Sans", "Noto Sans JP"
+  - text: 工作步骤展示 选择希望看到多少工具调用细节
   - button "详细"
   - text: 显示代码工作视图 开启后，显示轨迹、本轮代码差异，可选择完整的 Agent 预设切换
   - switch "显示代码工作视图"

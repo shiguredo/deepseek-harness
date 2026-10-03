@@ -1,9 +1,10 @@
 /**
  * Generic pi-ai-backed LLM adapter plugin. One plugin instance owns a dict of
  * provider routes; a route naming an installed pi-ai provider inherits that
- * provider's endpoint, protocol, and model catalog as defaults, and a route
- * pi-ai does not ship is declared outright. Profile facts resolve per request
- * over the optional `llm-pi-ai` user-settings section and the optional
+ * provider's endpoint, protocol, and model catalog as defaults, a route this
+ * build bundles (Ollama Cloud) gets the same treatment from bundled data, and a
+ * route neither describes is declared outright. Profile facts resolve per
+ * request over the optional `llm-pi-ai` user-settings section and the optional
  * credential seam, so a changed key, endpoint, model, or knob reaches the next
  * request without a restart; a changed *route set* (or a route's
  * registration-captured retry policy) re-registers the same adapter instance
@@ -140,6 +141,10 @@ function directoryEntries(
       ...error === undefined ? {} : { error },
     })
   }
+  // The route key, for every catalog entry including a bundled one: this list
+  // is what a provider picker renders, and it has always shown identifiers.
+  // The product name a bundle ships is the resolved profile's display name,
+  // which is what a configured row and every other selector read.
   for (const provider of catalog) declare(provider, provider)
   for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.catalogError)
   return [...entries.values()]

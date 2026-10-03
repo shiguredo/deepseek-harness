@@ -21,7 +21,7 @@
 - 'button "Access mode, current: Auto review EXP"':
   - text: Auto review
   - superscript: EXP
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "1 turns 2 steps"
 
@@ -52,6 +52,6 @@
 - 'button "Access mode, current: Auto review EXP"':
   - text: Auto review
   - superscript: EXP
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "1 turns 2 steps"
