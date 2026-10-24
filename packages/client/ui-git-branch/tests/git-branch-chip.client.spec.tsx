@@ -78,6 +78,7 @@ function bench(initial: WorkspaceGitStatus | undefined, workingDirectory: string
       useInput: () => { throw new Error('GitBranchChip does not read the input snapshot') },
       useChat: () => { throw new Error('GitBranchChip does not read the chat snapshot') },
       inputActions: {
+        insertQuote: () => false,
         captureInsertion: () => ({ start: 0, end: 0, draftRev: 0 }),
         insertText: () => false,
         setDraft: vi.fn(),

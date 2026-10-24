@@ -85,12 +85,12 @@ export class WorkspaceGit extends TypertRemoteService {
           const header = live?.header ?? stored?.header
           if (header === undefined) return undefined
           // The Session may have moved since its header was written — the
-          // worktree tool enters a linked checkout — so the projected working
+          // worktree tool enters a linked checkout — so the committed working
           // directory wins over the header, and only a cold Session, whose
           // events are not loaded, falls back to the header.
           const current = live === undefined
             ? undefined
-            : scope.get('sessionProjections')?.stateOf(live, 'workingDirectory')
+            : scope.get('workingDirectory')?.get(live)
           return {
             sessionId,
             workspaceRoot: current ?? header.cwd ?? scope.sandboxPolicy.workspaceRoot,

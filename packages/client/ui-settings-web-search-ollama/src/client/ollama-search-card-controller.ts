@@ -247,8 +247,8 @@ export class OllamaSearchCardController {
   inject(): OllamaSearchCardFace {
     return {
       hooks: { ollamaSearchCard: this.store },
-      edit: (field, text) => { this.formOf(field).actions().edit(field, text) },
-      resetField: (field) => { this.formOf(field).actions().resetField(field) },
+      edit: (field, text) => { this.provider.actions().edit(field, text) },
+      resetField: (field) => { this.provider.actions().resetField(field) },
       save: () => { void this.save() },
       discard: () => {
         this.provider.actions().discard()
@@ -305,11 +305,6 @@ export class OllamaSearchCardController {
       if (this.provider.shell().failed) return
     }
     if (this.selection.shell().dirty) await this.selection.save()
-  }
-
-  /** @returns the form owning one control's draft. */
-  private formOf(field: string): { actions(): SettingsFormActions } {
-    return field === 'searchProvider' || field === 'fetchProvider' ? this.selection : this.provider
   }
 
   /**

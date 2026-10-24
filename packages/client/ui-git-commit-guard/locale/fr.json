@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Garde des commits Git",
+    "description": "Ajoute la puce du compositeur qui change une session et une carte de réglages des plugins intégrés qui fixe la valeur par défaut des nouvelles sessions ; le paquet Host demande confirmation avant les commandes Git qui créent un commit."
+  }
+}

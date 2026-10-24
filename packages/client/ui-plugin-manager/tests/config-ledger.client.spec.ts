@@ -10,8 +10,8 @@ interface Registration {
 
 /** A slot registry and locale stand-in: ledgers by slot, versions that move on registration, and a locale revision. */
 function bench() {
-  const entries: Record<string, Registration[]> = { 'plugins.item': [], 'plugins.bundle.config': [], 'plugins.row.config': [], 'plugins.tab': [] }
-  const versions: Record<string, number> = { 'plugins.item': 0, 'plugins.bundle.config': 0, 'plugins.row.config': 0, 'plugins.tab': 0 }
+  const entries: Record<string, Registration[]> = { 'plugins.item': [], 'plugins.shiguredo': [], 'plugins.bundle.config': [], 'plugins.row.config': [], 'plugins.tab': [] }
+  const versions: Record<string, number> = { 'plugins.item': 0, 'plugins.shiguredo': 0, 'plugins.bundle.config': 0, 'plugins.row.config': 0, 'plugins.tab': 0 }
   const listeners = new Map<string, Set<() => void>>()
   const localeListeners = new Set<() => void>()
   let revision = 0
@@ -53,7 +53,7 @@ describe('configLedgerSource', () => {
   it('projects the official items in ledger order with locale-following labels, and the bundle and row keys', () => {
     const b = bench()
     const source = configLedgerSource(b.ctx)
-    expect(source.getSnapshot()).toEqual({ items: [], bundles: new Set(), rows: new Set() })
+    expect(source.getSnapshot()).toEqual({ items: [], shiguredo: [], bundles: new Set(), rows: new Set() })
 
     let title = 'Shell'
     b.register('plugins.item', { id: 'bash', label: () => title })
@@ -61,8 +61,10 @@ describe('configLedgerSource', () => {
     b.register('plugins.bundle.config', { key: 'dsh-x' })
     b.register('plugins.row.config', { key: rowConfigKey('dsh-x', 'row') })
 
+    b.register('plugins.shiguredo', { id: 'git-commit-guard', label: 'Commit guard' })
     expect(source.getSnapshot()).toEqual({
       items: [{ id: 'bash', label: 'Shell' }, { id: 'loop', label: 'Agent loop' }],
+      shiguredo: [{ id: 'git-commit-guard', label: 'Commit guard' }],
       bundles: new Set(['dsh-x']),
       rows: new Set(['dsh-x#row']),
     })
@@ -79,7 +81,7 @@ describe('configLedgerSource', () => {
     b.register('plugins.item', { id: 'bare' })
     b.register('plugins.bundle.config', {})
 
-    expect(source.getSnapshot()).toEqual({ items: [{ id: 'bare', label: '' }], bundles: new Set(), rows: new Set() })
+    expect(source.getSnapshot()).toEqual({ items: [{ id: 'bare', label: '' }], shiguredo: [], bundles: new Set(), rows: new Set() })
   })
 
   it('keeps its snapshot until a ledger or the locale moves, and follows every source while subscribed', () => {

@@ -30,9 +30,9 @@ describe('Workspace Git Session scope lookup', () => {
     ctx.provide('subprocess', {} as never)
     // The working-directory projection owns the effective directory; a moved
     // Session answers with it while an unmoved one leaves the header in charge.
-    ctx.provide('sessionProjections', {
-      stateOf: (session: { header: SessionHeader }, key: string) =>
-        key === 'workingDirectory' && session.header.id === movedId ? movedRoot : undefined,
+    ctx.provide('workingDirectory', {
+      get: (session: { header: SessionHeader }) =>
+        session.header.id === movedId ? movedRoot : undefined,
     } as never)
     const sessions = await ctx.plugin(SessionStore)
     const typert = await ctx.plugin(TypertRegistry)

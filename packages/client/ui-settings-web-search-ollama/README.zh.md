@@ -45,7 +45,7 @@ Official 分组中的 **Ollama Cloud 搜索** 卡片打开该页面，页面由�
 <details>
 <summary>实现内部细节 — 点击展开</summary>
 
-Host 半部分是一个空的 `apply`，其存在只是为了让该包拥有一个 Loader 行，供客户端模块系统为其提供浏览器半部分。浏览器半部分通过 `ctx.configForms.get` 绑定已组合的 `web-ollama-api` 配置项与 `web` 选择，用 `OllamaSearchCardController` 在 `ui-primitives` 共享的 `SettingsFormModel` 之上维护两份暂存表单，并通过 `ctx.configForms.whileServed` 把 `OllamaSearchCard` 注册进 Plugins 页的 `plugins.item` 槽位：Host 提供该提供方配置项时注册，停止提供时撤回。选中两个提供方时写入 `web` 配置项；两个端点、结果条数与密钥写入提供方配置项，且保存时先写提供方配置项，使开关永远不会指向尚未落地的端点。密钥是这些表单唯一的秘密控件：写入走 `remote.credentials.set`，寻址该配置项声明的引用；已配置状态从 `remote.credentials.describe` 读回，并在 Host 针对该引用报告 `credentials/reference-updated` 时重新读取。页面文案位于本包的 `settings.webSearchOllama` 字典；`SettingsForm` 框架以 props 接收自己的文案。
+Host 半部分是一个空的 `apply`，其存在只是为了让该包拥有一个 Loader 行，供客户端模块系统为其提供浏览器半部分。浏览器半部分通过 `ctx.configForms.get` 绑定已组合的 `web-ollama-api` 配置项与 `web` 选择，用 `OllamaSearchCardController` 在 `ui-primitives` 共享的 `SettingsFormModel` 之上维护两份暂存表单，并通过 `ctx.configForms.whileServed` 把 `OllamaSearchCard` 注册进 Plugins 页的 `plugins.shiguredo` 槽位（实验性之后的分组）：Host 提供该提供方配置项时注册，停止提供时撤回。选中两个提供方时写入 `web` 配置项；两个端点、结果条数与密钥写入提供方配置项，且保存时先写提供方配置项，使开关永远不会指向尚未落地的端点。密钥是这些表单唯一的秘密控件：写入走 `remote.credentials.set`，寻址该配置项声明的引用；已配置状态从 `remote.credentials.describe` 读回，并在 Host 针对该引用报告 `credentials/reference-updated` 时重新读取。页面文案位于本包的 `settings.webSearchOllama` 字典；`SettingsForm` 框架以 props 接收自己的文案。
 
 </details>
 
@@ -54,7 +54,7 @@ Host 半部分是一个空的 `apply`，其存在只是为了让该包拥有一�
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [ui-plugin-manager](../ui-plugin-manager/README.zh.md)——插件页以及本页注册进去的 `plugins.item` 槽位。
+- [ui-plugin-manager](../ui-plugin-manager/README.zh.md)——插件页以及本页注册进去的 `plugins.shiguredo` 槽位。
 - [ui-settings](../ui-settings/README.zh.md)——本页依赖的设置作用域与已提供命名空间监听。
 - [ui-primitives](../ui-primitives/README.zh.md)——本页渲染的设置表单模型与字段。
 - [credentials](../../credentials/README.zh.md)——密钥写入所经过的凭据引用接缝。

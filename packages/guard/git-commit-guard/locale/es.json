@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Protector de commits de Git",
+    "description": "Pide confirmación antes de ejecutar comandos de Git que crean un commit, con un interruptor por sesión y un valor predeterminado para sesiones nuevas."
+  }
+}

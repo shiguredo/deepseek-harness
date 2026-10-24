@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git-Commit-Schutz",
+    "description": "Fügt den Chip in der Eingabezeile hinzu, der eine Sitzung umschaltet, sowie eine Karte für integrierte Plugin-Einstellungen, die den Standard für neue Sitzungen festlegt; das Host-Paket fragt vor Git-Befehlen, die einen Commit erzeugen, nach Bestätigung."
+  }
+}

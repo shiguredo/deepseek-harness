@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git-Commit-Wächter",
+    "description": "Fragt vor Git-Befehlen, die einen Commit erzeugen, nach einer Bestätigung – mit einem Schalter pro Sitzung und einem Standardwert für neue Sitzungen."
+  }
+}

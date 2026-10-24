@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git commit guard",
+    "description": "Adds the composer chip that switches one Session and a built-in plugins settings card that sets the default for new Sessions; the host package asks for confirmation before commit-creating Git commands."
+  }
+}

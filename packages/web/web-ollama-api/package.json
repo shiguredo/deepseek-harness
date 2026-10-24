@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-web-ollama-api",
   "description": "Ollama Cloud-backed search and fetch providers (POST /api/web_search and /api/web_fetch) for the DeepSeek Harness web capability seam (ctx.web)",
-  "version": "0.2.1-alpha.5",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },

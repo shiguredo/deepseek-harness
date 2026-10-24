@@ -85,7 +85,7 @@ describe('PerplexitySearchProvider availability', () => {
 
 describe('PerplexitySearchProvider request mapping', () => {
   it('sends a chat-completions request with the query, model and max_tokens', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ choices: [{ message: { content: 'a' } }], citations: [] }))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse({ choices: [{ message: { content: 'a' } }], citations: [] }))
     vi.stubGlobal('fetch', fetchMock)
     await new PerplexitySearchProvider(options).search({ query: 'hello' })
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
@@ -96,11 +96,10 @@ describe('PerplexitySearchProvider request mapping', () => {
   })
 
   it('uses a configured full endpoint as-is instead of appending the operation path twice', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ choices: [{ message: { content: 'a' } }], citations: [] }))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse({ choices: [{ message: { content: 'a' } }], citations: [] }))
     vi.stubGlobal('fetch', fetchMock)
     await new PerplexitySearchProvider({ ...options, baseURL: 'https://api.perplexity.test/chat/completions' }).search({ query: 'q' })
-    const [url] = fetchMock.mock.calls[0] as unknown as [string]
-    expect(url).toBe('https://api.perplexity.test/chat/completions')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://api.perplexity.test/chat/completions')
   })
 
   it('sends search_recency_filter when configured, and omits it otherwise', async () => {

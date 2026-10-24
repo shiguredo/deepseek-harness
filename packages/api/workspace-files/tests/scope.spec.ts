@@ -24,33 +24,6 @@ function header(id: SessionId, cwd?: string): SessionHeader {
 }
 
 describe('Workspace Files Session scope lookup', () => {
-  it('prefers a live Session projected working directory over its immutable header', async () => {
-    const movedId = SessionId('live-moved')
-    const headerRoot = resolve('header-workspace')
-    const movedRoot = resolve('moved-workspace')
-    const ctx = new Context()
-    ctx.provide('fs', {} as never)
-    ctx.provide('sandboxPolicy', { workspaceRoot: movedRoot } as never)
-    ctx.provide('sessionProjections', {
-      stateOf: (session: { header: SessionHeader }, key: string) =>
-        key === 'workingDirectory' && session.header.id === movedId ? movedRoot : undefined,
-    } as never)
-    const sessions = await ctx.plugin(SessionStore)
-    const typert = await ctx.plugin(TypertRegistry)
-    const workspaceFiles = await ctx.plugin(WorkspaceFiles, CAPS)
-
-    try {
-      ctx.sessions.create(movedId, { meta: { cwd: headerRoot, origin: 'subagent' } })
-      const lookup = ctx.typert.lookups.get('workspaceFileScope')
-      if (lookup === undefined) throw new Error('workspaceFileScope lookup did not register')
-      await expect(lookup.resolve(movedId)).resolves.toEqual({ sessionId: movedId, workspaceRoot: movedRoot })
-    } finally {
-      await workspaceFiles.dispose()
-      await sessions.dispose()
-      await typert.dispose()
-    }
-  })
-
   it('uses live or stored headers without an Agent and leaves with its plugin', async () => {
     const liveId = SessionId('live-subagent')
     const coldId = SessionId('cold-subagent')

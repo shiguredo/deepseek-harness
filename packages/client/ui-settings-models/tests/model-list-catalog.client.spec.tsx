@@ -45,9 +45,9 @@ it('keeps the adapter magnitude as the placeholder for a model no catalog descri
   fireEvent.click(screen.getByRole('button', { name: `${en.modelAdvanced} 1` }))
 
   await waitFor(() => {
-    expect(screen.getByLabelText<HTMLInputElement>(`${en.contextWindow} 1`).placeholder).toBe('256K')
+    expect(screen.getByLabelText<HTMLInputElement>(`${en.contextWindow} 1`).placeholder).toBe('1M')
   })
-  expect(screen.getByLabelText<HTMLInputElement>(`${en.maxTokens} 1`).placeholder).toBe('32K')
+  expect(screen.getByLabelText<HTMLInputElement>(`${en.maxTokens} 1`).placeholder).toBe('128K')
 })
 
 it('ignores a late catalog response after the provider changes', async () => {

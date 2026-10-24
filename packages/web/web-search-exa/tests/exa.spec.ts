@@ -87,7 +87,7 @@ describe('ExaSearchProvider availability', () => {
 
 describe('ExaSearchProvider request mapping', () => {
   it('sends query, type, highlights, numResults and bearer auth', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ results: [{ url: 'https://a.test', highlights: ['hi'] }] }))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse({ results: [{ url: 'https://a.test', highlights: ['hi'] }] }))
     vi.stubGlobal('fetch', fetchMock)
 
     const provider = new ExaSearchProvider({ ...options, searchType: 'neural', highlightsPerResult: 3 })
@@ -107,11 +107,10 @@ describe('ExaSearchProvider request mapping', () => {
   })
 
   it('uses a configured full endpoint as-is instead of appending the operation path twice', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ results: [] }))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse({ results: [] }))
     vi.stubGlobal('fetch', fetchMock)
     await new ExaSearchProvider({ ...options, baseURL: 'https://api.exa.test/search' }).search({ query: 'q' })
-    const [url] = fetchMock.mock.calls[0] as unknown as [string]
-    expect(url).toBe('https://api.exa.test/search')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://api.exa.test/search')
   })
 
   it('falls back to the configured numResults when a request omits maxResults', async () => {

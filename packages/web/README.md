@@ -32,7 +32,7 @@ Eight packages play the web roles; the subsystem reference owns the exhaustive v
 | [`web-search-deepseek/`](web-search-deepseek/README.md) | Searches through DeepSeek Messages | registers on `ctx.web` |
 | [`web-deepseek-api/`](web-deepseek-api/README.md) | Searches and fetches pages through the DeepSeek Search and Fetch APIs | registers on `ctx.web` |
 | [`web-ollama-api/`](web-ollama-api/README.md) | Searches and fetches pages through Ollama Cloud | registers on `ctx.web` |
-| [`web-fetch-http/`](web-fetch-http/README.md) | Fetches public HTTP(S) pages anonymously | registers on `ctx.web` |
+| [`web-fetch-http/`](web-fetch-http/README.md) | Fetches HTTP(S) pages anonymously | registers on `ctx.web` |
 | [`tool-web/`](tool-web/README.md) | Exposes `web_search` and `web_fetch` to the model | registers on `ctx.tools` |
 
 -----
@@ -42,7 +42,7 @@ Eight packages play the web roles; the subsystem reference owns the exhaustive v
 
 Start with the subsystem reference for the shared vocabulary, then the design decision behind the single provider-selection service.
 
-- [Web subsystem](../../docs/subsystems/web.md) — the search/fetch requests and results, provider availability, `WebError`, and public-address enforcement.
+- [Web subsystem](../../docs/subsystems/web.md) — the search/fetch requests and results, provider availability, `WebError`, and the fetch network policy.
 - [Web capability seam decision](../../.agents/notes/implemented/architecture/2026-06-24-web-capability-seam.md) — why search and fetch share one provider-selection service.
 
 <a id="dev-note"></a>

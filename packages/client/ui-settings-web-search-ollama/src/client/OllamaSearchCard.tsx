@@ -13,7 +13,7 @@ import type { OllamaSearchCardFace } from './ollama-search-card-controller.ts'
 
 /** Props the renderer binds for the Ollama Cloud web page. */
 export type OllamaSearchCardProps =
-  PropsRuntime<'plugins.item'>
+  PropsRuntime<'plugins.shiguredo'>
   & PropsLocale<'settings.webSearchOllama'>
   & InjectFace<OllamaSearchCardFace>
 

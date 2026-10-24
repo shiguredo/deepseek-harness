@@ -33,5 +33,95 @@ export const en: Record<GitBranchKey, string> = {
   'dialog.none': '—',
 }
 
+/** Japanese dictionary, key-identical to the Chinese source of truth. */
+export const ja: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'ブランチ {ref}',
+  'detached.tooltip': 'デタッチド HEAD {ref}',
+  'worktree.tooltip': '（ワークツリー {name}）',
+  'path.tooltip': '{path} にあります',
+  'dialog.title': 'チェックアウト',
+  'dialog.branch': 'ブランチ',
+  'dialog.commit': 'コミット',
+  'dialog.worktree': 'ワークツリー',
+  'dialog.path': 'パス',
+  'dialog.repository': 'リポジトリ',
+  'dialog.none': '—',
+}
+
+/** Spanish dictionary, key-identical to the Chinese source of truth. */
+export const es: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'Rama {ref}',
+  'detached.tooltip': 'HEAD desacoplado {ref}',
+  'worktree.tooltip': '(árbol de trabajo {name})',
+  'path.tooltip': 'en {path}',
+  'dialog.title': 'Checkout',
+  'dialog.branch': 'Rama',
+  'dialog.commit': 'Commit',
+  'dialog.worktree': 'Árbol de trabajo',
+  'dialog.path': 'Ruta',
+  'dialog.repository': 'Repositorio',
+  'dialog.none': '—',
+}
+
+/** French dictionary, key-identical to the Chinese source of truth. */
+export const fr: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'Branche {ref}',
+  'detached.tooltip': 'HEAD détaché {ref}',
+  'worktree.tooltip': '(arbre de travail {name})',
+  'path.tooltip': 'dans {path}',
+  'dialog.title': 'Checkout',
+  'dialog.branch': 'Branche',
+  'dialog.commit': 'Commit',
+  'dialog.worktree': 'Arbre de travail',
+  'dialog.path': 'Chemin',
+  'dialog.repository': 'Dépôt',
+  'dialog.none': '—',
+}
+
+/** German dictionary, key-identical to the Chinese source of truth. */
+export const de: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'Branch {ref}',
+  'detached.tooltip': 'Detached HEAD {ref}',
+  'worktree.tooltip': '(Worktree {name})',
+  'path.tooltip': 'unter {path}',
+  'dialog.title': 'Checkout',
+  'dialog.branch': 'Branch',
+  'dialog.commit': 'Commit',
+  'dialog.worktree': 'Worktree',
+  'dialog.path': 'Pfad',
+  'dialog.repository': 'Repository',
+  'dialog.none': '—',
+}
+
+/** Russian dictionary, key-identical to the Chinese source of truth. */
+export const ru: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'Ветка {ref}',
+  'detached.tooltip': 'Отсоединённый HEAD {ref}',
+  'worktree.tooltip': '(рабочее дерево {name})',
+  'path.tooltip': 'в {path}',
+  'dialog.title': 'Checkout',
+  'dialog.branch': 'Ветка',
+  'dialog.commit': 'Коммит',
+  'dialog.worktree': 'Рабочее дерево',
+  'dialog.path': 'Путь',
+  'dialog.repository': 'Репозиторий',
+  'dialog.none': '—',
+}
+
+/** Portuguese dictionary, key-identical to the Chinese source of truth. */
+export const pt: Record<GitBranchKey, string> = {
+  'branch.tooltip': 'Branch {ref}',
+  'detached.tooltip': 'HEAD desanexado {ref}',
+  'worktree.tooltip': '(worktree {name})',
+  'path.tooltip': 'em {path}',
+  'dialog.title': 'Checkout',
+  'dialog.branch': 'Branch',
+  'dialog.commit': 'Commit',
+  'dialog.worktree': 'Worktree',
+  'dialog.path': 'Caminho',
+  'dialog.repository': 'Repositório',
+  'dialog.none': '—',
+}
+
 /** Key domain of the `gitBranch` namespace (zh is the source of truth). */
 export type GitBranchKey = keyof typeof zh

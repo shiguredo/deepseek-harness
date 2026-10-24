@@ -41,11 +41,11 @@ async function bench(served?: string[]) {
   return { ctx, slots: ctx.get('slots') as SlotRegistry, describeCredentials, describeSettings, remote }
 }
 
-/** The Plugins page's item slot, as its owner declares it. */
+/** The Plugins page's Shiguredo group slot, as its owner declares it. */
 function declareRoot(slots: SlotRegistry): () => void {
   return slots.register({
     name: 'root',
-    children: { 'plugins.item': { kind: 'list', scope: 'root' } },
+    children: { 'plugins.shiguredo': { kind: 'list', scope: 'root' } },
   } as never, () => null)
 }
 
@@ -64,8 +64,8 @@ describe('ui-settings-web-search-ollama apply', () => {
 
     await ctx.plugin({ inject: [...inject], apply }).await()
 
-    await vi.waitFor(() => { expect(slots.entries('plugins.item')).toHaveLength(1) })
-    const entry = slots.entries('plugins.item')[0]!
+    await vi.waitFor(() => { expect(slots.entries('plugins.shiguredo')).toHaveLength(1) })
+    const entry = slots.entries('plugins.shiguredo')[0]!
     expect(entry.options).toMatchObject({ id: 'web-ollama-api', order: 21 })
     expect(resolveSlotLabel(entry.options.label)).toBe('Ollama Cloud 搜索')
     expect(entry.locale).toBe(NS)
@@ -80,7 +80,7 @@ describe('ui-settings-web-search-ollama apply', () => {
     await ctx.plugin({ inject: [...inject], apply }).await()
     await vi.waitFor(() => { expect(describeSettings).toHaveBeenCalled() })
 
-    expect(slots.entries('plugins.item')).toHaveLength(0)
+    expect(slots.entries('plugins.shiguredo')).toHaveLength(0)
   })
 
   it('re-reads the credential when the Host reports the watched reference changed, and ignores another', async () => {
@@ -105,10 +105,10 @@ describe('ui-settings-web-search-ollama apply', () => {
     declareRoot(slots)
     const fiber = ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    await vi.waitFor(() => { expect(slots.entries('plugins.item')).toHaveLength(1) })
+    await vi.waitFor(() => { expect(slots.entries('plugins.shiguredo')).toHaveLength(1) })
 
     await fiber.dispose()
 
-    expect(slots.entries('plugins.item')).toHaveLength(0)
+    expect(slots.entries('plugins.shiguredo')).toHaveLength(0)
   })
 })

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git commit guard",
+    "description": "Asks you to confirm commit-creating Git commands, with a per-session switch and a default for new sessions."
+  }
+}

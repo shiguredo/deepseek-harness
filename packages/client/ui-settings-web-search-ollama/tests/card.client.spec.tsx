@@ -95,6 +95,21 @@ describe('OllamaSearchCard', () => {
     expect(actions.save).not.toHaveBeenCalled()
   })
 
+  it('stages a key and endpoint edits, and resets the result count it owns', () => {
+    const actions = renderCard({ maxResults: field('5', { overridden: true }) })
+
+    fireEvent.change(screen.getByLabelText(en.apiKey), { target: { value: 'sk-test' } })
+    fireEvent.change(screen.getByLabelText(en.searchBaseUrl), { target: { value: 'https://search.test' } })
+    fireEvent.change(screen.getByLabelText(en.fetchBaseUrl), { target: { value: 'https://fetch.test' } })
+
+    expect(actions.edit).toHaveBeenCalledWith('apiKey', 'sk-test')
+    expect(actions.edit).toHaveBeenCalledWith('searchBaseURL', 'https://search.test')
+    expect(actions.edit).toHaveBeenCalledWith('fetchBaseURL', 'https://fetch.test')
+
+    fireEvent.click(screen.getByRole('button', { name: en.reset }))
+    expect(actions.resetField).toHaveBeenCalledWith('maxResults')
+  })
+
   it('reports whether a key is configured without ever rendering one', () => {
     renderCard({ apiKeyConfigured: false })
     expect(screen.getByText(en.apiKeyUnset)).toBeTruthy()

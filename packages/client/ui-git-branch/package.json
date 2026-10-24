@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-git-branch",
   "description": "Composer stats-row chip showing the checkout the current Session workspace lives in (GitHub repository, branch, worktree) over the workspaceGit Remote namespace",
-  "version": "0.2.1-alpha.5",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -23,7 +23,8 @@
       "default": "./lib/client.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
     "client": {
@@ -65,6 +66,7 @@
     "react-dom": "^18.2.0"
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/client.js",
     "lib/types/**/*.d.ts"

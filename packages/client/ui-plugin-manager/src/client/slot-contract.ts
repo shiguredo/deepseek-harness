@@ -100,7 +100,7 @@ export interface PluginTabProps {
    */
   readonly install: (target: PluginTabInstall) => void
   /**
-   * Switch to the Installed tab and open a bundle's page.
+   * Switch to the Installed tab and open a bundle's page, whose back button returns to the calling tab.
    * @param packageName - npm package name of the bundle.
    */
   readonly openPackage: (packageName: string) => void
@@ -135,6 +135,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'plugins.item': { kind: 'list'; scope: 'root'; owner: PluginConfigViewProps }
     /**
+     * One Shiguredo-built-in plugin the Plugins page lists in its own settings
+     * group after the Experimental group: `label` is the card's title and
+     * `order` its place. The page renders the entry as the card's one-liner
+     * (`view: 'summary'`) and, once opened, as the body of its page
+     * (`view: 'page'`), exactly like `plugins.item`.
+     */
+    'plugins.shiguredo': { kind: 'list'; scope: 'root'; owner: PluginConfigViewProps }
+    /**
      * A bundle's own configuration, keyed by the bundle's package name and
      * rendered on the bundle's page between its description and its rows
      * (`view: 'page'` only).
@@ -160,7 +168,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'plugins.detail.badge': { kind: 'list'; scope: 'root'; owner: PluginDetailProps }
     /**
-     * Sections under a detail page's own content: after the rows on a bundle's
+     * Sections under a detail page's own content: after the source on a bundle's
      * page, after the configuration on a row's or an official plugin's page.
      * An entry draws its own section chrome and renders null for a subject it
      * has nothing for.

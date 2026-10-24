@@ -45,7 +45,7 @@ Nothing is written until **Save**; leaving the page drops the drafts, and text t
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The Host half is an empty `apply`, present only so the package holds a Loader row the client module system serves the browser half for. The browser half binds the composed `web-ollama-api` entry and the `web` selection through `ctx.configForms.get`, keeps two staged forms in `OllamaSearchCardController` over the shared `SettingsFormModel` of `ui-primitives`, and registers `OllamaSearchCard` into the Plugins page's `plugins.item` slot through `ctx.configForms.whileServed`, which registers while the Host serves the provider entry and withdraws when it stops. Selecting both providers stages the `web` section; the endpoints, the result count, and the key stage the provider section, and the save writes the provider section first so the switch never points at an endpoint that has not landed. The key is the forms' one secret control: its write goes to `remote.credentials.set` under the reference the section names, and the configured badge is read back from `remote.credentials.describe`, re-read when the Host reports `credentials/reference-updated` for that reference. The page's copy lives in this package's `settings.webSearchOllama` dictionary; the `SettingsForm` frame takes its copy as props.
+The Host half is an empty `apply`, present only so the package holds a Loader row the client module system serves the browser half for. The browser half binds the composed `web-ollama-api` entry and the `web` selection through `ctx.configForms.get`, keeps two staged forms in `OllamaSearchCardController` over the shared `SettingsFormModel` of `ui-primitives`, and registers `OllamaSearchCard` into the Plugins page's `plugins.shiguredo` slot (the group after Experimental) through `ctx.configForms.whileServed`, which registers while the Host serves the provider entry and withdraws when it stops. Selecting both providers stages the `web` section; the endpoints, the result count, and the key stage the provider section, and the save writes the provider section first so the switch never points at an endpoint that has not landed. The key is the forms' one secret control: its write goes to `remote.credentials.set` under the reference the section names, and the configured badge is read back from `remote.credentials.describe`, re-read when the Host reports `credentials/reference-updated` for that reference. The page's copy lives in this package's `settings.webSearchOllama` dictionary; the `SettingsForm` frame takes its copy as props.
 
 </details>
 
@@ -54,7 +54,7 @@ The Host half is an empty `apply`, present only so the package holds a Loader ro
 <a id="further-exploration"></a>
 ## Further Exploration
 
-- [ui-plugin-manager](../ui-plugin-manager/README.md) — the Plugins page and the `plugins.item` slot the page registers into.
+- [ui-plugin-manager](../ui-plugin-manager/README.md) — the Plugins page and the `plugins.shiguredo` slot the page registers into.
 - [ui-settings](../ui-settings/README.md) — the settings scopes and the served-namespace watch the page rides.
 - [ui-primitives](../ui-primitives/README.md) — the settings form model and fields the page renders.
 - [credentials](../../credentials/README.md) — the credential-reference seam the key writes through.

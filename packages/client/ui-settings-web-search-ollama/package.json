@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-settings-web-search-ollama",
   "description": "Settings page of the Ollama Cloud web provider on the dsh web client's Plugins page: whether it is selected, its API key, the endpoint each operation reaches, and the default result count",
-  "version": "0.2.1-alpha.5",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },

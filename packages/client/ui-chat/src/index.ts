@@ -2,7 +2,7 @@
 import type {} from '@deepseek-ai/dsh-settings'
 
 import type { Volatile, Context } from '@deepseek-ai/cordis'
-import type { ChatSettings, ClockTimeZone, CollapseTiming, LinkOpening, PerformanceUsageMode } from './chat-settings.ts'
+import type { ChatSettings, ClockTimeZone, CollapseTiming, FoldedReplies, LinkOpening, PerformanceUsageMode } from './chat-settings.ts'
 import z from '@deepseek-ai/schemastery'
 import { CLOCK_TIME_ZONE_FIELD, TRANSCRIPT_VIEW_FIELD } from './chat-settings.ts'
 
@@ -21,6 +21,8 @@ export interface Config {
   transcriptView: Volatile<ChatSettings['transcriptView']>
   /** When completed work details return to their historical presentation. */
   collapseTiming: Volatile<CollapseTiming>
+  /** Assistant replies kept visible while a completed Turn folds its process. */
+  foldedReplies: Volatile<FoldedReplies>
   /** Performance and usage detail level. */
   performanceUsage: Volatile<PerformanceUsageMode>
   /** Default destination for Chat HTTP(S) links. */
@@ -33,6 +35,7 @@ export interface Config {
 export const Config = z.object({
   [TRANSCRIPT_VIEW_FIELD]: ChatSettingsFields[TRANSCRIPT_VIEW_FIELD].volatile(),
   collapseTiming: ChatSettingsFields.collapseTiming.volatile(),
+  foldedReplies: ChatSettingsFields.foldedReplies.volatile(),
   performanceUsage: ChatSettingsFields['performanceUsage'].volatile(),
   linkOpening: ChatSettingsFields.linkOpening.volatile(),
   [CLOCK_TIME_ZONE_FIELD]: ChatSettingsFields[CLOCK_TIME_ZONE_FIELD].volatile(),

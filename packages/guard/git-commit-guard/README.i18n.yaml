@@ -1,0 +1,88 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/guard/git-commit-guard/README.md
+/:
+  en: a4c458d7009ae4ab
+  zh: 04bf30530da20839
+/deepseek-ai-dsh-git-commit-guard:
+  en: 0234cab2f5aa6b60
+  zh: 3eaa99570708136b
+/deepseek-ai-dsh-git-commit-guard/summary:
+  en: 3d0c136cf89801d3
+  zh: 68eb6dfd23075830
+/deepseek-ai-dsh-git-commit-guard/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 0ec2057fd6f8a054
+/deepseek-ai-dsh-git-commit-guard/use-this-package:
+  en: 26d2a196d228d140
+  zh: 3d096cea4a01d000
+/deepseek-ai-dsh-git-commit-guard/use-this-package/when-to-choose-it:
+  en: adcdd7bccc1aac7d
+  zh: 1b0b6a20cc244e74
+/deepseek-ai-dsh-git-commit-guard/use-this-package/settings:
+  en: 4eeace6d3474b0fa
+  zh: 34fc7649465d5e44
+/deepseek-ai-dsh-git-commit-guard/use-this-package/what-the-user-controls:
+  en: 831b39528f27a41d
+  zh: bff73c5e96ab1376
+/deepseek-ai-dsh-git-commit-guard/use-this-package/what-the-agent-sees:
+  en: 503a6744c8d16cb8
+  zh: 542c873134ad7253
+/deepseek-ai-dsh-git-commit-guard/understand-the-implementation:
+  en: 285c07b21a72d767
+  zh: 1b5723357c36b900
+/deepseek-ai-dsh-git-commit-guard/understand-the-implementation/interception-and-confirmation:
+  en: a329cb3805e1e1a9
+  zh: b6cda135c8e4a3fc
+/deepseek-ai-dsh-git-commit-guard/understand-the-implementation/two-independent-settings:
+  en: 77dbdb589d37c645
+  zh: ad14e188df9ddb81
+/deepseek-ai-dsh-git-commit-guard/understand-the-implementation/source-map:
+  en: 58f7df2959b08eda
+  zh: 39a4974507c52fdd
+/deepseek-ai-dsh-git-commit-guard/further-exploration:
+  en: 2a6645e352c33912
+  zh: 784bbbdc3d82ed2c
+/deepseek-ai-dsh-git-commit-guard/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-git-commit-guard/model-experience/commit-guard-policy-section:
+  en: 83014d63ca5c5c78
+  zh: 7e070c6e90e8ce93
+/deepseek-ai-dsh-git-commit-guard/model-experience/commit-guard-policy-section/what-the-model-sees:
+  en: 0918651c5e81f43d
+  zh: 16df10c709dc80bf
+/deepseek-ai-dsh-git-commit-guard/model-experience/commit-guard-policy-section/what-the-model-sees/session-policy-section:
+  en: 036100e4d7ae941e
+  zh: 7d9525bc1529c238
+/deepseek-ai-dsh-git-commit-guard/model-experience/commit-guard-policy-section/token-effect:
+  en: de142e3d90ccbd15
+  zh: ee412fd2f52b42e5
+/deepseek-ai-dsh-git-commit-guard/model-experience/commit-guard-policy-section/kv-cache-effect:
+  en: 656f066cdeab2133
+  zh: eaa24cd264df48f6
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit:
+  en: c9128145dbb09175
+  zh: 62045b766616e530
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit/what-the-model-sees:
+  en: e0ca0792ddc9055a
+  zh: 561448dcaa0159b4
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit/what-the-model-sees/rejection-message:
+  en: bf0ee260fad6b910
+  zh: db9d95d246e82dc9
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit/what-the-model-sees/unreachable-answerer-message:
+  en: 445e3c1ffa81ca52
+  zh: 4fd69813e63c43c6
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit/token-effect:
+  en: dab5a342de17f3ff
+  zh: 4f654965511e77bc
+/deepseek-ai-dsh-git-commit-guard/model-experience/refused-commit/kv-cache-effect:
+  en: 1ee9e935dab9a753
+  zh: 313ae74f74b3cd67
+/deepseek-ai-dsh-git-commit-guard/known-limitations-and-deferred-work:
+  en: b01e9d1bd2185a3d
+  zh: d3ba5ce6c2b82aae
+/deepseek-ai-dsh-git-commit-guard/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 4c879960b94cc733

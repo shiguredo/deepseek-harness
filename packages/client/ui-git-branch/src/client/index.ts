@@ -12,7 +12,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { GitBranchController } from './controller.ts'
 import { GitBranchChip, type GitBranchChipInjected } from './GitBranchChip.tsx'
-import { en, NS, zh, type GitBranchKey } from './locales.ts'
+import { de, en, es, fr, ja, NS, pt, ru, zh, type GitBranchKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -35,7 +35,7 @@ export const inject = ['slots', 'locale', 'remote', 'remote.workspaceGit']
 export function apply(ctx: ClientContext): void {
   const controller = new GitBranchController(ctx.remote)
   ctx.effect(() => () => { controller.dispose() }, 'ui-git-branch: checkout polling')
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-git-branch: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-git-branch: dictionaries')
   const chipInjected = (): GitBranchChipInjected => ({
     hooks: { gitBranch: controller.branches },
     acquire: (sessionId) => { controller.acquire(sessionId) },
