@@ -4,12 +4,14 @@ import type { PendingSubmission } from '@deepseek-ai/dsh-api-session-controller/
 import type { PropsRenderFactories, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { UserTextFacts } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { JsonBlock, StateDot, TextShimmer } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { ClockTimeZone } from '../../chat-settings.ts'
 import type {
   ChatNodeOwnerProps, ChatNodeViewProps, ChatViewSlotProps, UserContentAttachment, UserContentData, UserContentInput,
 } from '../contract/slots.ts'
 import type { ModelRetryNode, TurnErrorNode, UserMessageNode } from '../contract/snapshot.ts'
 import { CompactionItem } from './CompactionItem.tsx'
 import { ContextInjectionRow } from './ContextInjectionRow.tsx'
+import { MessageClock } from './MessageClock.tsx'
 import { MessageIconActions } from './MessageIconActions.tsx'
 import css from './MessageItem.module.css'
 
@@ -177,7 +179,7 @@ const NO_MESSAGE_SOURCE: PropsRenderSlots<'conversation.chat.user.before'>['rend
 
 /** Right-aligned bubble shared by user and steering rows. */
 function UserStyleBubble({
-  node, renderSlotChain, content, loadImage, renderFactorySlot, actions,
+  node, renderSlotChain, content, loadImage, renderFactorySlot, actions, clock,
   pending = false, echo = false, batchStart = false,
   referenceLabels, skillNames, previewAttachments, facts: inputFacts = EMPTY_TEXT_FACTS, interactive = false,
 }: {
@@ -189,6 +191,8 @@ function UserStyleBubble({
   node: DecoratedRow
   /** Seat renderer; rows that do not own the seat pass {@link NO_MESSAGE_SOURCE}. */
   renderSlotChain: PropsRenderSlots<'conversation.chat.user.before'>['renderSlotChain']
+  /** Optional timestamp line above the attachments and bubble. */
+  clock?: ReactNode
   /** Whether this is the Host-authoritative pre-admission steering projection. */
   pending?: boolean
   /** Whether this is a local submission echo (invisible marker; the echo renders exactly like its durable replacement). */
@@ -230,6 +234,7 @@ function UserStyleBubble({
         facts,
         interactive,
       })}
+      {clock}
       {actions?.(prepared.text)}
     </div>
   )
@@ -257,8 +262,7 @@ export function PendingSteeringBubble({ content, loadImage, renderFactorySlot, t
       actions={text => (
         <MessageIconActions
           text={text}
-          clock="start"
-          className={css.actions}
+          variant="user"
           t={t}
         />
       )}
@@ -274,9 +278,10 @@ export function PendingSteeringBubble({ content, loadImage, renderFactorySlot, t
  * @param props - the pending submission, authorized image loader, and render seats.
  * @returns the echoed user bubble.
  */
-export function PendingSubmissionBubble({ submission, loadImage, renderFactorySlot, t }: {
+export function PendingSubmissionBubble({ submission, loadImage, renderFactorySlot, clockTimeZone, t }: {
   submission: PendingSubmission
   renderFactorySlot: PropsRenderFactories['renderFactorySlot']
+  clockTimeZone: ClockTimeZone
   t: ChatViewSlotProps['t']
 } & Pick<ChatNodeOwnerProps, 'loadImage'>): ReactNode {
   const content = useMemo(
@@ -309,12 +314,11 @@ export function PendingSubmissionBubble({ submission, loadImage, renderFactorySl
       loadImage={loadImage}
       pending={submission.placement === 'steering'}
       echo
+      clock={<MessageClock time={submission.time} zone={clockTimeZone} className={css.clock} t={t} />}
       actions={text => (
         <MessageIconActions
           text={text}
-          time={submission.time}
-          clock="start"
-          className={css.actions}
+          variant="user"
           t={t}
         />
       )}
@@ -330,7 +334,7 @@ export function PendingSubmissionBubble({ submission, loadImage, renderFactorySl
  * bubble without asking for it.
  */
 export const UserMessageNodeView = memo(function UserMessageNodeView({
-  node, renderFactorySlot, loadImage, renderSlotChain, t,
+  node, renderFactorySlot, loadImage, renderSlotChain, clockTimeZone, t,
 }: ChatNodeViewProps<'user' | 'steering'> & {
   /** Bound by the `user` keyed registration, the only entry that declares the seat. */
   renderSlotChain: PropsRenderSlots<'conversation.chat.user.before'>['renderSlotChain']
@@ -347,12 +351,11 @@ export const UserMessageNodeView = memo(function UserMessageNodeView({
       batchStart={node.kind === 'steering' && node.data.batchStart === true}
       {...data.referenceLabels === undefined ? {} : { referenceLabels: data.referenceLabels }}
       {...data.skillNames === undefined ? {} : { skillNames: data.skillNames }}
+      clock={<MessageClock time={data.time} zone={clockTimeZone} className={css.clock} t={t} />}
       actions={text => (
         <MessageIconActions
           text={text}
-          time={data.time}
-          clock="start"
-          className={css.actions}
+          variant="user"
           t={t}
         />
       )}

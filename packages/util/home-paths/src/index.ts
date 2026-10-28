@@ -11,6 +11,9 @@ import { basename, dirname, join, resolve } from 'node:path'
 /** Directory name for the default DeepSeek Harness home under the OS home. */
 export const DSH_HOME_DIR_NAME = '.dsh'
 
+/** Directory name holding one durable-state namespace per named instance under the Harness home. */
+export const INSTANCES_DIR_NAME = 'instances'
+
 /** Stable user-facing display form for the default DeepSeek Harness home. */
 export const DEFAULT_DSH_HOME_DISPLAY = `~/${DSH_HOME_DIR_NAME}`
 
@@ -159,6 +162,25 @@ export function resolveAgentsHome(configured?: string, env: Record<string, strin
  */
 export function dshHomePath(...segments: string[]): string {
   return join(resolveDshHome(), ...segments)
+}
+
+/**
+ * Join path segments onto one named instance's namespace under the Harness
+ * home, or onto the shared home itself when no instance is named.
+ *
+ * A deployment that runs several servers over one home names each instance so
+ * the durable state they must not share — the Session store and the durable KV
+ * store — lives under `$DSH_HOME/instances/<name>/`. Omitted, this resolves
+ * exactly like {@link dshHomePath}, so a single-server deployment keeps the
+ * flat layout.
+ * @param instance - the instance name; a single path-safe segment, or undefined for the shared home.
+ * @param segments - path segments appended to the instance namespace; an empty list returns the namespace itself.
+ * @returns the normalized absolute joined path.
+ */
+export function dshInstancePath(instance: string | undefined, ...segments: string[]): string {
+  return instance === undefined
+    ? dshHomePath(...segments)
+    : dshHomePath(INSTANCES_DIR_NAME, instance, ...segments)
 }
 
 /**

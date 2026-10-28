@@ -54,6 +54,7 @@ kind: "package-group"
 | [`ui-workspace/`](ui-workspace/README.zh.md) | 提供工作区选择与创建界面 | — |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面 | — |
 | [`ui-chat/`](ui-chat/README.zh.md) | 投影并渲染 Chat 对话 target | — |
+| [`ui-git-branch/`](ui-git-branch/README.zh.md) | 在 composer dock 中显示当前 Session 工作区检出的 git 分支 | — |
 | [`ui-approval/`](ui-approval/README.zh.md) | 展示批准请求并返回用户决策 | — |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树与按工具键控的视图 | — |
 | [`ui-workflow-run/`](ui-workflow-run/README.zh.md) | 把持久工作流运行回放为嵌套对话折叠项 | — |
@@ -81,6 +82,7 @@ kind: "package-group"
 | [`ui-settings-session-log/`](ui-settings-session-log/README.zh.md) | 在通用设置中控制随 API 上传会话日志 | — |
 | [`ui-settings-subagent/`](ui-settings-subagent/README.zh.md) | 在插件页提供子智能体设置页 | — |
 | [`ui-settings-web-search/`](ui-settings-web-search/README.zh.md) | 在插件页提供网页搜索设置页 | — |
+| [`ui-settings-web-search-ollama/`](ui-settings-web-search-ollama/README.zh.md) | 在插件页提供 Ollama Cloud 搜索设置页 | — |
 | [`ui-plugin-manager/`](ui-plugin-manager/README.zh.md) | 贡献侧栏的“插件”面板：安装、启用、停用、重试与组合已安装的包 | — |
 | [`ui-entry-customization/`](ui-entry-customization/README.zh.md) | 添加分区域的“更多”菜单，固定或收起插件入口，并开始创建插件的草稿 | — |
 | [`ui-plugin-market/`](ui-plugin-market/README.zh.md) | 为“插件”页面贡献“发现”标签页：浏览市场索引并安装其中的组合包 | — |

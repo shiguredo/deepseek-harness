@@ -35,7 +35,7 @@ export const inject = ['web']
 export interface Config {
   /** Exa API key. Falls back to `$EXA_API_KEY`. Empty → provider unavailable. */
   apiKey?: string
-  /** Endpoint base; `/search` is appended. Defaults to the public API. */
+  /** Endpoint base or full endpoint; `/search` is appended when the value is not already it. Defaults to the public API. */
   baseURL?: string
   /** Retrieval mode sent as Exa's `type`. Defaults to `auto`. */
   searchType?: 'auto' | 'keyword' | 'neural'

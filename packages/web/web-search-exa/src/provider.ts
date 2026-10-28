@@ -34,7 +34,7 @@ const USER_AGENT = 'deepseek-harness/0.0.1'
 export interface ExaSearchProviderOptions {
   /** Exa API key. Empty/absent makes the provider unavailable. */
   apiKey: string
-  /** Endpoint base; `/search` is appended. */
+  /** Endpoint base or the full `/search` endpoint. */
   baseURL: string
   /** Retrieval mode sent as Exa's `type`. */
   searchType: 'auto' | 'keyword' | 'neural'
@@ -96,9 +96,10 @@ export class ExaSearchProvider implements WebSearchProvider {
   async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
     // A per-request bound wins over the configured default; either may be absent.
     const numResults = request.maxResults ?? this.options.numResults
+    const endpoint = this.options.baseURL.endsWith('/search') ? this.options.baseURL : `${this.options.baseURL}/search`
     let response: Response
     try {
-      response = await fetch(`${this.options.baseURL}/search`, {
+      response = await fetch(endpoint, {
         method: 'POST',
         redirect: 'error',
         headers: {

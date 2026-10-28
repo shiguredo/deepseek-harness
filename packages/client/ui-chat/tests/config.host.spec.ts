@@ -15,11 +15,13 @@ describe('ui-chat Host settings', () => {
     const { fiber } = configuration
 
     expect(plainConfig(configuration.fiber.effectiveConfig)).toEqual({
-      performanceUsage: 'detailed', linkOpening: 'sidebar', collapseTiming: 'completion', foldedReplies: 'all',
+      performanceUsage: 'detailed', linkOpening: 'sidebar', collapseTiming: 'completion',
+      foldedReplies: 'all', clockTimeZone: 'local',
     })
     await configuration.update({ transcriptView: 'normal' })
     expect(plainConfig(configuration.fiber.effectiveConfig)).toEqual({
-      transcriptView: 'normal', performanceUsage: 'detailed', linkOpening: 'sidebar', collapseTiming: 'completion', foldedReplies: 'all',
+      transcriptView: 'normal', performanceUsage: 'detailed', linkOpening: 'sidebar', collapseTiming: 'completion',
+      foldedReplies: 'all', clockTimeZone: 'local',
     })
     for (const mode of ['expanded', 'compact', 'standard', 'detailed', 'verbose']) {
       await configuration.update({ transcriptView: mode })
@@ -35,6 +37,9 @@ describe('ui-chat Host settings', () => {
     await configuration.update({ linkOpening: 'new-tab' })
     expect(plainConfig(configuration.fiber.effectiveConfig)).toMatchObject({ linkOpening: 'new-tab' })
     await expect(configuration.update({ linkOpening: 'popup' })).rejects.toThrow()
+    await configuration.update({ clockTimeZone: 'jst' })
+    expect(plainConfig(configuration.fiber.effectiveConfig)).toMatchObject({ clockTimeZone: 'jst' })
+    await expect(configuration.update({ clockTimeZone: 'pst' })).rejects.toThrow()
 
     await fiber.dispose()
   })

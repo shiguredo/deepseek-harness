@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-03-peak-provider-alternates.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-03-peak-provider-alternates.md
+/agent-note-peak-provider-alternates-for-one-model-entry:
+  en: f0cbfef8539ca254
+  zh: cd95ab52150f9d19
+/agent-note-peak-provider-alternates-for-one-model-entry/problem:
+  en: 7c8b59e37953a30d
+  zh: 68a2ee3d0e50c980
+/agent-note-peak-provider-alternates-for-one-model-entry/decision:
+  en: 9457aa5e0fdb2c35
+  zh: a3d5a0fff5aad684
+/agent-note-peak-provider-alternates-for-one-model-entry/decision/candidates-are-catalog-data-not-other-routes:
+  en: c1e96dcbaabb9fbf
+  zh: 50cc69a70b176ee5
+/agent-note-peak-provider-alternates-for-one-model-entry/alternatives-considered:
+  en: 2df0a74998254e22
+  zh: 3d437ce17b1484cd
+/agent-note-peak-provider-alternates-for-one-model-entry/consequences:
+  en: 56b4e3c219bfb633
+  zh: 922f4f75bccc889b

@@ -88,7 +88,8 @@ describe('web e2e: plugin configuration pages', () => {
     const panel = await openPlugins()
 
     // Every page the shipped web composition exposes: the shell executor, the
-    // agent loop, subagent selection, and the DeepSeek search provider.
+    // agent loop, subagent selection, and the web search provider. This fork's
+    // own cards (Ollama Cloud search, push guard) live in the shiguredo group.
     await panel.getByRole('button', { name: '查看 网页搜索', exact: true }).waitFor({ timeout: 20_000 })
     const basic = panel.locator('[data-plugin-group="basic"]')
     expect(await basic.locator('[data-plugin-item]').count()).toBe(4)
@@ -96,6 +97,12 @@ describe('web e2e: plugin configuration pages', () => {
       .toEqual(['subagent', 'web-search', 'agent-loop', 'shell'])
     for (const title of ['子智能体', '网页搜索', 'Agent 循环', '终端']) {
       expect(await basic.getByRole('button', { name: `查看 ${title}`, exact: true }).count()).toBe(1)
+    }
+    const shiguredo = panel.locator('[data-plugin-group="shiguredo"]')
+    expect(await shiguredo.locator(':scope > ul > li').evaluateAll(cards => cards.map(card => card.getAttribute('data-plugin-item'))))
+      .toEqual(['web-ollama-api', 'git-push-guard'])
+    for (const title of ['Ollama Cloud 搜索', 'Git 推送防护']) {
+      expect(await shiguredo.getByRole('button', { name: `查看 ${title}`, exact: true }).count()).toBe(1)
     }
     // A card carries the one-liner; the fields wait for the page.
     expect(await basic.getByText('限制每条命令最多能跑多久、最多输出多少内容。', { exact: true }).count()).toBe(1)
@@ -201,6 +208,52 @@ describe('web e2e: plugin configuration pages', () => {
     expect(await settingsDocument()).toContain('baseURL: https://messages.test/anthropic/v1')
     expect(tripwire.pageErrors).toEqual([])
   })
+
+  it('selects both Ollama Cloud providers and edits each operation’s endpoint from its own page', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-ollama-search-settings'))
+    const panel = await openPlugins()
+    await openPage(panel, 'Ollama Cloud 搜索')
+    const toggle = panel.getByRole('switch', { name: '网页搜索与抓取都使用 Ollama Cloud', exact: true })
+    const search = panel.getByLabel('搜索 API 地址', { exact: true })
+    const fetchUrl = panel.getByLabel('抓取 API 地址', { exact: true })
+    const results = panel.getByLabel('每次搜索结果数', { exact: true })
+
+    // The shipped composition selects DeepSeek search and local HTTP fetch, so
+    // the switch starts off and each field shows its own operation's default.
+    expect(await toggle.getAttribute('aria-checked')).toBe('false')
+    expect(await search.inputValue()).toBe('')
+    expect(await fetchUrl.inputValue()).toBe('')
+    expect(await search.getAttribute('placeholder')).toBe('https://ollama.com/api/web_search')
+    expect(await fetchUrl.getAttribute('placeholder')).toBe('https://ollama.com/api/web_fetch')
+    expect(await results.inputValue()).toBe('5')
+
+    // The switch stages the selection; the fields stage the section the
+    // providers read, which saves first so the switch never points at an
+    // endpoint that has not landed.
+    await toggle.click()
+    await search.fill('https://ollama-search.test')
+    await results.fill('12')
+    await panel.getByRole('button', { name: '保存', exact: true }).click()
+    await expect.poll(() => panel.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(true)
+    await expect.poll(settingsDocument).toContain('searchProvider: ollama-cloud')
+    await expect.poll(settingsDocument).toContain('fetchProvider: ollama-cloud-fetch')
+    await expect.poll(settingsDocument).toContain('searchBaseURL: https://ollama-search.test')
+    await expect.poll(settingsDocument).toContain('maxResults: 12')
+
+    await openPlugins()
+    await openPage(panel, 'Ollama Cloud 搜索')
+    expect(await toggle.getAttribute('aria-checked')).toBe('true')
+    expect(await search.inputValue()).toBe('https://ollama-search.test')
+    expect(await results.inputValue()).toBe('12')
+    await toggle.click()
+    await panel.getByRole('button', { name: '恢复默认', exact: true }).first().click()
+    await panel.getByRole('button', { name: '恢复默认', exact: true }).first().click()
+    await panel.getByRole('button', { name: '保存', exact: true }).click()
+    await expect.poll(() => panel.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(true)
+    await expect.poll(settingsDocument).not.toContain('searchProvider: ollama-cloud')
+    await expect.poll(settingsDocument).not.toContain('https://ollama-search.test')
+    await panel.getByRole('button', { name: '返回插件', exact: true }).click()
+  }, 120_000)
 
   it('saves subagent limits and resets them to the deployment defaults', async () => {
     const panel = await openPlugins()

@@ -20,6 +20,9 @@
 /deepseek-ai-dsh-home-paths/use-this-package/resolving-the-home:
   en: e681c83a7977404f
   zh: 618c04e09385c417
+/deepseek-ai-dsh-home-paths/use-this-package/resolving-an-instance-namespace:
+  en: e44904e6505ea611
+  zh: daeddc85f01c9e3b
 /deepseek-ai-dsh-home-paths/use-this-package/resolving-the-shared-agents-root:
   en: 899c53a36b4a77cd
   zh: 216532c8876d201d
@@ -39,8 +42,8 @@
   en: 584610e67c4aa386
   zh: 766f77e35c65193d
 /deepseek-ai-dsh-home-paths/understand-the-implementation/resolution-rules:
-  en: 0315e0bd66f98ac6
-  zh: ba3a26a19e0bda5c
+  en: a7298ee955da29a0
+  zh: e0ea7a0b6bb69ff2
 /deepseek-ai-dsh-home-paths/understand-the-implementation/canonicalization-mechanics:
   en: a79aecd162317dc2
   zh: 342f9bae0231c3de

@@ -24,7 +24,7 @@ import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStor
 import { EXTENSION_BUNDLES, HIDDEN_BUNDLES, MORE_BUNDLES } from '@deepseek-ai/dsh-official-bundles'
 import type { createNavigationStore } from './navigation-store.ts'
 import type { PluginHeaderLayoutFace } from './header-scroll.ts'
-import { rowConfigKey, type OfficialItem } from './config-ledger.ts'
+import { rowConfigKey, type ConfigLedger, type OfficialItem } from './config-ledger.ts'
 import { INSTALL_GIT_EXAMPLE, INSTALL_PATH_EXAMPLE, type PluginManagerLocaleKey } from './locales.ts'
 import {
   bundleBusy, asksMirror, githubRecoveryRegistry, isInstallPending, offeredRegistries, rowKey, updateCandidate,
@@ -38,13 +38,23 @@ import { UpdateDialog, VersionSection } from './versions.tsx'
 import { BundleDetailSection } from './BundleDetailSection.tsx'
 import css from './PluginManagerPage.module.css'
 
+/** Resolve an opened item card to its ledger entry and the group slot that renders it. */
+function itemEntry(id: string, ledger: ConfigLedger): { item: OfficialItem; slot: 'plugins.item' | 'plugins.shiguredo' } | undefined {
+  const official = ledger.items.find(item => item.id === id)
+  if (official !== undefined) return { item: official, slot: 'plugins.item' }
+  const shiguredo = ledger.shiguredo.find(item => item.id === id)
+  /* v8 ignore next -- an item view id comes from a card in one of the two ledgers */
+  if (shiguredo === undefined) return undefined
+  return { item: shiguredo, slot: 'plugins.shiguredo' }
+}
+
 /** Full component props assembled by the main slot renderer. */
 export type PluginManagerPageProps =
   PropsRuntime<'main'>
   & PropsLocale<'pluginManager'>
   & PropsRenderSlots<
-    | 'plugins.item' | 'plugins.bundle.config' | 'plugins.row.config' | 'plugins.bundle.activation'
-    | 'plugins.add.actions' | 'plugins.tab'
+    | 'plugins.item' | 'plugins.shiguredo' | 'plugins.bundle.config' | 'plugins.row.config'
+    | 'plugins.bundle.activation' | 'plugins.add.actions' | 'plugins.tab'
     | 'plugins.detail.actions' | 'plugins.detail.badge' | 'plugins.detail.section'
   >
   & InjectFace<PluginManagerFace & PluginHeaderLayoutFace>
@@ -576,15 +586,16 @@ function PackageCard({ pkg, t, resolveText, busy, highlighted, newer, onOpen, on
  * One official plugin as a card that opens its page: its icon, its title from
  * the registration, and the one-liner the entry renders in its summary view.
  */
-function ItemCard({ item, t, onOpen, renderSlot }: {
+function ItemCard({ item, slot, t, onOpen, renderSlot }: {
   readonly item: OfficialItem
+  readonly slot: 'plugins.item' | 'plugins.shiguredo'
   readonly t: Translate
   readonly onOpen: () => void
   readonly renderSlot: RenderConfig
 }): ReactNode {
   return (
     <li className={`${css.card} ${css.cardLink}`} data-plugin-item={item.id}>
-      <CardHead title={item.label} t={t} onOpen={onOpen} icon={itemArtwork(item.id)} description={renderSlot('plugins.item', { view: 'summary' }, { only: item.id })} />
+      <CardHead title={item.label} t={t} onOpen={onOpen} icon={itemArtwork(item.id)} description={renderSlot(slot, { view: 'summary' }, { only: item.id })} />
     </li>
   )
 }
@@ -612,8 +623,9 @@ function packageRef(pkg: PackageView): PluginPackageRef {
  * contributed actions, its title with the contributed badges over its
  * one-liner, the form the entry renders, and the contributed sections.
  */
-function ItemDetail({ item, t, onBack, renderSlot, form }: {
+function ItemDetail({ item, slot, t, onBack, renderSlot, form }: {
   readonly item: OfficialItem
+  readonly slot: 'plugins.item' | 'plugins.shiguredo'
   readonly t: Translate
   readonly onBack: () => void
   readonly renderSlot: RenderConfig
@@ -634,11 +646,11 @@ function ItemDetail({ item, t, onBack, renderSlot, form }: {
           <h3 className={css.detailTitle}>{item.label}</h3>
           {renderSlot('plugins.detail.badge', { subject })}
         </div>
-        <p className={css.detailDesc}>{renderSlot('plugins.item', { view: 'summary' }, { only: item.id })}</p>
+        <p className={css.detailDesc}>{renderSlot(slot, { view: 'summary' }, { only: item.id })}</p>
       </div>
       <div className={css.detailSections}>
         <section className={css.detailSection} data-plugin-config>
-          {renderSlot('plugins.item', { view: 'page', form }, { only: item.id })}
+          {renderSlot(slot, { view: 'page', form }, { only: item.id })}
         </section>
         {renderSlot('plugins.detail.section', { subject })}
       </div>
@@ -1589,7 +1601,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   const openPkg = view.kind === 'package' || view.kind === 'row'
     ? listed.find(pkg => pkg.name === view.name)
     : undefined
-  const openItem = view.kind === 'item' ? ledger.items.find(item => item.id === view.id) : undefined
+  const openItem = view.kind === 'item' ? itemEntry(view.id, ledger) : undefined
   const openRow = view.kind === 'row' && openPkg !== undefined ? openPkg.rows.find(row => row.rowId === view.rowId) : undefined
   const onInstalled = tab === INSTALLED_TAB
   const showsCards = !onInstalled || (openPkg === undefined && openItem === undefined)
@@ -1636,9 +1648,12 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
     />
   )
   const basicCards = ledger.items.map(item => (
-    <ItemCard key={`item:${item.id}`} item={item} t={t} renderSlot={renderSlot} onOpen={() => { setView({ kind: 'item', id: item.id }) }} />
+    <ItemCard key={`item:${item.id}`} item={item} slot="plugins.item" t={t} renderSlot={renderSlot} onOpen={() => { setView({ kind: 'item', id: item.id }) }} />
   ))
-  const renderGroup = (id: 'basic' | 'extensions' | 'bundles', heading: string, cards: readonly ReactNode[]): ReactNode => {
+  const shiguredoCards = ledger.shiguredo.map(item => (
+    <ItemCard key={`shiguredo:${item.id}`} item={item} slot="plugins.shiguredo" t={t} renderSlot={renderSlot} onOpen={() => { setView({ kind: 'item', id: item.id }) }} />
+  ))
+  const renderGroup = (id: 'basic' | 'extensions' | 'shiguredo' | 'bundles', heading: string, cards: readonly ReactNode[]): ReactNode => {
     const offersMore = id === 'extensions' && more.length > 0
     if (cards.length === 0 && !offersMore) return null
     return (
@@ -1815,7 +1830,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
           )
           : null}
         {onInstalled && loaded && openItem !== undefined
-          ? <ItemDetail form={formFor(openItem.id)} item={openItem} t={t} renderSlot={renderSlot} onBack={() => { setView({ kind: 'list' }) }} />
+          ? <ItemDetail form={formFor(openItem.item.id)} item={openItem.item} slot={openItem.slot} t={t} renderSlot={renderSlot} onBack={() => { setView({ kind: 'list' }) }} />
           : null}
         {loaded && installedCards
           ? basicCards.length === 0 && official.length === 0 && mine.length === 0 && state.status !== 'error'
@@ -1830,6 +1845,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
                   <>
                     {renderGroup('basic', t('basicTitle'), basicCards)}
                     {renderGroup('extensions', t('extensionsTitle'), extensions.map(packageCard))}
+                    {renderGroup('shiguredo', t('shiguredoTitle'), shiguredoCards)}
                     {renderGroup('bundles', t('bundlesTitle'), mine.map(packageCard))}
                   </>
                 )}

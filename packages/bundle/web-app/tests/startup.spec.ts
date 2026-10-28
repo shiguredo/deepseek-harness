@@ -61,6 +61,7 @@ export const apply = ctx => globalThis.__webStartupApply(ctx)
     `  inject: [${WEB_STARTUP_SERVICE}]`,
     '  config:',
     "    host: !!js ctx.webStartup.host ?? '127.0.0.1'",
+    '    instance: !!js ctx.webStartup.instance',
     '    openBrowser: !!js ctx.webStartup.openBrowser',
     '    port: !!js ctx.webStartup.port ?? 3080',
     '    publicUrl: !!js ctx.webStartup.publicUrl',
@@ -97,6 +98,7 @@ describe('web command-line provider', () => {
   it('publishes each flag and releases direct service expressions', async () => {
     const { values, observed } = await bootProvider([
       '--host', '127.0.0.1',
+      '--instance',
       '--no-open',
       '--port', '8080',
       '--trusted-host', 'lab.internal', 'lab-2.internal',
@@ -106,6 +108,7 @@ describe('web command-line provider', () => {
     ])
     expect(values).toEqual({
       host: '127.0.0.1',
+      instance: '8080',
       openBrowser: false,
       port: 8080,
       trustedHosts: ['lab.internal', 'lab-2.internal', '10.0.0.9'],
@@ -134,6 +137,40 @@ describe('web command-line provider', () => {
       port: 3080,
       trustedHosts: [],
     })
+  })
+
+  it('derives the instance name from the explicit port', async () => {
+    const { values, observed } = await bootProvider(['--instance', '--port', '8080'])
+    expect(values).toEqual({ instance: '8080', openBrowser: true, port: 8080, trustedHosts: [] })
+    expect(observed.readerConfig).toEqual({
+      host: '127.0.0.1',
+      instance: '8080',
+      openBrowser: true,
+      port: 8080,
+      trustedHosts: [],
+    })
+    expect(observed.exits).toEqual([])
+  })
+
+  it('leaves the instance unset when only --port is given', async () => {
+    const { values } = await bootProvider(['--port', '8080'])
+    expect(values).toEqual({ openBrowser: true, port: 8080, trustedHosts: [] })
+  })
+
+  it('refuses a portless --instance before activating consumers', async () => {
+    const { values, observed } = await bootProvider(['--instance'])
+    expect(observed.out).toContain('--instance requires an explicit nonzero --port')
+    expect(values).toBeUndefined()
+    expect(observed.readerConfig).toBeUndefined()
+    expect(observed.exits).toEqual([1])
+  })
+
+  it('refuses an OS-assigned port as an instance namespace', async () => {
+    const { values, observed } = await bootProvider(['--instance', '--port', '0'])
+    expect(observed.out).toContain('--instance requires an explicit nonzero --port')
+    expect(values).toBeUndefined()
+    expect(observed.readerConfig).toBeUndefined()
+    expect(observed.exits).toEqual([1])
   })
 
   it('prints its own help and leaves the consumer pending', async () => {

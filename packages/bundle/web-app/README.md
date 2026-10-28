@@ -86,6 +86,15 @@ The printed URL contains a process credential; share it only with intended users
 
 When you launch `dsh --profile web` over SSH, the URL line still prints but the browser is not opened for you: the SSH client or editor owns the local forwarding address. Without an advertised root the printed URL names the remote host's bind-address endpoint — loopback for a loopback bind — which you reach through your forwarding address. With `--public-url` the printed URL is the authenticated advertised root; the browser handoff stays suppressed, because opening a browser on the remote host cannot reach your screen.
 
+### Running more than one server on one machine
+
+One `dsh --profile web` process runs all of its Sessions on one JavaScript thread, so a machine that needs more independent capacity runs several servers on different ports. Pass `--instance` to namespace each server's durable state by its own `--port`: the Session store and the durable KV store (workspace, schedule, projection cache) then live under `$DSH_HOME/instances/<port>/`. Without the flag both stay at `$DSH_HOME/sessions` and `$DSH_HOME/storages`, where concurrent servers share one Session listing and race on the same KV unit files — the JSON backend assumes one writer per process. `--instance` takes no name and requires an explicit nonzero `--port`: the composed default port would relocate an existing plain `dsh --profile web` store, and an OS-assigned port names nothing stable. Profiles, credentials, settings, and attachments stay shared, so every instance reaches the same models without another sign-in.
+
+```sh
+dsh --profile web --instance --port 3080
+dsh --profile web --instance --port 3081
+```
+
 ### Per-session agent setup
 
 Each browser session selects a shipped preset (`standard` by default). The Agent presets settings page changes the default and edits preset child plugins; saves persist in `$DSH_HOME/profiles/web/cordis.patch.yml`. Standard and Creator enable the plugin-management tool only when the Host provides an editable profile.
@@ -102,7 +111,7 @@ The bundle is one patch layer of five files plus one runtime glue plugin: `cordi
 
 ### Patch semantics
 
-A patch replaces the targeted row's whole `config`, so each web row restates every key it owns: the persona prefix template and the `session-query-sqlite` values on the base rows, then `insert` adds the web host rows, transport, and browser roster. The `webserver`, `web-runtime`, and `connection` rows inject the `webStartup` provider and read their invocation values directly; Connection composes its accepted authorities from `ctx.webStartup.trustedHosts`, and the Host/Origin fence accepts the listener's bind IP independently of that list. The bundle inherits native tool execution; a [PTC overlay](../../../apps/cli/config/examples/ptc.yml) changes the deployment executor. The per-agent tool rows the base mounts process-wide are disabled here and the preset roster takes over; the reasoning for each host-plane versus preset-plane decision is inline in the patch.
+A patch replaces the targeted row's whole `config`, so each web row restates every key it owns: the persona prefix template, the `session-query-sqlite` values, and the `session-persistence-jsonl` and `storage-json` roots that `--instance` moves under `$DSH_HOME/instances/<name>`, then `insert` adds the web host rows, transport, and browser roster. The `webserver`, `web-runtime`, and `connection` rows inject the `webStartup` provider and read their invocation values directly; Connection composes its accepted authorities from `ctx.webStartup.trustedHosts`, and the Host/Origin fence accepts the listener's bind IP independently of that list. The bundle inherits native tool execution; a [PTC overlay](../../../apps/cli/config/examples/ptc.yml) changes the deployment executor. The per-agent tool rows the base mounts process-wide are disabled here and the preset roster takes over; the reasoning for each host-plane versus preset-plane decision is inline in the patch.
 
 ### Advertised application URL
 
@@ -118,7 +127,7 @@ The URL line and browser handoff are readiness signals: supervisors RPC as soon 
 |---|---|
 | [`src/index.ts`](src/index.ts) | The `web-app` glue plugin: dist resolution, advertised application URL, bash variable, URL line, browser handoff |
 | [`src/public-url.ts`](src/public-url.ts) | Advertised-root validation and trailing-slash normalization; a leaf module for local imports, not package API |
-| [`src/startup.ts`](src/startup.ts) | The `web-startup` provider: `--host`, `--port`, `--tls-cert`, `--tls-key`, `--public-url`, `--trusted-host`, `--no-open`, `--help` |
+| [`src/startup.ts`](src/startup.ts) | The `web-startup` provider: `--host`, `--port`, `--instance`, `--tls-cert`, `--tls-key`, `--public-url`, `--trusted-host`, `--no-open`, `--help` |
 | [`cordis.patch.yml`](cordis.patch.yml) | The web patch: restated base values, web host rows, browser roster, preset registry |
 | [`presets/`](presets) | One `@deepseek-ai/dsh-agent-preset` declaration per shipped preset (`standard`, `ptc`, `minimal`, `cordis`), each its own patch file |
 | [`tests/web-app.spec.ts`](tests/web-app.spec.ts) | Dist index anchoring, advertised-URL publication and warnings, bash variable, readiness publication |

@@ -9,9 +9,9 @@
     - 'row "CONTEXT, Current runtime context. This snapshot supersedes earlier runtime-context snapshots. Current working directory: \"{{cwd}}/workspace\". Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"{{cwd}}/workspace\". Some pl…"':
       - cell "CONTEXT"
       - 'cell "Current runtime context. This snapshot supersedes earlier runtime-context snapshots. Current working directory: \"{{cwd}}/workspace\". Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"{{cwd}}/workspace\". Some pl…"'
-    - 'row "CONTEXT, Time sampled while preparing turn 1, step 1: 2026-01-15T{{clock}}+{{clock}}[Asia/Shanghai] Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone. Elapsed since the preceding model-visible message: unavailable."':
+    - 'row "CONTEXT, Time sampled while preparing turn 1, step 1: {{clock}}+{{clock}}[Asia/Shanghai] Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone. Elapsed since the preceding model-visible message: unavailable."':
       - cell "CONTEXT"
-      - 'cell "Time sampled while preparing turn 1, step 1: 2026-01-15T{{clock}}+{{clock}}[Asia/Shanghai] Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone. Elapsed since the preceding model-visible message: unavailable."'
+      - 'cell "Time sampled while preparing turn 1, step 1: {{clock}}+{{clock}}[Asia/Shanghai] Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone. Elapsed since the preceding model-visible message: unavailable."'
     - row "Request 1, compaction":
       - 'cell "Request #1"':
         - 'button "Request #1"'

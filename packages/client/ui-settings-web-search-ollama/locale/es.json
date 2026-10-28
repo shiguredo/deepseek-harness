@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ajustes de búsqueda de Ollama Cloud",
+    "description": "Configure la selección del proveedor web de Ollama Cloud, la clave, sus dos extremos y el número de resultados."
+  }
+}

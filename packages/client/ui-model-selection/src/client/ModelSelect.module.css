@@ -52,6 +52,18 @@
   white-space: nowrap;
 }
 
+/* Provider name leading the model name (same 13/20/400 as the label, caption
+   tone). Adaptive priority: it absorbs deficit after the effort has gone to
+   zero and before the model name gives up a pixel. */
+.triggerProvider {
+  flex-shrink: 100;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-caption);
+}
+
 /* Effort value beside the model name (mock's 'High': same 13/20/400, caption
    tone). Adaptive priority: the huge shrink factor makes the effort absorb
    all deficit first — it ellipsizes away to nothing before the model name
@@ -65,6 +77,13 @@
   color: var(--dsw-alias-label-caption);
 }
 
+/* Active off-peak routing: the provider name reads "Auto" and takes the
+   accent tone, shown only while the current model's windows contain the
+   browser clock. */
+.triggerProviderRouted {
+  color: var(--dsw-alias-state-business-primary);
+}
+
 /* The Models glyph replaces the text when the composer row cannot fit it. */
 .triggerIcon {
   display: var(--dsh-composer-model-icon-display, none);
@@ -74,6 +93,7 @@
 /* The composer measures expanded row demand and owns these display variables.
    Outside a composer, the trigger retains its text. */
 .triggerLabel,
+.triggerProvider,
 .triggerEffort {
   display: var(--dsh-composer-model-text-display, block);
 }
@@ -348,6 +368,17 @@
   .cell:hover {
     background: var(--dsw-alias-interactive-bg-hover);
   }
+
+  /* Read-only root row (the current provider): the cells' rhythm without
+     their hover affordance, focus treatment, or chevron. Declared after the
+     hover rule so its transparent background wins the matching specificity. */
+  .cellStatic:hover {
+    background: transparent;
+  }
+}
+
+.cellStatic {
+  cursor: default;
 }
 
 .cellLabel {

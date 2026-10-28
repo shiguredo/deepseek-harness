@@ -16,7 +16,7 @@ import AttachmentStore from '@deepseek-ai/dsh-attachment'
 import LlmRuntime, { LlmAdapter, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type {
   GenerateOptions, LlmCallConfigAdapterDefaults, LlmModelInfo,
-  LlmModelReasoningInfo, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk,
+  LlmModelReasoningInfo, LlmModelRouting, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk,
   UserMessage,
 } from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
@@ -47,6 +47,7 @@ class CatalogAdapter extends LlmAdapter {
     private readonly models: readonly LlmModelInfo[] | Error,
     private readonly reasoning?: LlmModelReasoningInfo,
     private readonly exactError?: Error,
+    private readonly routing?: LlmModelRouting,
   ) {
     super()
   }
@@ -68,6 +69,7 @@ class CatalogAdapter extends LlmAdapter {
       id: model,
       name: model,
       ...this.reasoning === undefined ? {} : { reasoning: this.reasoning },
+      ...this.routing === undefined ? {} : { routing: this.routing },
     })
   }
 
@@ -471,6 +473,25 @@ describe('Web session model selection', () => {
     expect(catalog.failures).toContainEqual({
       id: 'string-failure', name: 'String Failure', message: 'string catalog failure',
     })
+    await ctx.fiber.dispose()
+  })
+
+  it('carries routing windows from the exact-model read into the catalog', async () => {
+    const { ctx } = await harness()
+    const routing: LlmModelRouting = {
+      windows: [{ from: '21:00', to: '03:00', timeZone: 'Asia/Tokyo', provider: 'opencode-go' }],
+    }
+    ctx.llm.registerAdapter(['windowed'], new CatalogAdapter('Windowed', [
+      { provider: 'windowed', id: 'windowed-model', name: 'Windowed Model' },
+    ], undefined, undefined, routing))
+    await createSessionTestRemote(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      cwd: '/tmp',
+    })
+    const catalog = await buildModelCatalog(ctx)
+    expect(catalog.groups).toEqual(expect.arrayContaining([
+      { id: 'windowed', name: 'Windowed', models: [{ id: 'windowed-model', name: 'Windowed Model', routing }] },
+    ]))
     await ctx.fiber.dispose()
   })
 

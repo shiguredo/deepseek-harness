@@ -1,0 +1,88 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/guard/git-push-guard/README.md
+/:
+  en: 94002a2132c47c37
+  zh: 51bb44954ea8738a
+/deepseek-ai-dsh-git-push-guard:
+  en: 88c42d0bcbc13388
+  zh: 362e912cd46d9cac
+/deepseek-ai-dsh-git-push-guard/summary:
+  en: 5ea6b4bafbe91f0e
+  zh: 5fe54ce6ae0ed747
+/deepseek-ai-dsh-git-push-guard/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 0ec2057fd6f8a054
+/deepseek-ai-dsh-git-push-guard/use-this-package:
+  en: a544d7998ff28ba5
+  zh: afc46a86f379d037
+/deepseek-ai-dsh-git-push-guard/use-this-package/when-to-choose-it:
+  en: 57ce08d54fdb2811
+  zh: dadbda0526663907
+/deepseek-ai-dsh-git-push-guard/use-this-package/settings:
+  en: c58cf3fc60ea5fa2
+  zh: dabc7160dc23ff88
+/deepseek-ai-dsh-git-push-guard/use-this-package/what-the-user-controls:
+  en: ae8953956c0bd845
+  zh: b1c7db680e8be1c1
+/deepseek-ai-dsh-git-push-guard/use-this-package/what-the-agent-sees:
+  en: 3c5ef273b6ccfa07
+  zh: 93b6a8d1e05dc664
+/deepseek-ai-dsh-git-push-guard/understand-the-implementation:
+  en: 285c07b21a72d767
+  zh: 1b5723357c36b900
+/deepseek-ai-dsh-git-push-guard/understand-the-implementation/interception-and-confirmation:
+  en: 46570c66e7bf8882
+  zh: 60176748fd392ef0
+/deepseek-ai-dsh-git-push-guard/understand-the-implementation/two-independent-settings:
+  en: 77dbdb589d37c645
+  zh: ad14e188df9ddb81
+/deepseek-ai-dsh-git-push-guard/understand-the-implementation/source-map:
+  en: 86f539b7ff0c8e6d
+  zh: 38b6a2e7f7a810c9
+/deepseek-ai-dsh-git-push-guard/further-exploration:
+  en: 2a6645e352c33912
+  zh: 784bbbdc3d82ed2c
+/deepseek-ai-dsh-git-push-guard/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-git-push-guard/model-experience/git-push-guard-policy-section:
+  en: ccfcc407fbbbbcf4
+  zh: 844cae34662c5df4
+/deepseek-ai-dsh-git-push-guard/model-experience/git-push-guard-policy-section/what-the-model-sees:
+  en: 0918651c5e81f43d
+  zh: 16df10c709dc80bf
+/deepseek-ai-dsh-git-push-guard/model-experience/git-push-guard-policy-section/what-the-model-sees/session-policy-section:
+  en: 036100e4d7ae941e
+  zh: 7d9525bc1529c238
+/deepseek-ai-dsh-git-push-guard/model-experience/git-push-guard-policy-section/token-effect:
+  en: de142e3d90ccbd15
+  zh: ee412fd2f52b42e5
+/deepseek-ai-dsh-git-push-guard/model-experience/git-push-guard-policy-section/kv-cache-effect:
+  en: 656f066cdeab2133
+  zh: eaa24cd264df48f6
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push:
+  en: 2cc0cb6b9c196653
+  zh: fb6ae8bb4a0792e7
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push/what-the-model-sees:
+  en: e0ca0792ddc9055a
+  zh: 561448dcaa0159b4
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push/what-the-model-sees/rejection-message:
+  en: bf0ee260fad6b910
+  zh: db9d95d246e82dc9
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push/what-the-model-sees/unreachable-answerer-message:
+  en: 445e3c1ffa81ca52
+  zh: 4fd69813e63c43c6
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push/token-effect:
+  en: dab5a342de17f3ff
+  zh: 4f654965511e77bc
+/deepseek-ai-dsh-git-push-guard/model-experience/refused-push/kv-cache-effect:
+  en: 1ee9e935dab9a753
+  zh: 313ae74f74b3cd67
+/deepseek-ai-dsh-git-push-guard/known-limitations-and-deferred-work:
+  en: 853cc7ca1df9fdd6
+  zh: b452934eecbcf714
+/deepseek-ai-dsh-git-push-guard/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 4c879960b94cc733

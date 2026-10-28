@@ -7,8 +7,8 @@
 - button "Tool call str_replace_editor · create"
 - paragraph: DONE
 - button "View changes to edited.txt": Edited edited.txt +1 -0
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}

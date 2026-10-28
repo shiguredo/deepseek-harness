@@ -43,7 +43,7 @@ Load the service and let a single mounted backend auto-select, or pin a provider
 
 | Field | Default | Meaning |
 |---|---|---|
-| `searchProvider` | (unset) | Pinned search provider id; unset auto-selects when exactly one is usable |
+| `searchProvider` | (unset) | Pinned search provider id, read on every search; the Web search settings page writes it live. Unset auto-selects when exactly one is usable |
 | `fetchProvider` | (unset) | Pinned fetch provider id; unset auto-selects when exactly one is usable |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-web) is the exhaustive source for every accepted field and its JSDoc.

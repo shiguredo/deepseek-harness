@@ -53,7 +53,7 @@ export interface Config {
   apiKey: Volatile<string | undefined>
   /** Credential reference resolved for each search; defaults to `DEEPSEEK_API_KEY`. */
   apiKeyEnv: Volatile<string>
-  /** Anthropic-compatible endpoint base; `/messages` is appended. */
+  /** Anthropic-compatible endpoint base or full endpoint; `/messages` is appended when the value is not already it. */
   baseURL: Volatile<string | undefined>
   /** Anthropic-format model name. Defaults to `deepseek-v4-flash`. */
   model: Volatile<string>

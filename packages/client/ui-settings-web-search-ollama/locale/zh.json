@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ollama Cloud 搜索设置",
+    "description": "配置 Ollama Cloud 网页提供方的选择、密钥、两个端点与结果条数。"
+  }
+}

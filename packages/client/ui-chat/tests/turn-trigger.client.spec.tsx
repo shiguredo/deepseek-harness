@@ -40,7 +40,7 @@ describe('Turn trigger notices', () => {
     const details = turnTriggerDetails(node.data)
     expect(details).toEqual({ title: `message.trigger.${icon}`, icon })
     const t = makeTranslate(en)
-    const view = render(<TurnTriggerNodeView node={node} t={t} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={t} />)
     expect(view.getByRole('button').textContent).toContain(title)
     expect(view.getByRole('button').querySelector('svg')).not.toBeNull()
     expect(view.container.querySelector('time')?.dateTime).toBe('2023-11-14T22:13:20.000Z')
@@ -53,7 +53,7 @@ describe('Turn trigger notices', () => {
     const node = trigger({ kind: 'agent-message', form: 'relay', senderSessionId: 'sender' })
     node.data.content = [{ type: 'text', text: 'Team message from reviewer-2:' }, { type: 'text', text: 'Ready.' }]
     expect(turnTriggerDetails(node.data)).toEqual({ title: 'message.trigger.agent', icon: 'agent' })
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(locale)} />)
     expect(view.getByRole('button').textContent).toContain(title)
     fireEvent.click(view.getByRole('button'))
     expect(view.container.querySelector('[data-context-text]')?.textContent).toContain('Team message from reviewer-2:')
@@ -64,7 +64,7 @@ describe('Turn trigger notices', () => {
     { locale: zh, title: '自动化任务' },
   ])('uses the automation task label $title and shared clock', ({ locale, title }) => {
     const node = trigger({ kind: 'schedule' })
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(locale)} />)
     expect(view.getByRole('button').textContent).toContain(title)
     const reference = render(<IconClockOutlineRegular size={14} />)
     expect(view.getByRole('button').querySelector('svg')?.outerHTML)
@@ -73,7 +73,7 @@ describe('Turn trigger notices', () => {
   })
 
   it('opens the recorded notice body and closes it independently of the Turn', () => {
-    const view = render(<TurnTriggerNodeView node={trigger({ kind: 'schedule' })} t={makeTranslate(en)} />)
+    const view = render(<TurnTriggerNodeView node={trigger({ kind: 'schedule' })} clockTimeZone="local" t={makeTranslate(en)} />)
     const button = view.getByRole('button')
     expect(button.getAttribute('aria-expanded')).toBe('false')
     expect(view.container.querySelector('[data-context-text]')).toBeNull()

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-26-git-push-guard.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-26-git-push-guard.md
+/agent-note-git-push-guard-as-a-built-in-plugin:
+  en: d50d68b39590e155
+  zh: 9fac16160ae7c44f
+/agent-note-git-push-guard-as-a-built-in-plugin/problem:
+  en: 02da3b21733690b1
+  zh: c5654bec58d714f9
+/agent-note-git-push-guard-as-a-built-in-plugin/decision:
+  en: d127d402833529a3
+  zh: c8ff644f717c4cc5
+/agent-note-git-push-guard-as-a-built-in-plugin/alternatives-considered:
+  en: cd3d4bd59ca63a2c
+  zh: 70daed18fb2fc744
+/agent-note-git-push-guard-as-a-built-in-plugin/consequences:
+  en: d2a313e0a9c8724f
+  zh: 35337607a49ae9b9
+/agent-note-git-push-guard-as-a-built-in-plugin/testing:
+  en: b80e122f6ad83d2f
+  zh: 033f2b35355d4fff

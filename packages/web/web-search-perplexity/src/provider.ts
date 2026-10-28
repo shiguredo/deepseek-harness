@@ -37,7 +37,7 @@ const USER_AGENT = 'deepseek-harness/0.0.1'
 export interface PerplexitySearchProviderOptions {
   /** Perplexity API key. Empty/absent makes the provider unavailable. */
   apiKey: string
-  /** Endpoint base; `/chat/completions` is appended. */
+  /** Endpoint base or the full `/chat/completions` endpoint. */
   baseURL: string
   /** Search model name. */
   model: string
@@ -99,9 +99,10 @@ export class PerplexitySearchProvider implements WebSearchProvider {
   /* jscpd:ignore-end */
 
   async search(request: WebSearchRequest, signal?: AbortSignal): Promise<WebSearchResult> {
+    const endpoint = this.options.baseURL.endsWith('/chat/completions') ? this.options.baseURL : `${this.options.baseURL}/chat/completions`
     let response: Response
     try {
-      response = await fetch(`${this.options.baseURL}/chat/completions`, {
+      response = await fetch(endpoint, {
         method: 'POST',
         redirect: 'error',
         headers: {

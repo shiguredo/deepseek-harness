@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The `web/` packages let models search the public web and fetch HTTP(S) pages through the `web_search` and `web_fetch` tools. Deployments can choose Exa, Perplexity, or DeepSeek for search and anonymous HTTP(S) or DeepSeek for fetch; availability and resource limits depend on the configured provider. Use this family for search and page retrieval, not interactive browsing, content extraction, or per-URL policy enforcement. Models receive consistent tool behavior, cancellation, and error reporting when providers change.
+The `web/` packages let models search the public web and fetch HTTP(S) pages through the `web_search` and `web_fetch` tools. Deployments can choose Exa, Perplexity, DeepSeek, or Ollama Cloud for search and anonymous HTTP(S) or DeepSeek for fetch; availability and resource limits depend on the configured provider. Use this family for search and page retrieval, not interactive browsing, content extraction, or per-URL policy enforcement. Models receive consistent tool behavior, cancellation, and error reporting when providers change.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ The `web/` packages let models search the public web and fetch HTTP(S) pages thr
 <a id="packages"></a>
 ## Packages
 
-Six packages play the web roles; the subsystem reference owns the exhaustive vocabulary and contracts.
+Eight packages play the web roles; the subsystem reference owns the exhaustive vocabulary and contracts.
 
 | Package | Role | ctx key |
 |---|---|---|
@@ -31,6 +31,7 @@ Six packages play the web roles; the subsystem reference owns the exhaustive voc
 | [`web-search-perplexity/`](web-search-perplexity/README.md) | Searches the web through Perplexity | registers on `ctx.web` |
 | [`web-search-deepseek/`](web-search-deepseek/README.md) | Searches through DeepSeek Messages | registers on `ctx.web` |
 | [`web-deepseek-api/`](web-deepseek-api/README.md) | Searches and fetches pages through the DeepSeek Search and Fetch APIs | registers on `ctx.web` |
+| [`web-ollama-api/`](web-ollama-api/README.md) | Searches and fetches pages through Ollama Cloud | registers on `ctx.web` |
 | [`web-fetch-http/`](web-fetch-http/README.md) | Fetches HTTP(S) pages anonymously | registers on `ctx.web` |
 | [`tool-web/`](tool-web/README.md) | Exposes `web_search` and `web_fetch` to the model | registers on `ctx.tools` |
 

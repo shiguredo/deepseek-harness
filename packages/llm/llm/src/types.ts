@@ -351,6 +351,35 @@ export interface LlmDiscoveredModel {
   inputModalities?: readonly ModelModality[]
 }
 
+/** One local wall-clock window an adapter routes a model through another provider. */
+export interface LlmRoutingWindow {
+  /** Inclusive local start as `HH:mm`. */
+  from: string
+  /** Exclusive local end as `HH:mm`; earlier than {@link from} crosses midnight. */
+  to: string
+  /** IANA time zone the window is read in; absence means the reader's own zone. */
+  timeZone?: string
+  /**
+   * Local weekdays the window applies to, named by the day it starts in that
+   * zone; absence applies it every day. A window crossing midnight belongs to
+   * the day it starts, so an after-midnight reading reads the day before.
+   */
+  days?: readonly string[]
+  /** Provider route that serves this window's requests. */
+  provider: string
+  /**
+   * Model id the serving provider receives; absence keeps the routed model's
+   * own id, which is how a window that only moves the endpoint is declared.
+   */
+  model?: string
+}
+
+/** Time windows a deployment configured for one model entry. */
+export interface LlmModelRouting {
+  /** The windows in configuration order; the model is routed in any of them. */
+  windows: readonly LlmRoutingWindow[]
+}
+
 /**
  * Emphasis of a model badge: `neutral` states a plain fact, `info` highlights
  * the model, `success` marks a benefit, and `warning` asks for attention.
@@ -377,6 +406,8 @@ export interface LlmModelInfo {
   description?: string
   /** Accepted request modalities; absent means unknown, while an explicit omission is negative capability. */
   inputModalities?: readonly ModelModality[]
+  /** Windows in which the route's requests go to another provider; absent means none. */
+  routing?: LlmModelRouting
   /**
    * Selector label advertised by catalog discovery; exact-route resolution
    * omits it, and no model request or Session event carries it.

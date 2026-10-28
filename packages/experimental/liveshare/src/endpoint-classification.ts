@@ -138,6 +138,7 @@ export const VIEWER_ENDPOINT_CLASSES = {
   'workspaceFiles/read': 'owner-only', // owner Workspace file access
   'workspaceFiles/readBytes': 'owner-only', // owner Workspace file access
   'workspaceFiles/stat': 'owner-only', // owner Workspace file access
+  'workspaceGit/status': 'owner-only', // owner reads its Session's checkout through git for the composer branch chip
   'pluginManager/cancelInstall': 'owner-only', // owner plugin management
   'pluginManager/inspect': 'owner-only', // owner plugin management
   'pluginManager/installBundle': 'owner-only', // owner plugin management

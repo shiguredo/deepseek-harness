@@ -49,7 +49,7 @@ kind: "package-reference"
 - [ui-settings-plugin-inventory](../ui-settings-plugin-inventory/README.zh.md)——只读清单标签页。
 - [ui-settings](../ui-settings/README.zh.md)——声明 `settings.section` 的领域基座。
 - [ui-plugin-manager](../ui-plugin-manager/README.zh.md)——配置官方插件的插件页。
-- [ui-settings-shell](../ui-settings-shell/README.zh.md)、[ui-settings-agent-loop](../ui-settings-agent-loop/README.zh.md)、[ui-settings-subagent](../ui-settings-subagent/README.zh.md)、[ui-settings-web-search](../ui-settings-web-search/README.zh.md)——官方配置页，每个一个伴生包。
+- [ui-settings-shell](../ui-settings-shell/README.zh.md)、[ui-settings-agent-loop](../ui-settings-agent-loop/README.zh.md)、[ui-settings-subagent](../ui-settings-subagent/README.zh.md)、[ui-settings-web-search](../ui-settings-web-search/README.zh.md)、[ui-settings-web-search-ollama](../ui-settings-web-search-ollama/README.zh.md)——官方配置页，每个一个伴生包。
 
 -----
 

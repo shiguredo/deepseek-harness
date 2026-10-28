@@ -86,6 +86,15 @@ dsh --profile web --no-open --host "$(hostname -i | awk '{print $1}')" --public-
 
 通过 SSH 启动 `dsh --profile web` 时，URL 行仍会打印，但不会为你打开浏览器：本地转发地址由 SSH 客户端或编辑器持有。没有公告根时，打印的 URL 指向远端宿主机的绑定地址端点——绑定 loopback 时即 loopback——你通过自己的转发地址访问它。配置了 `--public-url` 时，打印的 URL 是带认证的公告根；浏览器交接仍被抑制，因为在远端宿主机上打开浏览器无法到达你的屏幕。
 
+### 在一台机器上运行多个服务器
+
+一个 `dsh --profile web` 进程的所有 Session 都在同一个 JavaScript 线程上运行，因此需要更多独立容量的机器会在不同端口上运行多个服务器。传入 `--instance` 让每个服务器按其自身的 `--port` 命名持久状态：Session 存储与持久 KV 存储（workspace、schedule、projection cache）随后位于 `$DSH_HOME/instances/<port>/` 下。不传该 flag 时两者仍位于 `$DSH_HOME/sessions` 与 `$DSH_HOME/storages`，同时并发的服务器会共享同一份 Session 列表，并在同一批 KV unit 文件上竞争——JSON 后端假定每个进程只有一个写入者。`--instance` 不接受名称，并要求显式的非零 `--port`：组合的默认端口会搬迁现有的普通 `dsh --profile web` 存储，而由操作系统分配的端口不代表稳定的命名空间。Profiles、credentials、settings 与 attachments 保持共享，因此每个实例无需再次登录就能访问同一批模型。
+
+```sh
+dsh --profile web --instance --port 3080
+dsh --profile web --instance --port 3081
+```
+
 ### 按会话的 agent 设置
 
 每个浏览器会话选择一个随发行版交付的 preset（默认 `standard`）。Agent 预设设置页可更改默认项并编辑预设的子插件；保存结果持久化到 `$DSH_HOME/profiles/web/cordis.patch.yml`。只有 Host 提供可编辑的 profile 时，标准模式和 Creator 才会启用插件管理工具。
@@ -102,7 +111,7 @@ dsh --profile web --no-open --host "$(hostname -i | awk '{print $1}')" --public-
 
 ### patch 语义
 
-patch 会替换目标行的整个 `config`，因此每个 Web 行都重述自己拥有的每个键：基础行上的 persona 前缀模板与 `session-query-sqlite` 值，随后 `insert` 添加 Web 宿主行、传输层与浏览器名录。`webserver`、`web-runtime` 与 `connection` 行都注入 `webStartup` 提供方并直接读取本次调用的取值；Connection 的被接受 authority 全部来自 `ctx.webStartup.trustedHosts`，Host/Origin 栅栏则独立于该列表接受监听器的绑定 IP。bundle 继承原生工具执行；[PTC overlay](../../../apps/cli/config/examples/ptc.yml) 可切换部署执行器。base 以进程级挂载的按 agent 工具行在这里被禁用，由 preset 名录接管；每项宿主层与 preset 层归属决策的理由以行内注释写在 patch 里。
+patch 会替换目标行的整个 `config`，因此每个 Web 行都重述自己拥有的每个键：persona 前缀模板、`session-query-sqlite` 值，以及 `--instance` 迁移到 `$DSH_HOME/instances/<name>` 下的 `session-persistence-jsonl` 与 `storage-json` 根，随后 `insert` 添加 Web 宿主行、传输层与浏览器名录。`webserver`、`web-runtime` 与 `connection` 行都注入 `webStartup` 提供方并直接读取本次调用的取值；Connection 的被接受 authority 全部来自 `ctx.webStartup.trustedHosts`，Host/Origin 栅栏则独立于该列表接受监听器的绑定 IP。bundle 继承原生工具执行；[PTC overlay](../../../apps/cli/config/examples/ptc.yml) 可切换部署执行器。base 以进程级挂载的按 agent 工具行在这里被禁用，由 preset 名录接管；每项宿主层与 preset 层归属决策的理由以行内注释写在 patch 里。
 
 ### 公告应用 URL
 
@@ -118,7 +127,7 @@ URL 行与浏览器交接都是就绪信号：监督方一观察到该行就发�
 |---|---|
 | [`src/index.ts`](src/index.ts) | `web-app` 粘合插件：dist 解析、公告应用 URL、bash 变量、URL 行、浏览器交接 |
 | [`src/public-url.ts`](src/public-url.ts) | 公告根的校验与尾斜杠归一化；供本地导入的叶子模块，不属于包 API |
-| [`src/startup.ts`](src/startup.ts) | `web-startup` 提供方：`--host`、`--port`、`--tls-cert`、`--tls-key`、`--public-url`、`--trusted-host`、`--no-open`、`--help` |
+| [`src/startup.ts`](src/startup.ts) | `web-startup` 提供方：`--host`、`--port`、`--instance`、`--tls-cert`、`--tls-key`、`--public-url`、`--trusted-host`、`--no-open`、`--help` |
 | [`cordis.patch.yml`](cordis.patch.yml) | Web patch：重述的基础值、Web 宿主行、浏览器名录、preset 注册表 |
 | [`presets/`](presets) | 每个随发行版交付的 preset（`standard`、`ptc`、`minimal`、`cordis`）各一条 `@deepseek-ai/dsh-agent-preset` 声明，各自一个补丁文件 |
 | [`tests/web-app.spec.ts`](tests/web-app.spec.ts) | dist index 锚定、公告 URL 发布与警告、bash 变量、就绪宣告发布 |

@@ -23,6 +23,7 @@ import type {
   LlmModelContext,
   LlmModelInfo,
   LlmModelReasoningInfo,
+  LlmModelRouting,
   LlmProviderInfo,
   LlmResolvedModelInfo,
   SystemPromptUpdate,
@@ -72,6 +73,7 @@ class CatalogAdapter extends ScriptedAdapter {
     private readonly reasoning: Readonly<Record<string, LlmModelReasoningInfo>> = {},
     private readonly defaultMaxTokens: Readonly<Record<string, number>> = {},
     private readonly systemPromptUpdate: Readonly<Record<string, string>> = {},
+    private readonly routing: Readonly<Record<string, LlmModelRouting>> = {},
   ) {
     super(SCRIPT)
   }
@@ -95,6 +97,7 @@ class CatalogAdapter extends ScriptedAdapter {
       ...this.contexts[model] === undefined ? {} : { context: this.contexts[model] },
       ...this.reasoning[model] === undefined ? {} : { reasoning: this.reasoning[model] },
       ...this.defaultMaxTokens[model] === undefined ? {} : { defaultMaxTokens: this.defaultMaxTokens[model] },
+      ...this.routing[model] === undefined ? {} : { routing: this.routing[model] },
       ...this.systemPromptUpdate[model] === undefined
         ? {}
         : { systemPromptUpdate: this.systemPromptUpdate[model] as SystemPromptUpdate },
@@ -1441,6 +1444,66 @@ describe('LlmRuntime', () => {
     const model = { provider: 'route', id: 'same', name: 'Same' }
     ctx.llm.registerAdapter(['route'], new CatalogAdapter({ id: 'route', name: 'Route' }, [model, model]))
     await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
+  })
+
+  it('detaches and carries routing windows from both catalog reads', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    const routing: LlmModelRouting = {
+      windows: [
+        { from: '21:00', to: '03:00', timeZone: 'Asia/Tokyo', provider: 'opencode-go' },
+        { from: '09:00', to: '17:00', provider: 'ollama-cloud', days: ['sat', 'sun'] },
+      ],
+    }
+    const model: LlmModelInfo = { provider: 'route', id: 'm', name: 'M', routing }
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [model],
+      {}, {}, {}, {},
+      { m: routing },
+    ))
+    const [listed] = await ctx.llm.listModels('route')
+    expect(listed?.routing).toEqual(routing)
+    expect(listed?.routing).not.toBe(routing)
+    expect(listed?.routing?.windows).not.toBe(routing.windows)
+    expect(listed?.routing?.windows[1]?.days).not.toBe(routing.windows[1]?.days)
+    const resolved = await ctx.llm.resolveModelInfo('route', 'm')
+    expect(resolved.routing).toEqual(routing)
+    expect(resolved.routing).not.toBe(routing)
+  })
+
+  // The table carries values a catalog must refuse: a wrong-typed field or an
+  // absent one, which no valid `LlmModelRouting` can express.
+  it.each<{ routing: unknown; label: string }>([
+    { routing: { windows: [] }, label: 'no windows' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', timeZone: 1 }] }, label: 'non-string time zone' },
+    { routing: { windows: [{ from: 1, to: '03:00' }] }, label: 'non-string start' },
+    { routing: { windows: [{ from: '21:00', to: 1 }] }, label: 'non-string end' },
+    { routing: { windows: [{ from: '21:00', to: '03:00' }] }, label: 'missing provider' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: '' }] }, label: 'empty provider' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: 'mon' }] }, label: 'non-array days' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: ['mon', 1] }] }, label: 'non-string day' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: [''] }] }, label: 'empty day' },
+  ])('rejects invalid routing metadata in a catalog read ($label)', async ({ routing }) => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [{ provider: 'route', id: 'm', name: 'M', routing } as LlmModelInfo],
+    ))
+    await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
+  })
+
+  it('rejects invalid routing metadata in an exact model read', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [{ provider: 'route', id: 'm', name: 'M' }],
+      {}, {}, {}, {},
+      { m: { windows: [] } },
+    ))
+    await expect(ctx.llm.resolveModelInfo('route', 'm')).rejects.toMatchObject({ code: 'INVALID_MODEL_INFO' })
   })
 
   it('lets llm/stream waterfall listeners wrap the underlying stream', async () => {

@@ -33,8 +33,11 @@
   en: b25bf00ce3a6a119
   zh: 0ab47a4014ea5e1e
 /chat-conversation-node-rules/display-modes/collapse-timing:
-  en: 34fceb582301b4f8
-  zh: 23bea929ac798bb5
+  en: ad74c1a610fc50d2
+  zh: 13de05ffedf63f0c
+/chat-conversation-node-rules/display-modes/message-clocks:
+  en: 3b398c1e37242377
+  zh: ca1d78b0392dacdf
 /chat-conversation-node-rules/display-modes/replies-after-collapse:
   en: 8e775c43878ae31a
   zh: 4c1063c0071ebdbd

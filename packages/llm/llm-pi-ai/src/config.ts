@@ -42,6 +42,8 @@ import type {
   RouteCatalog,
 } from './catalog.ts'
 import { buildProvider, supportedProtocols } from './provider.ts'
+import { bundledProvider } from './bundled-catalog.ts'
+import type { PiAiPeakProvider, PiAiPeakWindow } from './peak.ts'
 
 /** Default maximum idle interval while an adapter stream read is outstanding. */
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
@@ -87,6 +89,7 @@ export type {
   PiAiReasoningEfforts,
   PiAiThinkingFormat,
 } from './catalog.ts'
+export type { PiAiPeakDay, PiAiPeakProvider, PiAiPeakWindow } from './peak.ts'
 
 /** Configuration for one pi-ai provider route; the `providers` dict key IS the route. */
 export interface PiAiProviderProfile {
@@ -216,6 +219,8 @@ export interface ResolvedPiAiProviderProfile
    * own, so a catalog capability must not appear here.
    */
   configuredMaxTokens: ReadonlyMap<string, number>
+  /** Validated peak windows by model id; empty when no entry declares one. */
+  peak: ReadonlyMap<string, readonly PiAiPeakWindow[]>
 }
 
 /** Plugin configuration: the provider routes this instance owns. */
@@ -299,6 +304,15 @@ const reasoningEfforts = z.dict(
   z.union(THINKING_LEVELS),
 ) as unknown as z<PiAiReasoningEfforts>
 
+const peakProvider: z<PiAiPeakProvider> = z.object({
+  provider: z.string().required(),
+  model: z.string(),
+  apiKeyEnv: z.string().role('credential-ref'),
+})
+
+/** Destination providers one model's published peak window routes to, in priority order. */
+const peakCandidates: z<PiAiPeakProvider[]> = z.array(peakProvider)
+
 /** The fields a `models` entry and a `modelOverrides` value share; only the id's home differs. */
 const modelFields = {
   name: z.string(),
@@ -313,6 +327,7 @@ const modelFields = {
   // installed catalog's capability", while `false` disables reasoning.
   reasoningEfforts: z.union([z.const(false), reasoningEfforts]),
   compat: compatProfile,
+  peak: peakCandidates,
 }
 
 const modelProfile: z<PiAiModelProfile> = z.object({
@@ -458,15 +473,24 @@ export function resolveProfiles(
     // The route key, not the installed provider's own name: the directory has
     // always shown route keys, and a catalog route must not silently rename
     // itself on every configuration surface just because it gained a profile.
-    const displayName = source.displayName ?? provider
+    // A bundled route is the exception, because this build ships the product
+    // name a selector should show and nothing else supplies it.
+    const bundled = bundledProvider(provider)
+    const displayName = source.displayName ?? bundled?.name ?? provider
+    // A bundled route defaults its endpoint and protocol from the bundle, so a
+    // profile that only names a credential serves it. A profile naming either
+    // field wins: repointing a bundled route at a proxy is exactly what that
+    // field is for, and the bundled models follow the endpoint they resolve to.
+    const api = source.api ?? bundled?.api
+    const baseURL = source.baseURL ?? bundled?.baseURL
     let catalog: RouteCatalog | undefined
     let piProvider: Provider | undefined
     let catalogError: string | undefined
     try {
       catalog = resolveRouteModels({
         provider,
-        ...source.api === undefined ? {} : { api: source.api },
-        ...source.baseURL === undefined ? {} : { baseURL: source.baseURL },
+        ...api === undefined ? {} : { api },
+        ...baseURL === undefined ? {} : { baseURL },
         ...source.models === undefined ? {} : { models: source.models },
         ...source.modelOverrides === undefined ? {} : { modelOverrides: source.modelOverrides },
         ...source.compat === undefined ? {} : { compat: source.compat },
@@ -478,8 +502,8 @@ export function resolveProfiles(
       piProvider = buildProvider({
         provider,
         displayName,
-        ...source.api === undefined ? {} : { api: source.api },
-        ...source.baseURL === undefined ? {} : { baseURL: source.baseURL },
+        ...api === undefined ? {} : { api },
+        ...baseURL === undefined ? {} : { baseURL },
         models: catalog.models,
         namesCredential: source.apiKeyEnv !== undefined,
       })
@@ -492,6 +516,8 @@ export function resolveProfiles(
       ...rest,
       provider,
       displayName,
+      ...api === undefined ? {} : { api },
+      ...baseURL === undefined ? {} : { baseURL },
       ...apiKeyEnv === undefined ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },
       streamIdleTimeoutMs,
       maxRequestImageBytes,
@@ -502,9 +528,35 @@ export function resolveProfiles(
       ...rest.thinkingBudgets === undefined ? {} : { thinkingBudgets: { ...rest.thinkingBudgets } },
       configuredMaxTokens: catalog?.configuredMaxTokens ?? new Map(),
       modelErrors: catalog?.modelErrors ?? new Map(),
+      peak: catalog?.peak ?? new Map(),
       ...piProvider === undefined ? {} : { piProvider },
       ...catalogError === undefined ? {} : { catalogError },
     })
   }
   return resolved
+}
+
+/**
+ * The execution profile for one provider a peak window names, resolved
+ * from the installed catalog rather than configured as a route. It carries the
+ * adapter's own stream defaults and the catalog provider itself; the
+ * credential comes from the candidate's own `apiKeyEnv`, resolved per request.
+ * @param provider - pi-ai provider id the window named.
+ * @param piProvider - the catalog provider built for that id.
+ * @returns a profile the request path can execute against.
+ */
+export function catalogAlternateProfile(provider: string, piProvider: Provider): ResolvedPiAiProviderProfile {
+  return {
+    provider,
+    displayName: provider,
+    streamIdleTimeoutMs: DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+    maxRequestImageBytes: DEFAULT_MAX_REQUEST_IMAGE_BYTES,
+    requestImagePixelBudget: DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET,
+    requestImageMaxBytes: DEFAULT_REQUEST_IMAGE_MAX_BYTES,
+    retryPolicy: resolveRetryPolicy(undefined, `llm-pi-ai: catalog alternate "${provider}" retryPolicy`),
+    piProvider,
+    modelErrors: new Map(),
+    configuredMaxTokens: new Map(),
+    peak: new Map(),
+  }
 }

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-06-zone-pinned-message-timestamps.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-06-zone-pinned-message-timestamps.md
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line:
+  en: 801136af32a7c0fe
+  zh: 0cc050b464337983
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line/problem:
+  en: 6659f0ace675997c
+  zh: 34ca6ffe12940338
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line/decision:
+  en: 1be54ddeeddb9304
+  zh: f332acc7bc8603a1
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line/alternatives-considered:
+  en: 83afff6608b7bd32
+  zh: 99c2f32bbcf555ab
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line/consequences:
+  en: 2ec0a18f4eedbfcf
+  zh: ee9b7675379dd47a
+/agent-note-message-timestamps-become-a-zone-pinned-caption-line/testing:
+  en: c0ec981d079c2e6a
+  zh: bda4af2eda2f35d2

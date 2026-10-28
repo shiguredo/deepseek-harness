@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ollama Cloud 検索設定",
+    "description": "Ollama Cloud の Web 提供元の選択、キー、2 つのエンドポイント、結果件数を設定します。"
+  }
+}

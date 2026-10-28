@@ -96,6 +96,11 @@ export const zh = {
   'settings.performance.description': '选择性能与用量信息展示的详细程度',
   'settings.performance.compact': '简洁',
   'settings.performance.detailed': '详细',
+  'settings.clockTimeZone.title': '时间戳时区',
+  'settings.clockTimeZone.description': '消息时间戳使用的时区',
+  'settings.clockTimeZone.local': '设备时区',
+  'settings.clockTimeZone.jst': '日本标准时间（JST）',
+  'settings.clockTimeZone.utc': '协调世界时（UTC）',
   'settings.links.title': '网页链接默认打开方式',
   'settings.links.description': '对话中网页链接的打开位置',
   'settings.links.sidebar': '应用内侧边栏',
@@ -198,8 +203,9 @@ export const zh = {
   'row.running': '运行中',
   'row.failed': '失败',
   'json.truncated': '… 已截断，共 {total} 字符',
-  'clock.md': '{m}月{d}日',
-  'clock.ymd': '{y}年{m}月{d}日',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<string, string>
 
 /** Chat dictionary key union. */
@@ -298,6 +304,11 @@ export const en = {
   'settings.performance.description': 'Choose how much performance and usage information to show',
   'settings.performance.compact': 'Compact',
   'settings.performance.detailed': 'Detailed',
+  'settings.clockTimeZone.title': 'Timestamp time zone',
+  'settings.clockTimeZone.description': 'Time zone the message timestamps use',
+  'settings.clockTimeZone.local': 'Device time zone',
+  'settings.clockTimeZone.jst': 'Japan Standard Time (JST)',
+  'settings.clockTimeZone.utc': 'Coordinated Universal Time (UTC)',
   'settings.links.title': 'Open chat links in',
   'settings.links.description': 'Choose where to open web links',
   'settings.links.sidebar': 'In-App Sidebar',
@@ -400,8 +411,9 @@ export const en = {
   'row.running': 'Running',
   'row.failed': 'Failed',
   'json.truncated': '… truncated, {total} characters total',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<ChatKey, string>
 
 /** Japanese copy, checked against the English keys. */
@@ -497,6 +509,11 @@ export const ja = {
   'settings.performance.description': 'パフォーマンスと使用状況の表示量を選択',
   'settings.performance.compact': 'コンパクト',
   'settings.performance.detailed': '詳細',
+  'settings.clockTimeZone.title': 'タイムスタンプのタイムゾーン',
+  'settings.clockTimeZone.description': 'メッセージのタイムスタンプが使うタイムゾーン',
+  'settings.clockTimeZone.local': '端末のタイムゾーン',
+  'settings.clockTimeZone.jst': '日本標準時（JST）',
+  'settings.clockTimeZone.utc': '協定世界時（UTC）',
   'settings.links.title': 'チャットリンクを開く場所',
   'settings.links.description': 'Web リンクを開く場所を選択',
   'settings.links.sidebar': 'アプリ内サイドバー',
@@ -599,8 +616,9 @@ export const ja = {
   'row.running': '実行中',
   'row.failed': '失敗',
   'json.truncated': '… 省略表示、全{total}文字',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -696,6 +714,11 @@ export const es = {
   'settings.performance.description': 'Elija cuánta información de rendimiento y uso desea mostrar',
   'settings.performance.compact': 'Compacto',
   'settings.performance.detailed': 'Detallado',
+  'settings.clockTimeZone.title': 'Zona horaria de las marcas de tiempo',
+  'settings.clockTimeZone.description': 'Zona horaria que usan las marcas de tiempo de los mensajes',
+  'settings.clockTimeZone.local': 'Zona horaria del dispositivo',
+  'settings.clockTimeZone.jst': 'Hora estándar de Japón (JST)',
+  'settings.clockTimeZone.utc': 'Tiempo universal coordinado (UTC)',
   'settings.links.title': 'Abrir enlaces de chat en',
   'settings.links.description': 'Elija dónde abrir enlaces web',
   'settings.links.sidebar': 'Barra lateral en la aplicación',
@@ -798,8 +821,9 @@ export const es = {
   'row.running': 'corriendo',
   'row.failed': 'Fallido',
   'json.truncated': '… truncado, caracteres {total} en total',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -895,6 +919,11 @@ export const fr = {
   'settings.performance.description': "Choisissez la quantité d'informations sur les performances et l'utilisation à afficher",
   'settings.performance.compact': 'Compacte',
   'settings.performance.detailed': 'Détaillé',
+  'settings.clockTimeZone.title': 'Fuseau horaire des horodatages',
+  'settings.clockTimeZone.description': 'Fuseau horaire utilisé par les horodatages des messages',
+  'settings.clockTimeZone.local': "Fuseau horaire de l'appareil",
+  'settings.clockTimeZone.jst': 'Heure standard du Japon (JST)',
+  'settings.clockTimeZone.utc': 'Temps universel coordonné (UTC)',
   'settings.links.title': 'Ouvrir les liens de discussion dans',
   'settings.links.description': 'Choisissez où ouvrir les liens Web',
   'settings.links.sidebar': "Barre latérale dans l'application",
@@ -997,8 +1026,9 @@ export const fr = {
   'row.running': 'Courir',
   'row.failed': 'Échec',
   'json.truncated': '… tronqué, nombre total de caractères {total}',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -1094,6 +1124,11 @@ export const de = {
   'settings.performance.description': 'Wählen Sie aus, wie viele Leistungs- und Nutzungsinformationen angezeigt werden sollen',
   'settings.performance.compact': 'Kompakt',
   'settings.performance.detailed': 'Ausführlich',
+  'settings.clockTimeZone.title': 'Zeitzone der Zeitstempel',
+  'settings.clockTimeZone.description': 'Zeitzone, die die Zeitstempel der Nachrichten verwenden',
+  'settings.clockTimeZone.local': 'Zeitzone des Geräts',
+  'settings.clockTimeZone.jst': 'Japanische Normalzeit (JST)',
+  'settings.clockTimeZone.utc': 'Koordinierte Weltzeit (UTC)',
   'settings.links.title': 'Öffnen Sie Chat-Links in',
   'settings.links.description': 'Wählen Sie aus, wo Weblinks geöffnet werden sollen',
   'settings.links.sidebar': 'In-App-Seitenleiste',
@@ -1196,8 +1231,9 @@ export const de = {
   'row.running': 'Laufen',
   'row.failed': 'Fehlgeschlagen',
   'json.truncated': '… gekürzt, {total} Zeichen insgesamt',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -1293,6 +1329,11 @@ export const ru = {
   'settings.performance.description': 'Выберите, какой объем информации о производительности и использовании показывать',
   'settings.performance.compact': 'Компактный',
   'settings.performance.detailed': 'Подробный',
+  'settings.clockTimeZone.title': 'Часовой пояс меток времени',
+  'settings.clockTimeZone.description': 'Часовой пояс, используемый метками времени сообщений',
+  'settings.clockTimeZone.local': 'Часовой пояс устройства',
+  'settings.clockTimeZone.jst': 'Японское стандартное время (JST)',
+  'settings.clockTimeZone.utc': 'Всемирное координированное время (UTC)',
   'settings.links.title': 'Открыть ссылки на чат в',
   'settings.links.description': 'Выберите, где открывать веб-ссылки',
   'settings.links.sidebar': 'Боковая панель в приложении',
@@ -1395,8 +1436,9 @@ export const ru = {
   'row.running': 'Бег',
   'row.failed': 'Не удалось',
   'json.truncated': '… усечено, всего символов {total}',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -1492,6 +1534,11 @@ export const pt = {
   'settings.performance.description': 'Escolha quantas informações de desempenho e uso serão exibidas',
   'settings.performance.compact': 'Compacto',
   'settings.performance.detailed': 'Detalhado',
+  'settings.clockTimeZone.title': 'Fuso horário dos carimbos de data/hora',
+  'settings.clockTimeZone.description': 'Fuso horário usado pelos carimbos de data/hora das mensagens',
+  'settings.clockTimeZone.local': 'Fuso horário do dispositivo',
+  'settings.clockTimeZone.jst': 'Horário Padrão do Japão (JST)',
+  'settings.clockTimeZone.utc': 'Tempo Universal Coordenado (UTC)',
   'settings.links.title': 'Abra links de bate-papo em',
   'settings.links.description': 'Escolha onde abrir links da web',
   'settings.links.sidebar': 'Barra lateral no aplicativo',
@@ -1594,6 +1641,7 @@ export const pt = {
   'row.running': 'Correndo',
   'row.failed': 'Falha',
   'json.truncated': '… truncado, {total} caracteres no total',
-  'clock.md': '{m}/{d}',
-  'clock.ymd': '{y}-{m}-{d}',
+  'clock.zoned': '{time} ({zone})',
+  'clock.zone.jst': 'JST',
+  'clock.zone.utc': 'UTC',
 } satisfies Record<keyof typeof en, string>

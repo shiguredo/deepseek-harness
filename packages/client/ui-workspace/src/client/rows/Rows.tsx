@@ -11,7 +11,7 @@
  * session and workspace hover cards are suppressed while a menu is open.
  */
 import { useEffect, useMemo, useRef } from 'react'
-import type { PointerEvent, RefObject } from 'react'
+import type { MouseEvent, PointerEvent, RefObject } from 'react'
 import clsx from 'clsx'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import {
@@ -570,10 +570,12 @@ export function SearchResultItem({
 /**
  * One top-level 32px session row: leading 16px cell (status dot, or the
  * leading seat while the row's primary state is idle), title, relative time or
- * compact pending label, and the row actions menu. A row that owns a state dot
- * keeps that cell and renders no seat, so an ambient automation mark never
- * appears beside the row's own state dot. An archived row keeps the cell blank:
- * neither marker renders there, and its live status stays on the hover card.
+ * compact pending label, and the row actions menu. A flat row adds the owning
+ * Workspace label above the title, because its hierarchy-free list has no
+ * group header to name the Workspace. A row that owns a state dot keeps that
+ * cell and renders no seat, so an ambient automation mark never appears beside
+ * the row's own state dot. An archived row keeps the cell blank: neither
+ * marker renders there, and its live status stays on the hover card.
  * The row accepts Tab focus and opens with unmodified Enter or Space; descendant controls
  * handle their own activation without opening the row.
  * @param props.node - derived session node.
@@ -588,6 +590,7 @@ export function SearchResultItem({
  * @param props.onReveal - scroll this row into view after search navigation, then acknowledge it.
  * @param props.drag - optional row-drag target wiring; blank rows, and rows whose access excludes
  * `workspace/insertSessionBefore`, cannot start a drag.
+ * @param props.flat - flat-list presentation: names the owning Workspace above the title.
  * @param props.home - host account home for POSIX hover-path abbreviation.
  * @param props.useSessionAccess - the browser root's Session access Hook; the title double-click
  * renames only while it allows `session/rename`.
@@ -596,7 +599,7 @@ export function SearchResultItem({
  */
 export function SessionNodeItem({
   node, currentId, now, onOpen, onRenameRequest, renderSlot, openSessionMenu, useContextMenuTarget,
-  useContextMenu, onReveal, drag, home, useSessionAccess, t,
+  useContextMenu, onReveal, drag, flat = false, home, useSessionAccess, t,
 }: {
   useContextMenu: WorkspaceBrowserProps['useContextMenu']
   openSessionMenu: WorkspaceBrowserProps['openSessionMenu']
@@ -611,6 +614,8 @@ export function SessionNodeItem({
   onReveal?: (() => void) | undefined
   /** Present on reorderable-list rows so every row can remain a drop target. */
   drag?: RowDragProps | undefined
+  /** Flat-list presentation: renders the owning Workspace label above the title. */
+  flat?: boolean | undefined
   /** Host account home; POSIX home-rooted hover paths display as `~`. */
   home?: string | undefined
   t: RowTranslate
@@ -633,6 +638,13 @@ export function SessionNodeItem({
   const renamable = useSessionAccess(node.id, 'session/rename')
   const reorderable = useSessionAccess(node.id, 'workspace/insertSessionBefore')
   const draggable = drag !== undefined && reorderable && !row.blank && !row.archived
+  // The flat list has no group header, so the row itself names the Workspace;
+  // an empty label means neither a Workspace nor a named directory accounts for it.
+  const workspaceLabel = !flat
+    ? undefined
+    : row.workspace === undefined || row.workspace === ''
+      ? t('group.ungrouped')
+      : row.workspace
   const menuOpen = useContextMenuTarget(target => target?.kind === 'session' && target.value.sessionId === node.id)
   const dragPreview = useRowDragPreview(css.dragPreview as string, DRAG_PREVIEW_PROPERTIES)
   const rowRef = useRef<HTMLDivElement>(null)
@@ -643,6 +655,26 @@ export function SessionNodeItem({
   const renameArmed = useRef(false)
   const disarmRename = useRef(() => { renameArmed.current = false }).current
   const marquee = useTitleMarquee(titleRef)
+  // Both presentations render the same title cell: the flat list only wraps it
+  // in the Workspace label its group header would have carried.
+  const titleCell = {
+    ref: titleRef,
+    className: css.title,
+    onMouseDown: (event: MouseEvent<HTMLSpanElement>): void => {
+      if (event.detail !== 1) return
+      renameArmed.current = true
+      // One shared function and options: repeated presses add one listener.
+      window.addEventListener('blur', disarmRename, { once: true })
+    },
+    onDoubleClick: row.blank || !renamable
+      ? undefined
+      : (event: MouseEvent<HTMLSpanElement>): void => {
+        event.stopPropagation()
+        if (!renameArmed.current) return
+        renameArmed.current = false
+        onRenameRequest(node.id, row.title)
+      },
+  }
   useEffect(() => {
     if (menuOpen || rowRef.current?.matches(':hover')) marquee.enter()
     else marquee.leave()
@@ -659,6 +691,7 @@ export function SessionNodeItem({
       className={clsx(
         css.sessionRow, selected && css.selected, menuOpen && css.menuOpen,
         row.archived && css.archived,
+        flat && css.flatSessionRow,
         drag?.marker === 'before' && css.dropBefore, drag?.marker === 'after' && css.dropAfter,
       )}
       role="treeitem"
@@ -711,26 +744,14 @@ export function SessionNodeItem({
           ? <SessionStatusDots statuses={statuses} />
           : renderSlot('sidebar.session.row.leading', { sessionId: node.id }))}
       </span>
-      <span
-        ref={titleRef}
-        className={css.title}
-        onMouseDown={(e) => {
-          if (e.detail !== 1) return
-          renameArmed.current = true
-          // One shared function and options: repeated presses add one listener.
-          window.addEventListener('blur', disarmRename, { once: true })
-        }}
-        onDoubleClick={row.blank || !renamable
-          ? undefined
-          : (e) => {
-            e.stopPropagation()
-            if (!renameArmed.current) return
-            renameArmed.current = false
-            onRenameRequest(node.id, row.title)
-          }}
-      >
-        {title}
-      </span>
+      {workspaceLabel === undefined
+        ? <span {...titleCell}>{title}</span>
+        : (
+          <span className={css.flatCell}>
+            <span className={css.workspace}>{workspaceLabel}</span>
+            <span {...titleCell}>{title}</span>
+          </span>
+        )}
       {/* Blank rows have no first prompt, so neither trailing details nor
           actions for existing content are available. */}
       {!row.blank && (

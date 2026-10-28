@@ -1,0 +1,16 @@
+/* One quiet timestamp line above the message it belongs to, wearing the
+   session row's project-line recipe: caption size, tertiary ink, single line.
+   Fixed size like that sibling metadata line, so the clock stays a quiet
+   second tier however far the content font-size preference moves the message. */
+
+.clock {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  user-select: none;
+}

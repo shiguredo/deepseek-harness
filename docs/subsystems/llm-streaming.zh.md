@@ -552,6 +552,39 @@ interface LlmModelBadge {
 ```
 
 ```ts type-equiv
+/** One local wall-clock window an adapter routes a model through another provider. */
+interface LlmRoutingWindow {
+  /** Inclusive local start as `HH:mm`. */
+  from: string
+  /** Exclusive local end as `HH:mm`; earlier than {@link from} crosses midnight. */
+  to: string
+  /** IANA time zone the window is read in; absence means the reader's own zone. */
+  timeZone?: string
+  /**
+   * Local weekdays the window applies to, named by the day it starts in that
+   * zone; absence applies it every day. A window crossing midnight belongs to
+   * the day it starts, so an after-midnight reading reads the day before.
+   */
+  days?: readonly string[]
+  /** Provider route that serves this window's requests. */
+  provider: string
+  /**
+   * Model id the serving provider receives; absence keeps the routed model's
+   * own id, which is how a window that only moves the endpoint is declared.
+   */
+  model?: string
+}
+```
+
+```ts type-equiv
+/** Time windows a deployment configured for one model entry. */
+interface LlmModelRouting {
+  /** The windows in configuration order; the model is routed in any of them. */
+  windows: readonly LlmRoutingWindow[]
+}
+```
+
+```ts type-equiv
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 interface LlmModelInfo {
   /** Provider route that owns this model entry. */
@@ -564,6 +597,8 @@ interface LlmModelInfo {
   description?: string
   /** Accepted request modalities; absent means unknown, while an explicit omission is negative capability. */
   inputModalities?: readonly ModelModality[]
+  /** Windows in which the route's requests go to another provider; absent means none. */
+  routing?: LlmModelRouting
   /**
    * Selector label advertised by catalog discovery; exact-route resolution
    * omits it, and no model request or Session event carries it.
@@ -571,6 +606,8 @@ interface LlmModelInfo {
   badge?: LlmModelBadge
 }
 ```
+
+适配器若把同一模型交由多个提供方服务，就会在 `LlmModelInfo.routing` 中声明本地窗口，使选择器能在窗口生效时标记该模型；该声明是展示元数据，不是第二个路由权威。
 
 对正确性敏感的元数据与参考目录分开解析，并归服务该确切路由的适配器所有。上下文容量、适配器调用默认值、推理选项和系统提示词更新模式共用同一个确切模型结果，消费方因而无需重复执行权威模型解析。`SystemPromptUpdate` 只有一个值 `'in-history'`：模型把 `messages` 中任意位置最新的 `system` 消息读作完整的有效系统提示词，因此 agent loop 可以把变化后的提示词追加到已缓存历史之后，而不是改写第 0 条消息（[决策规则](../../packages/core/agent-loop/README.zh.md#understand-the-implementation)）；模式缺失表示只读取开头的 system 消息，`normalizeModelInfo` 以 `INVALID_MODEL_INFO` 拒绝任何其他值。
 

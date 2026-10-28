@@ -1,10 +1,12 @@
 /**
  * ModelSelect: the composer's named model seat (`conversation.input.model`).
- * Two-level selection per figma 496:26454's MenuDropdown: the root menu is
- * the Model / Effort row pair (label + current value + a right chevron),
- * each drilling into its own list — the provider-grouped model list over
- * the shared directory, and the effort levels. The trigger (313:14108's
- * ToggleButton) shows both: model name + effort in the caption tone.
+ * Two-level selection per figma 496:26454's MenuDropdown: the root menu lists
+ * the current provider above the Model / Effort row pair (label + current
+ * value + a right chevron), the two rows drilling into the provider-grouped
+ * model list over the shared directory and the effort levels. The provider
+ * row shows its value without a chevron and is not selectable. The trigger
+ * (313:14108's ToggleButton) shows the provider name, model name, and
+ * effort: the provider and effort use the caption tone.
  * Model catalogs above four entries show search, which retains focus while
  * ↑/↓ cycle the highlighted result; Enter and Tab accept it. Smaller model
  * catalogs, root panes, and effort panes move focus between rows. Escape and Shift+Tab leave a drilled pane first and otherwise close
@@ -43,6 +45,7 @@ import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/d
 import type { ModelLabelOwner, ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
 import { orderModelProviders } from './provider-order.ts'
+import { activeRoutingWindow, type ModelRouting } from './routing.ts'
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
 type Pane = 'root' | 'model' | 'effort'
@@ -56,6 +59,24 @@ interface EffortChoice {
 
 /** Unplaced portal card: hidden but laid out at a fixed origin so offsetWidth/offsetHeight are real (Menu primitive's measure pass). */
 const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
+
+/**
+ * Re-render the routing indicator at its boundaries. The interval runs only
+ * while the current model advertises routing, so a selector without one keeps
+ * its ordinary render behavior.
+ * @param enabled - whether the current model declares routing windows.
+ * @returns the instant the indicator should be evaluated at.
+ */
+function useRoutingClock(enabled: boolean): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!enabled) return
+    setNow(Date.now())
+    const timer = setInterval(() => { setNow(Date.now()) }, 60_000)
+    return () => { clearInterval(timer) }
+  }, [enabled])
+  return now
+}
 
 /**
  * Render the composer model seat.
@@ -127,6 +148,9 @@ export function ModelSelect(
     ? -1
     : choices.findIndex(c => c.selection.provider === state.current?.provider && c.selection.model === state.current.model)
   const currentChoice = choices[selectedIndex]
+  const routing: ModelRouting | undefined = currentChoice?.model.routing
+  const routingNow = useRoutingClock(routing !== undefined)
+  const activeRoute = routing === undefined ? undefined : activeRoutingWindow(routing, routingNow)
   const reasoning = currentChoice?.model.reasoning
   const effectiveEffort = state.current?.reasoningEffort ?? reasoning?.defaultEffort
   const effortLabel = currentChoice === undefined
@@ -421,19 +445,33 @@ export function ModelSelect(
     submit(selection)
   }
 
+  /** Provider display name; the account route owns localized copy. */
+  const providerName = (provider: { readonly id: string; readonly name: string }): string =>
+    provider.id === 'deepseek-account' ? t('provider.account') : provider.name
   const waiting = currentChoice === undefined && state.status === 'loading'
   const modelLabel = waiting
     ? t('trigger.loading')
     : currentChoice?.model.name
       ?? t('trigger.fallback')
-  const triggerLabel = effortLabel === undefined ? modelLabel : `${modelLabel} · ${effortLabel}`
-  const triggerAria = waiting
+  // The trigger leads the model with its provider whenever the catalog still
+  // names it; a selection the catalog no longer resolves keeps the plain
+  // fallback and hides the root pane's provider row.
+  // A routed model names the provider serving the active window and marks it
+  // automatic; outside every window the catalog provider stands unchanged.
+  const providerLabel = currentChoice === undefined
+    ? undefined
+    : activeRoute === undefined
+      ? providerName(currentChoice.group)
+      : `${groups.find(group => group.id === activeRoute.provider)?.name ?? activeRoute.provider} (${t('trigger.routing')})`
+  const modelValue = providerLabel === undefined ? modelLabel : `${providerLabel} · ${modelLabel}`
+  const triggerLabel = effortLabel === undefined ? modelValue : `${modelValue} · ${effortLabel}`
+  const triggerAria = (waiting
     ? t('trigger.loading')
     : currentChoice === undefined
       ? t('trigger.selectAria')
       : effortLabel === undefined
-        ? t('trigger.aria', { model: modelLabel })
-        : t('trigger.ariaEffort', { model: modelLabel, effort: effortLabel })
+        ? t('trigger.aria', { model: modelValue })
+        : t('trigger.ariaEffort', { model: modelValue, effort: effortLabel }))
   const renderModelLabel = (
     provider: ModelLabelOwner['provider'], model: ModelLabelOwner['model'],
     placement: ModelLabelOwner['placement'], selected: boolean,
@@ -492,6 +530,11 @@ export function ModelSelect(
         }}
       >
         <IconDataOutlineRegular className={css.triggerIcon} size={16} />
+        {providerLabel !== undefined && (
+          <span className={clsx(css.triggerProvider, activeRoute !== undefined && css.triggerProviderRouted)}>
+            {`${providerLabel} · `}
+          </span>
+        )}
         <span className={css.triggerLabel}>
           {currentChoice === undefined ? modelLabel : renderModelLabel(currentChoice.group.provider, currentChoice.model, 'trigger', true)}
         </span>
@@ -516,6 +559,12 @@ export function ModelSelect(
         >
           {pane === 'root' && (
             <>
+              {providerLabel !== undefined && (
+                <div className={clsx(css.cell, css.cellStatic)}>
+                  <span className={css.cellLabel}>{t('menu.provider')}</span>
+                  <span className={css.cellValue}>{providerLabel}</span>
+                </div>
+              )}
               <button ref={itemRef()} type="button" role="menuitem" className={css.cell} onClick={() => { drill('model') }}>
                 <span className={css.cellLabel}>{t('menu.model')}</span>
                 <span className={css.cellValue}>
@@ -575,7 +624,7 @@ export function ModelSelect(
               )}
               {state.failures.map(failure => (
                 <div className={css.warning} key={failure.id}>
-                  <span>{t('warning.groupLoad', { name: failure.id === 'deepseek-account' ? t('provider.account') : failure.name, message: failure.message })}</span>
+                  <span>{t('warning.groupLoad', { name: providerName(failure), message: failure.message })}</span>
                   <button type="button" className={css.retry} onClick={reload}>{t('retry')}</button>
                 </div>
               ))}

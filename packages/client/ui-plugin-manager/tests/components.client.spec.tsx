@@ -100,7 +100,7 @@ function subjectOf(owner: unknown): PluginsSubject | undefined {
   return typeof owner === 'object' && owner !== null && 'subject' in owner ? (owner as PluginDetailProps).subject : undefined
 }
 
-const NO_CONFIG: ConfigLedger = { items: [], bundles: new Set(), rows: new Set() }
+const NO_CONFIG: ConfigLedger = { items: [], shiguredo: [], bundles: new Set(), rows: new Set() }
 
 function renderTab(
   state: Partial<PluginManagerState> = {}, config: Partial<ConfigLedger> = {},
@@ -1253,6 +1253,28 @@ describe('PluginManagerPage', () => {
       fireEvent.click(within(detail).getByRole('button', { name: en.backToList }))
       expect(document.querySelector('[data-plugin-item-detail]')).toBeNull()
       expect(screen.getByRole('heading', { name: en.basicTitle })).toBeTruthy()
+    })
+
+    it('lists Shiguredo built-in plugin settings in their own group after Experimental', () => {
+      renderTab(
+        { packages: [pkg()] },
+        { shiguredo: [{ id: 'git-push-guard', label: 'Push guard' }] },
+        {
+          'plugins.shiguredo:git-push-guard': view => (view === 'summary' ? 'Asks before pushes.' : <form aria-label="guard form" />),
+        },
+      )
+      expect([...document.querySelectorAll('[data-plugin-group]')].map(group => group.getAttribute('data-plugin-group')))
+        .toEqual(['shiguredo', 'bundles'])
+      const shiguredo = document.querySelector('[data-plugin-group="shiguredo"]') as HTMLElement
+      expect(within(shiguredo).getByRole('heading', { name: en.shiguredoTitle })).toBeTruthy()
+      expect(within(shiguredo).getByText('Asks before pushes.')).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: en.openDetail.replace('{name}', 'Push guard') }))
+      const detail = document.querySelector('[data-plugin-item-detail="git-push-guard"]') as HTMLElement
+      expect(within(detail).getByRole('heading', { level: 3 }).textContent).toBe('Push guard')
+      expect(within(detail).getByText('Asks before pushes.')).toBeTruthy()
+      expect(within(detail).getByRole('form', { name: 'guard form' })).toBeTruthy()
+      fireEvent.click(within(detail).getByRole('button', { name: en.backToList }))
+      expect(screen.getByRole('heading', { name: en.shiguredoTitle })).toBeTruthy()
     })
 
     it.each([

@@ -16,5 +16,6 @@
   - paragraph: Queue this follow-up while the current turn is running.
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Push guard ON" [pressed]
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Queue message"

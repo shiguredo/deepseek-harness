@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Proteção de push do Git",
+    "description": "Pede confirmação antes de um comando git push, com um interruptor por sessão e um padrão para novas sessões."
+  }
+}

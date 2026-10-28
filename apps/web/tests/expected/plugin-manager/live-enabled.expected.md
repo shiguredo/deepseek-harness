@@ -47,6 +47,14 @@
     - text: 实验性 跟踪每个会话的变更请求及其检查与评审，新会话也可以在 Git 工作树中开始；GitHub 通过 gh 命令行访问。
     - status
     - switch "启用 变更请求与工作树"
+- heading "时雨堂内置插件设置" [level=3]
+- list:
+  - listitem:
+    - button "查看 Ollama Cloud 搜索": Ollama Cloud 搜索
+    - text: 设置 Ollama Cloud 的网页搜索与抓取提供方。
+  - listitem:
+    - button "查看 Git 推送防护": Git 推送防护
+    - text: 在 Git 推送执行前请求确认。
 - heading "已安装插件" [level=3]
 - list:
   - listitem:

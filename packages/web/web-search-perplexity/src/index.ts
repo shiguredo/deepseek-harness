@@ -30,7 +30,7 @@ export const inject = ['web']
 export interface Config {
   /** Perplexity API key. Falls back to `$PERPLEXITY_API_KEY`. Empty → unavailable. */
   apiKey?: string
-  /** Endpoint base; `/chat/completions` is appended. Defaults to the public API. */
+  /** Endpoint base or full endpoint; `/chat/completions` is appended when the value is not already it. Defaults to the public API. */
   baseURL?: string
   /** Search model name. Defaults to `sonar`. */
   model?: string

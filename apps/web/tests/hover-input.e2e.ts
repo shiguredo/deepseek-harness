@@ -171,7 +171,7 @@ it.each([false, true])('keeps actions and focus usable with touch=%s across layo
   const row = page.locator(`[data-row-key="session:${id}"]`)
   await row.waitFor({ state: 'visible' })
   expect(await row.getAttribute('aria-selected')).toBe('true')
-  const copy = page.locator('[data-clock="end"] > button').first()
+  const copy = page.locator('[data-variant="assistant"] > button').first()
   const background = () => copy.evaluate(element => getComputedStyle(element).backgroundColor)
   await page.mouse.move(0, 0)
   const resting = await background()

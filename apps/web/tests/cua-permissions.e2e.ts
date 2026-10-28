@@ -80,7 +80,12 @@ it.skipIf(process.platform !== 'darwin')('keeps system requests pending until fr
   const plugins = page.locator('[data-plugin-panel]')
   const openDetails = page.getByRole('button', { name: 'View Computer use', exact: true })
   await openDetails.scrollIntoViewIfNeeded()
-  expect(await plugins.locator('[data-plugin-body]').evaluate(element => element.scrollTop)).toBeGreaterThan(0)
+  const panelBox = await plugins.locator('[data-plugin-body]').evaluate(element => ({
+    scrollTop: element.scrollTop, scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
+  }))
+  // The list scrolls to reach a card below the fold; a viewport tall enough to
+  // show every card needs no scroll, so only assert the panel scrolled when it overflows.
+  if (panelBox.scrollHeight > panelBox.clientHeight + 1) expect(panelBox.scrollTop).toBeGreaterThan(0)
   await openDetails.click()
   const panel = page.locator('[data-cua-settings]')
   const accessibility = panel.getByRole('group', { name: 'Accessibility', exact: true })

@@ -162,15 +162,25 @@ export function QuestionComposer(props: QuestionComposerProps) {
         useStore={props.useStore}
         useQuestionCard={props.useQuestionCard}
         actions={props.actions}
+        renderSlot={props.renderSlot}
       />
     )
-    : <PlanReviewPanel key={question.key} pending={question} review={review} t={props.t} renderSlot={props.renderSlot} />
+    : (
+      <PlanReviewPanel
+        key={question.key}
+        pending={question}
+        review={review}
+        t={props.t}
+        renderSlot={props.renderSlot}
+      />
+    )
 }
 
 type QuestionFlowProps =
-  { pending: PendingQuestion } & Pick<QuestionComposerProps, 't' | 'useStore' | 'useQuestionCard' | 'actions'>
+  { pending: PendingQuestion }
+  & Pick<QuestionComposerProps, 't' | 'useStore' | 'useQuestionCard' | 'actions' | 'renderSlot'>
 
-function QuestionFlow({ pending, t, useStore, useQuestionCard, actions }: QuestionFlowProps) {
+function QuestionFlow({ pending, t, useStore, useQuestionCard, actions, renderSlot }: QuestionFlowProps) {
   const descriptionIdPrefix = useId()
   const questions = pending.questions
   // A read-only card built from a settled call's transcript: the same panel
@@ -467,16 +477,17 @@ function QuestionFlow({ pending, t, useStore, useQuestionCard, actions }: Questi
         aria-labelledby={`question-${pending.key}-${String(index)}`}
       >
         <header className={css.header}>
-          {(question.header !== undefined || minimized) && (
-            <div className={css.headingBlock}>
-              {question.header !== undefined && <div className={css.eyebrow}>{question.header}</div>}
-              {minimized && (
-                <h2 className={css.title} id={`question-${pending.key}-${String(index)}`}>
-                  {question.question}
-                </h2>
-              )}
+          <div className={css.headingBlock}>
+            <div className={css.headerLead}>
+              {renderSlot('conversation.question.header.lead', {})}
             </div>
-          )}
+            {question.header !== undefined && <div className={css.eyebrow}>{question.header}</div>}
+            {minimized && (
+              <h2 className={css.title} id={`question-${pending.key}-${String(index)}`}>
+                {question.question}
+              </h2>
+            )}
+          </div>
           <div className={css.headerActions}>
             {countdown !== undefined && card.waitState !== 'waiting' && card.waitState !== 'editing' && card.waitState !== 'continued' && (
               <span className={css.waitStatus}>

@@ -40,6 +40,8 @@ export const remoteDefaultResponses: RemoteTable = {
     // ui-settings-account bonus notice read and acknowledgement at signing in.
     'account/getUnnotifiedBonuses': ok(null),
     'account/ackBonusNotified': ok(true),
+    // ui-git-branch composer chip for the first Session whose input bar mounts; fixture directories are not checkouts.
+    'workspaceGit/status': ok({ kind: 'none' }),
   },
   // Stream endpoints the roster opens later than boot; declared so a spec that forgets the script gets a stream miss.
   streams: [

@@ -49,7 +49,7 @@ The section declares `settings.plugins.tab`, a root list slot whose labels becom
 - [ui-settings-plugin-inventory](../ui-settings-plugin-inventory/README.md) — the read-only inventory tab.
 - [ui-settings](../ui-settings/README.md) — the domain base declaring `settings.section`.
 - [ui-plugin-manager](../ui-plugin-manager/README.md) — the Plugins page where official plugins are configured.
-- [ui-settings-shell](../ui-settings-shell/README.md), [ui-settings-agent-loop](../ui-settings-agent-loop/README.md), [ui-settings-subagent](../ui-settings-subagent/README.md), [ui-settings-web-search](../ui-settings-web-search/README.md) — the official configuration pages, one companion package each.
+- [ui-settings-shell](../ui-settings-shell/README.md), [ui-settings-agent-loop](../ui-settings-agent-loop/README.md), [ui-settings-subagent](../ui-settings-subagent/README.md), [ui-settings-web-search](../ui-settings-web-search/README.md), [ui-settings-web-search-ollama](../ui-settings-web-search-ollama/README.md) — the official configuration pages, one companion package each.
 
 -----
 

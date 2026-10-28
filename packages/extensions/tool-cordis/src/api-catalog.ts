@@ -4596,6 +4596,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workspaceGit',
+    summary: 'Host reader of the checkout one Session workspace lives in.',
+    description: 'Host reader of the checkout one Session workspace lives in.',
+    methods: [
+      {
+        signature: '@Remote async status(workspaceGitScope: WorkspaceGitScope, signal: AbortSignal): Promise<WorkspaceGitStatus>',
+        description: 'Read the checkout one Session workspace lives in.',
+        parameters: [{ name: 'workspaceGitScope', description: 'resolved working directory for the Session identity on the wire.' }, { name: 'signal', description: 'caller cancellation.' }],
+        returns: 'the checked-out branch or detached short commit id, together with the checkout root path and, when the workspace is a linked worktree, its directory name, plus the GitHub repository the checkout carries, or `none` outside a repository.',
+      },
+    ],
+  },
+  {
     key: 'workspaceRegistry',
     summary: 'Durable workspace registry.',
     description: 'Durable workspace registry. Startup waits for `sessionPersistence`, builds one canonical-cwd header index, and completes the one-time history bootstrap before the service becomes active. The persistence dependency is mandatory so an unavailable peer can never be mistaken for an empty history and commit the initialized marker.',
@@ -6949,11 +6962,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmModelInfo',
-    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    badge?: LlmModelBadge;\n}',
+    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    routing?: LlmModelRouting;\n    badge?: LlmModelBadge;\n}',
   },
   {
     name: 'LlmModelReasoningInfo',
     declaration: 'export interface LlmModelReasoningInfo {\n    efforts: readonly LlmReasoningEffortInfo[];\n    defaultEffort?: ReasoningEffortId;\n}',
+  },
+  {
+    name: 'LlmModelRouting',
+    declaration: 'export interface LlmModelRouting {\n    windows: readonly LlmRoutingWindow[];\n}',
   },
   {
     name: 'LlmNativeAuth',
@@ -6978,6 +6995,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LlmResolvedModelInfo',
     declaration: 'export interface LlmResolvedModelInfo extends LlmModelInfo {\n    context?: LlmModelContext;\n    defaultMaxTokens?: number;\n    reasoning?: LlmModelReasoningInfo;\n    systemPromptUpdate?: SystemPromptUpdate;\n    toolUpdate?: ToolUpdate;\n}',
+  },
+  {
+    name: 'LlmRoutingWindow',
+    declaration: 'export interface LlmRoutingWindow {\n    from: string;\n    to: string;\n    timeZone?: string;\n    days?: readonly string[];\n    provider: string;\n    model?: string;\n}',
   },
   {
     name: 'LlmRuntime',
@@ -7249,7 +7270,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelCatalogModel',
-    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly badge?: LlmModelBadge;\n}',
+    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly routing?: LlmModelRouting;\n    readonly badge?: LlmModelBadge;\n}',
   },
   {
     name: 'ModelMessageSource',
@@ -10178,6 +10199,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceFollowIncrement',
     declaration: 'export type WorkspaceFollowIncrement = {\n    readonly type: \'replace\';\n    readonly value: WorkspaceBaseline;\n} | {\n    readonly type: \'upsert\';\n    readonly workspace: WorkspaceView;\n} | {\n    readonly type: \'remove\';\n    readonly workspaceId: WorkspaceId;\n} | {\n    readonly type: \'order\';\n    readonly workspaceIds: readonly WorkspaceId[];\n} | {\n    readonly type: \'archived\';\n    readonly archivedSessionIds: readonly SessionId[];\n} | {\n    readonly type: \'pinned\';\n    readonly pinnedSessionIds: readonly SessionId[];\n};',
+  },
+  {
+    name: 'WorkspaceGitScope',
+    declaration: 'export interface WorkspaceGitScope {\n    readonly sessionId: SessionId;\n    readonly workspaceRoot: string;\n}',
+  },
+  {
+    name: 'WorkspaceGitStatus',
+    declaration: 'export type WorkspaceGitStatus = (WorkspaceGitRepository & {\n    readonly kind: \'branch\';\n    readonly name: string;\n}) | (WorkspaceGitRepository & {\n    readonly kind: \'detached\';\n    readonly head: string;\n}) | {\n    readonly kind: \'none\';\n};',
   },
   {
     name: 'WorkspaceInsertBeforeRequest',

@@ -40,6 +40,17 @@ An explicit configured path has the highest precedence, then `$DSH_HOME`, then t
 
 `dshCachePath(...segments)` derives paths from the resolved home's `cache` directory. With no segments it returns the cache directory itself. Pass an initial options object, `dshCachePath({ dshHome: home }, ...segments)`, to use an explicit configured home with the same precedence and tilde expansion. It returns an absolute path without creating directories.
 
+### Resolving an instance namespace
+
+```ts
+import { dshInstancePath } from '@deepseek-ai/dsh-home-paths'
+
+dshInstancePath(undefined, 'sessions')       // $DSH_HOME/sessions, the shared layout
+dshInstancePath('lab', 'sessions')           // $DSH_HOME/instances/lab/sessions
+```
+
+A deployment running several servers over one home names each instance so the durable state they must not share — the Session store and the durable KV store — lives under `$DSH_HOME/instances/<name>/`. Omitted, `dshInstancePath` resolves exactly like `dshHomePath`, so a single-server deployment keeps the flat layout. The name is one path-safe segment; callers validate it at their own parser boundary.
+
 ### Resolving the shared agents root
 
 ```ts
@@ -81,7 +92,7 @@ The package is built on one principle: harness user data lives under one root, a
 
 ### Resolution rules
 
-`resolveDshHome` reads the explicit override, then `$DSH_HOME`, then falls back to the operating-system home joined with `.dsh`. `resolveAgentsHome` reads the same three levels for `$DSH_AGENTS_HOME` and `~/.agents`. The chosen value is tilde-expanded and normalized to an absolute path; `dshHomePath` joins child segments with Node's platform path rules. `dshHomeDisplay` and `agentsHomeDisplay` compare the resolved path against the default root and return the symbolic label, so a configured root never leaks its absolute path.
+`resolveDshHome` reads the explicit override, then `$DSH_HOME`, then falls back to the operating-system home joined with `.dsh`. `resolveAgentsHome` reads the same three levels for `$DSH_AGENTS_HOME` and `~/.agents`. The chosen value is tilde-expanded and normalized to an absolute path; `dshHomePath` joins child segments with Node's platform path rules, and `dshInstancePath` inserts `instances/<name>` ahead of them when a name is supplied. `dshHomeDisplay` and `agentsHomeDisplay` compare the resolved path against the default root and return the symbolic label, so a configured root never leaks its absolute path.
 
 ### Canonicalization mechanics
 

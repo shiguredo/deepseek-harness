@@ -4,7 +4,8 @@ import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
 import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
 import { settingsSchema } from './settings-schema.client.ts'
-import { deriveKeyRef, joinProviderDirectory, ModelsSettingsStore, providerUsable } from '../src/client/store.ts'
+import { deriveKeyRef, joinProviderDirectory, ModelsSettingsStore, providerUsable, routingProviderOptions } from '../src/client/store.ts'
+import type { ProviderRow } from '../src/client/store.ts'
 
 it.each([
   ['anthropic', 'ANTHROPIC_API_KEY'],
@@ -108,6 +109,7 @@ function api(overrides: {
   providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
   describeSettings?: () => Promise<RemoteAnswer<{ writable: boolean; hasDocument: boolean; namespaces: typeof NAMESPACES }>>
   describeCredentials?: (refs: readonly string[]) => Promise<RemoteAnswer<Record<string, unknown>>>
+  catalog?: () => Promise<RemoteAnswer<{ groups: readonly { id: string; models: readonly { id: string }[] }[] }>>
 } = {}) {
   const seenRefs: string[][] = []
   const providers = overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY })))
@@ -129,8 +131,10 @@ function api(overrides: {
       : remoteFail(response.result.error.message)
   }
   const face = {
-    session: { modelCatalog: async () => remoteOk({ groups: overrides.accountAvailable
-      ? [{ id: 'deepseek-account', models: [{ id: 'deepseek-flash' }] }] : [] }) },
+    session: {
+      modelCatalog: overrides.catalog ?? (async () => remoteOk({ groups: overrides.accountAvailable
+        ? [{ id: 'deepseek-account', models: [{ id: 'deepseek-flash' }] }] : [] })),
+    },
     llm: {
       listProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.active)
@@ -242,6 +246,74 @@ describe('ModelsSettingsStore', () => {
     expect(store.store.getSnapshot()).toMatchObject({
       status: 'error', error: 'configuration directory down',
     })
+  })
+
+  it('offers configured providers that serve the model', () => {
+    const row = (provider: string, configured: boolean): ProviderRow => ({
+      entry: {
+        provider,
+        displayName: provider,
+        settingsNs: 'llm-pi-ai',
+        settingsPath: ['providers', provider],
+        active: configured,
+      },
+      configured,
+      removable: false,
+      apiKeyEnv: undefined,
+      credential: undefined,
+    })
+    expect(routingProviderOptions(
+      [row('opencode-go', true), row('declared-only', false), row('no-catalog', true)],
+      [{
+        id: 'opencode-go',
+        name: 'OpenCode Go',
+        models: [{ id: 'deepseek-v4.1-flash', name: 'DeepSeek V4.1 Flash' }],
+      }],
+    )).toEqual([
+      { id: 'opencode-go', name: 'opencode-go', models: ['deepseek-v4.1-flash'] },
+      { id: 'no-catalog', name: 'no-catalog', models: [] },
+    ])
+  })
+
+  it('keeps the last good catalog groups when a catalog read fails', async () => {
+    let calls = 0
+    const { ctx, mirror } = api({ catalog: () => {
+      calls += 1
+      return calls === 1
+        ? Promise.resolve(remoteOk({ groups: [{ id: 'opencode-go', models: [{ id: 'deepseek-v4.1-flash' }] }] }))
+        : Promise.resolve(remoteFail('catalog down'))
+    } })
+    const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+    await store.load()
+    expect(store.store.getSnapshot().catalogGroups).toEqual([
+      { id: 'opencode-go', models: [{ id: 'deepseek-v4.1-flash' }] },
+    ])
+    await store.load()
+    expect(store.store.getSnapshot().catalogGroups).toEqual([
+      { id: 'opencode-go', models: [{ id: 'deepseek-v4.1-flash' }] },
+    ])
+  })
+
+  it('drops a stale catalog response after a newer load finished', async () => {
+    const firstCatalog = Promise.withResolvers<RemoteAnswer<{ groups: readonly { id: string; models: readonly { id: string }[] }[] }>>()
+    const firstStarted = Promise.withResolvers<undefined>()
+    let calls = 0
+    const { ctx, mirror } = api({ catalog: () => {
+      calls += 1
+      if (calls === 1) {
+        firstStarted.resolve(undefined)
+        return firstCatalog.promise
+      }
+      return Promise.resolve(remoteOk({ groups: [] }))
+    } })
+    const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+    const first = store.load()
+    await firstStarted.promise
+    await store.load()
+    expect(store.store.getSnapshot().status).toBe('ready')
+    firstCatalog.resolve(remoteOk({ groups: [{ id: 'late', models: [{ id: 'm' }] }] }))
+    await first
+    expect(store.store.getSnapshot().catalogGroups).toEqual([])
   })
 
   it('lets the newest load win over a stale slow response', async () => {

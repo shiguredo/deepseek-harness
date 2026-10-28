@@ -26,13 +26,13 @@ const TRIGGER_ICONS: Record<TurnTriggerIcon, ComponentType<IconProps>> = {
 }
 
 /** Render recorded trigger attribution above the whole-Turn disclosure. */
-export function TurnTriggerNodeView({ node, t }: Pick<ChatNodeViewProps<'turn-trigger'>, 'node' | 't'>) {
+export function TurnTriggerNodeView({ node, clockTimeZone, t }: Pick<ChatNodeViewProps<'turn-trigger'>, 'node' | 'clockTimeZone' | 't'>) {
   const [open, setOpen] = useState(false)
   const bodyId = useId()
   const details = turnTriggerDetails(node.data)
   const TriggerIcon = TRIGGER_ICONS[details.icon]
   const date = new Date(node.data.time)
-  const time = formatMessageClock(node.data.time, t)
+  const time = formatMessageClock(node.data.time, t, clockTimeZone)
   return (
     <section className={css.root} data-turn-trigger>
       <button className={css.header} type="button" aria-expanded={open} aria-controls={bodyId} onClick={() => { setOpen(!open) }}>

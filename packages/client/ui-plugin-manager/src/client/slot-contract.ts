@@ -135,6 +135,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'plugins.item': { kind: 'list'; scope: 'root'; owner: PluginConfigViewProps }
     /**
+     * One Shiguredo-built-in plugin the Plugins page lists in its own settings
+     * group after the Experimental group: `label` is the card's title and
+     * `order` its place. The page renders the entry as the card's one-liner
+     * (`view: 'summary'`) and, once opened, as the body of its page
+     * (`view: 'page'`), exactly like `plugins.item`.
+     */
+    'plugins.shiguredo': { kind: 'list'; scope: 'root'; owner: PluginConfigViewProps }
+    /**
      * A bundle's own configuration, keyed by the bundle's package name and
      * rendered on the bundle's page between its description and its rows
      * (`view: 'page'` only).

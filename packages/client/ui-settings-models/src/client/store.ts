@@ -9,7 +9,7 @@
 
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {
-  CredentialInfo, LlmConfigurableProvider, LlmNativeAuth, LlmProviderInfo, SettingsNamespaceView,
+  CredentialInfo, LlmConfigurableProvider, LlmNativeAuth, LlmProviderInfo, ModelProviderGroup, SettingsNamespaceView,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -113,6 +113,8 @@ export interface ModelsSettingsState {
   rows: readonly ProviderRow[]
   /** Namespace views by ns, for the editor's schema/layers/secrets. */
   namespaces: ReadonlyMap<string, SettingsNamespaceView>
+  /** Last good model groups by provider, used to offer routing destinations that serve a model. */
+  catalogGroups: readonly ModelProviderGroup[]
 }
 
 /**
@@ -186,6 +188,7 @@ export class ModelsSettingsStore {
   /** The snapshot the section renders from (uSES-safe store). */
   readonly store: SnapshotStore<ModelsSettingsState> = createSnapshotStore<ModelsSettingsState>({
     status: 'idle', error: null, credentialError: null, writable: false, rows: [], namespaces: new Map(),
+    catalogGroups: [],
   })
 
   /** Latest load wins; an older response never overwrites a newer one. */
@@ -264,11 +267,16 @@ export class ModelsSettingsStore {
         credential: undefined,
       }
     })
+    // The routing control offers only providers that serve a given model, and
+    // only the model catalog knows that. A failed read keeps the last good
+    // groups so a transient failure narrows no choice the user already had.
+    const catalog = await this.ctx.remote.session.modelCatalog()
+    if (generation !== this.generation) return
+    const catalogGroups = catalog.ok ? catalog.value.groups : this.store.getSnapshot().catalogGroups
     if (rows.some(row => row.entry.provider === 'deepseek-account')) {
-      const catalog = await this.ctx.remote.session.modelCatalog()
       for (const row of rows) {
-        if (row.entry.provider === 'deepseek-account') row.accountAvailable = catalog.ok
-          && catalog.value.groups.some(group => group.id === 'deepseek-account' && group.models.length > 0)
+        if (row.entry.provider === 'deepseek-account') row.accountAvailable = catalogGroups.some(
+          group => group.id === 'deepseek-account' && group.models.length > 0)
       }
     }
     const refs = [...new Set(rows.filter(row => row.entry.provider !== 'deepseek-account').flatMap(row =>
@@ -308,6 +316,7 @@ export class ModelsSettingsStore {
         }
       })
       s.namespaces = namespaces
+      s.catalogGroups = catalogGroups
     })
   }
 
@@ -343,6 +352,35 @@ export function providerUsable(row: ProviderRow): boolean {
   if (row.entry.provider === 'deepseek-account') return row.accountAvailable === true
   if (row.apiKeyEnv === undefined) return true
   return row.credential?.configured === true
+}
+
+/** One selectable peak routing destination. */
+export interface RoutingProviderOption {
+  /** Provider route id written into `peak` and sent to the adapter. */
+  id: string
+  /** Provider name shown in the select. */
+  name: string
+  /** Model ids this provider's catalog serves; a row keeps only its own. */
+  models: readonly string[]
+}
+
+/**
+ * Routing destinations a model row may offer: the providers this deployment
+ * configured, each with the model ids its catalog currently serves.
+ * @param rows - every joined provider row.
+ * @param catalogGroups - last good model groups by provider.
+ * @returns one option per configured provider, in row order.
+ */
+export function routingProviderOptions(
+  rows: readonly ProviderRow[],
+  catalogGroups: readonly ModelProviderGroup[],
+): RoutingProviderOption[] {
+  const models = new Map(catalogGroups.map(group => [group.id, group.models.map(model => model.id)]))
+  return rows.filter(row => row.configured).map(row => ({
+    id: row.entry.provider,
+    name: row.entry.displayName,
+    models: models.get(row.entry.provider) ?? [],
+  }))
 }
 
 /** First-run onboarding readiness derived only from the shared Models join. */

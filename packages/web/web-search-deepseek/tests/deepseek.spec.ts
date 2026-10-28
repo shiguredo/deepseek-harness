@@ -188,7 +188,7 @@ describe('DeepSeekSearchProvider availability', () => {
 
 describe('DeepSeekSearchProvider request mapping', () => {
   it('records and posts the same Anthropic Messages request with the web_search server tool', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse(searchResponse()))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse(searchResponse()))
     const recordRequest = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     await searchProvider({ ...options, recordRequest }).search({ query: 'hello' })
@@ -214,6 +214,13 @@ describe('DeepSeekSearchProvider request mapping', () => {
       body,
     })
     expect(recordRequest.mock.invocationCallOrder[0]).toBeLessThan(fetchMock.mock.invocationCallOrder[0] ?? 0)
+  })
+
+  it('uses a configured full endpoint as-is instead of appending the operation path twice', async () => {
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => jsonResponse(searchResponse()))
+    vi.stubGlobal('fetch', fetchMock)
+    await searchProvider({ ...options, baseURL: 'https://api.deepseek.test/anthropic/v1/messages' }).search({ query: 'q' })
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://api.deepseek.test/anthropic/v1/messages')
   })
 
   it('forwards the abort signal', async () => {

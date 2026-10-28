@@ -15,11 +15,11 @@
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: MINIMAL_COMPACT_READY
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
 - button "compact Compacted 2 history items (~{{tokens}} tokens)" [expanded]
 - paragraph: Implement minimal image reading through the existing filesystem tool, preserving permissions, model capability checks, and standard mode. Enable automatic and manual compaction.
 - text: Continue using the project requirements. Reply exactly MINIMAL_COMPACT_OK and stop. {{clock}}
@@ -27,15 +27,16 @@
 - status: Completed
 - button "Completed in {{duration}}" [disabled]
 - paragraph: MINIMAL_COMPACT_OK
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Push guard ON" [pressed]
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash": DeepSeek · DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "2 turns 2 steps"
 - button "28 tok · Cache hit 0%": 28 tokCache hit 0%

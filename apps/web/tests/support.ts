@@ -64,12 +64,11 @@ export const PLUGIN_TOGGLE_SETTLE_MS = 10_000
 /**
  * Pin the Host clock to the shared fixture day for one scenario suite.
  *
- * A rendered message clock gains a `clock.md` / `clock.ymd` date prefix as soon
- * as the message's local day differs from the renderer's, so a scenario whose
+ * A rendered message clock names its own date and time, so a scenario whose
  * message times are stamped by the Host wall clock — a live composer send, or a
  * seed anchored from `Date.now()` — renders a different aria line once the run
- * spans `Asia/Shanghai` midnight. Reading the fixture day on both clocks makes
- * that calendar fact part of the scenario rather than of the run.
+ * crosses the date the golden recorded. Reading the fixture day on both clocks
+ * makes that calendar fact part of the scenario rather than of the run.
  *
  * The pinned clock advances with real elapsed time, so turn deadlines, session
  * ordering, and durations keep running.

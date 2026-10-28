@@ -20,6 +20,9 @@ export type CollapseTiming = typeof COLLAPSE_TIMINGS[number]
 /** Preserve completion-time folding when no timing preference is saved. */
 export const DEFAULT_COLLAPSE_TIMING: CollapseTiming = 'completion'
 
+/** Field carrying the zone message clocks read. */
+export const CLOCK_TIME_ZONE_FIELD = 'clockTimeZone'
+
 /** Field carrying which Assistant replies stay visible in a folded Turn. */
 export const FOLDED_REPLIES_FIELD = 'foldedReplies'
 
@@ -70,6 +73,15 @@ export type LinkOpening = 'sidebar' | 'new-tab'
 /** Preserve the built-in browser for users without an explicit preference. */
 export const DEFAULT_LINK_OPENING: LinkOpening = 'sidebar'
 
+/** Zones a message clock can be pinned to; `local` follows the device. */
+export const CLOCK_TIME_ZONES = ['local', 'jst', 'utc'] as const
+
+/** Zone message clocks read. */
+export type ClockTimeZone = typeof CLOCK_TIME_ZONES[number]
+
+/** Follow the device zone for users without an explicit preference. */
+export const DEFAULT_CLOCK_TIME_ZONE: ClockTimeZone = 'local'
+
 /** Durable Chat section shared by the Host schema and browser scope. */
 export interface ChatSettings {
   /** Work-details preference; absence uses the client default, and legacy saved values remain accepted. */
@@ -82,6 +94,8 @@ export interface ChatSettings {
   performanceUsage: PerformanceUsageMode
   /** Default destination for Chat HTTP(S) links. */
   linkOpening: LinkOpening
+  /** Zone the message clocks read. */
+  clockTimeZone: ClockTimeZone
 }
 
 /** Durable Chat schema; also the wire envelope the browser scope validates against. */
@@ -90,6 +104,7 @@ export const ChatSettingsFields = {
   [FOLDED_REPLIES_FIELD]: z.union([...FOLDED_REPLIES]).default(DEFAULT_FOLDED_REPLIES),
   linkOpening: z.union(['sidebar', 'new-tab']).default(DEFAULT_LINK_OPENING),
   performanceUsage: z.union([...PERFORMANCE_USAGE_MODES]).default(DEFAULT_PERFORMANCE_USAGE),
+  clockTimeZone: z.union([...CLOCK_TIME_ZONES]).default(DEFAULT_CLOCK_TIME_ZONE),
   // Missing and unrecognized modes defer to the client's default.
   [TRANSCRIPT_VIEW_FIELD]: z.union([...TRANSCRIPT_VIEW_SETTING_VALUES]).loose(),
 }

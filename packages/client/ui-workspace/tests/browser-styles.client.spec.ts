@@ -116,6 +116,9 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(rowDeclarations('.slot')?.get('width')).toBe('16px')
     expect(rowDeclarations('.slot')?.get('height')).toBe('20px')
     expect(rowDeclarations('.sessionRow .title')?.get('margin')).toBe('0 6px 0 var(--dsh-sidebar-label-gap)')
+    // The flat row's two-line cell takes the same shared title margin.
+    expect(rowDeclarations('.flatSessionRow')?.get('min-height')).toBe('45px')
+    expect(rowDeclarations('.flatCell')?.get('margin')).toBe('0 6px 0 var(--dsh-sidebar-label-gap)')
     expect(rowDeclarations('.searchResultRow')?.get('min-height')).toBe('48px')
     expect(rowDeclarations('.searchResultTitle')?.get('margin')).toBe('0 var(--dsh-sidebar-label-gap)')
     expect(rowDeclarations('.sessionRow.selected')?.get('background-color'))

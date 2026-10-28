@@ -550,7 +550,9 @@ describe('web e2e: long Chat scroll contract', () => {
   for (const scenario of [
     { name: 'body-only', bodyParagraphs: 32, inputLines: 1, reduced: false },
     { name: 'visible-steps', bodyParagraphs: 2, inputLines: 1, reduced: false },
-    { name: 'large-input', bodyParagraphs: 2, inputLines: 18, reduced: false },
+    // The fork's per-message clock row adds height above the fold, so this draft
+    // stays tall enough to test the fold while still leaving visible fold room.
+    { name: 'large-input', bodyParagraphs: 2, inputLines: 10, reduced: false },
     { name: 'reduced-motion', bodyParagraphs: 2, inputLines: 1, reduced: true },
     { name: 'cancel-all-during-fold', bodyParagraphs: 2, inputLines: 1, reduced: false },
     { name: 'content-growth-during-fold', bodyParagraphs: 32, inputLines: 1, reduced: false },
