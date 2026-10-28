@@ -23,6 +23,7 @@ export interface OfficialItem {
  */
 export interface ConfigLedger {
   readonly items: readonly OfficialItem[]
+  readonly shiguredo: readonly OfficialItem[]
   readonly bundles: ReadonlySet<string>
   readonly rows: ReadonlySet<string>
 }
@@ -37,7 +38,7 @@ export function rowConfigKey(bundle: string, rowId: string): string {
   return `${bundle}#${rowId}`
 }
 
-const SLOTS = ['plugins.item', 'plugins.bundle.config', 'plugins.row.config'] as const
+const SLOTS = ['plugins.item', 'plugins.shiguredo', 'plugins.bundle.config', 'plugins.row.config'] as const
 
 /**
  * Project the configuration ledgers as one observable the page binds.
@@ -47,7 +48,13 @@ const SLOTS = ['plugins.item', 'plugins.bundle.config', 'plugins.row.config'] as
 export function configLedgerSource(ctx: ClientContext): HostObservable<ConfigLedger> {
   let versions: readonly number[] = []
   let revision = -1
-  let ledger: ConfigLedger = { items: [], bundles: new Set(), rows: new Set() }
+  let ledger: ConfigLedger = { items: [], shiguredo: [], bundles: new Set(), rows: new Set() }
+  const itemsOf = (name: 'plugins.item' | 'plugins.shiguredo'): readonly OfficialItem[] =>
+    ctx.slots.entries(name).map(entry => ({
+      /* v8 ignore next -- list-slot registration requires id */
+      id: entry.options.id ?? '',
+      label: resolveSlotLabel(entry.options.label) ?? '',
+    }))
   const keysOf = (name: 'plugins.bundle.config' | 'plugins.row.config'): ReadonlySet<string> =>
     new Set(ctx.slots.entries(name).flatMap(entry => entry.options.key === undefined ? [] : [entry.options.key]))
   return {
@@ -58,11 +65,8 @@ export function configLedgerSource(ctx: ClientContext): HostObservable<ConfigLed
         versions = next
         revision = current
         ledger = {
-          items: ctx.slots.entries('plugins.item').map(entry => ({
-            /* v8 ignore next -- list-slot registration requires id */
-            id: entry.options.id ?? '',
-            label: resolveSlotLabel(entry.options.label) ?? '',
-          })),
+          items: itemsOf('plugins.item'),
+          shiguredo: itemsOf('plugins.shiguredo'),
           bundles: keysOf('plugins.bundle.config'),
           rows: keysOf('plugins.row.config'),
         }

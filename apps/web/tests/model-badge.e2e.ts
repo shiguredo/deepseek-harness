@@ -61,7 +61,7 @@ describe.skipIf(MODE === 'record')('web e2e: catalog model badges', () => {
     const trigger = page.getByRole('button', { name: /^选择模型/ })
     await trigger.getByText('新', { exact: true }).waitFor()
     expect(await trigger.textContent()).toContain(`新 ${NAME}`)
-    expect(await trigger.getAttribute('aria-label')).toBe(`选择模型，当前 ${NAME}`)
+    expect(await trigger.getAttribute('aria-label')).toBe(`选择模型，当前 DeepSeek · ${NAME}`)
     expect(await trigger.getByText('新', { exact: true }).getAttribute('data-tone')).toBe('success')
     try {
       await trigger.click()
@@ -113,7 +113,7 @@ describe.skipIf(MODE === 'record')('web e2e: catalog model badges', () => {
       expect(await updated.locator('[data-tone]').getAttribute('data-tone')).toBe('success')
       adapter.badge = undefined
       scaffold.ctx.emit('llm/models-updated', provider)
-      await expect.poll(() => trigger.textContent()).toBe('Live model')
+      await expect.poll(() => trigger.textContent()).toBe('live-badge · Live model')
       const cleared = page.getByRole('menuitemradio', { name: 'Live model', exact: true })
       await cleared.waitFor()
       expect(await cleared.locator('[data-tone]').count()).toBe(0)
@@ -133,7 +133,7 @@ describe.skipIf(MODE === 'record')('web e2e: catalog model badges', () => {
       await trigger.click()
       await page.getByRole('menuitem', { name: /^模型/ }).click()
       await page.getByRole('menuitemradio', { name: `${LONG_NAME} Preview`, exact: true }).click()
-      await expect.poll(() => trigger.textContent()).toBe(`Preview ${LONG_NAME}`)
+      await expect.poll(() => trigger.textContent()).toBe(`DeepSeek · Preview ${LONG_NAME}`)
       const triggerBadge = trigger.getByText('Preview', { exact: true })
       const triggerBox = (await trigger.boundingBox())!
       const triggerBadgeBox = (await triggerBadge.boundingBox())!

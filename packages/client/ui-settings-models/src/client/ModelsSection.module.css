@@ -731,6 +731,46 @@
   font-size: 13px;
 }
 
+/* Peak routing of one model row: destination, window, and zone. */
+.routingFields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--dsw-alias-border-l3);
+}
+
+.routingFields > .modelFieldLabel,
+.routingHint {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* The window is stated, not edited: one line of text under its label. */
+.routingWindow {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.routingWindowValue {
+  margin: 0;
+  font-family: var(--ds-font-family-code);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.routingHint {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .modelEmpty {
   padding: 12px;
   border: 1px dashed var(--dsw-alias-border-l3);

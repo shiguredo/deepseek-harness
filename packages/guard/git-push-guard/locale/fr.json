@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Garde de push Git",
+    "description": "Demande confirmation avant une opération git push, avec un interrupteur par session et une valeur par défaut pour les nouvelles sessions."
+  }
+}

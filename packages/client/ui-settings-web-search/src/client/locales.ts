@@ -5,7 +5,7 @@ import type { SettingsFormLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 /** Locale keys the page renders. */
 export type WebSearchSettingsLocaleKey =
   | 'title' | 'description' | 'searchSection' | 'fetchSection'
-  | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerAuto'
+  | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerMissingHint' | 'providerAuto'
   | 'providerLegacy' | 'legacyKeyHint' | 'maxUses' | 'maxUsesHint' | 'invalidMaxUses'
   | 'providersFailed' | 'retry'
   | 'pluginProviderHint' | 'searchGuide' | 'searchGuideUrl'
@@ -30,6 +30,7 @@ export const en: Record<WebSearchSettingsLocaleKey, string> = {
   providerLocal: 'Direct fetch',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (not loaded)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automatic',
   providersFailed: "Couldn't load the provider list, so this menu may be incomplete.",
   retry: 'Retry',
@@ -69,6 +70,7 @@ export const zh: Record<WebSearchSettingsLocaleKey, string> = {
   providerLocal: '本机直接获取',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id}（未加载）',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: '自动选择',
   providersFailed: '无法读取提供方列表，此菜单可能不完整',
   retry: '重试',
@@ -117,6 +119,7 @@ export const ja = {
   'providerLocal': '直接取得',
   'providerDeepSeekFetch': 'DeepSeek Fetch API',
   'providerMissing': '{id}（未読み込み）',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   'providerAuto': '自動',
   'providersFailed': 'プロバイダー一覧を読み込めなかったため、このメニューは不完全な可能性があります。',
   'retry': '再試行',
@@ -156,6 +159,7 @@ export const es = {
   providerLocal: 'Obtención directa',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (no cargado)',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: 'Automático',
   providersFailed: 'No se pudo cargar la lista de proveedores, por lo que este menú puede estar incompleto.',
   retry: 'Reintentar',
@@ -195,6 +199,7 @@ export const fr = {
   providerLocal: 'Récupération directe',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (non chargé)',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: 'Automatique',
   providersFailed: 'Impossible de charger la liste des fournisseurs ; ce menu peut être incomplet.',
   retry: 'Réessayer',
@@ -234,6 +239,7 @@ export const de = {
   providerLocal: 'Direkter Abruf',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (nicht geladen)',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: 'Automatisch',
   providersFailed: 'Die Anbieterliste konnte nicht geladen werden, daher ist dieses Menü möglicherweise unvollständig.',
   retry: 'Erneut versuchen',
@@ -273,6 +279,7 @@ export const ru = {
   providerLocal: 'Прямая загрузка',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (не загружен)',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: 'Автоматически',
   providersFailed: 'Не удалось загрузить список поставщиков, поэтому это меню может быть неполным.',
   retry: 'Повторить',
@@ -312,6 +319,7 @@ export const pt = {
   providerLocal: 'Obtenção direta',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (não carregado)',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: 'Automático',
   providersFailed: 'Não foi possível carregar a lista de provedores, por isso este menu pode estar incompleto.',
   retry: 'Tentar novamente',

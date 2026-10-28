@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ollama Cloud Web 検索",
+    "description": "Ollama Cloud 経由で Web 検索結果を提供します。"
+  }
+}

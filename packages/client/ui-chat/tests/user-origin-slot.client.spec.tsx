@@ -103,7 +103,7 @@ describe('official user renderer origin seat', () => {
     const bubble = view.container.querySelector('[data-message-bubble]')
     const text = view.getByText('hello').firstChild
     const copy = view.getByRole('button', { name: '复制' })
-    const actions = copy.closest('[data-clock]')
+    const actions = copy.closest('[data-variant="user"]')
     expect(bubble).not.toBeNull()
     expect(text?.nodeType).toBe(Node.TEXT_NODE)
     expect(actions).not.toBeNull()
@@ -115,7 +115,7 @@ describe('official user renderer origin seat', () => {
       expect(view.container.querySelector('[data-message-bubble]')).toBe(bubble)
       expect(view.getByText('hello').firstChild).toBe(text)
       expect(view.getByRole('button', { name: '复制' })).toBe(copy)
-      expect(copy.closest('[data-clock]')).toBe(actions)
+      expect(copy.closest('[data-variant="user"]')).toBe(actions)
       expect(view.container.querySelector('[data-test-origin]') !== null).toBe(renderSlotChain === occupied)
     }
   })

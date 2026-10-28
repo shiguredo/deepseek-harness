@@ -40,6 +40,17 @@ const cache = dshCachePath('models')         // $DSH_HOME/cache/models, default 
 
 `dshCachePath(...segments)` 从解析出的主目录下的 `cache` 目录派生路径。不传路径段时返回缓存目录本身。传入首个选项对象 `dshCachePath({ dshHome: home }, ...segments)` 可使用显式配置的主目录，遵循相同的优先级与波浪号展开规则。它返回绝对路径，不会创建目录。
 
+### 解析实例命名空间
+
+```ts
+import { dshInstancePath } from '@deepseek-ai/dsh-home-paths'
+
+dshInstancePath(undefined, 'sessions')       // $DSH_HOME/sessions, the shared layout
+dshInstancePath('lab', 'sessions')           // $DSH_HOME/instances/lab/sessions
+```
+
+在同一主目录上运行多个服务器的部署会为每个实例命名，使它们绝不能共享的持久状态——Session 存储与持久 KV 存储——位于 `$DSH_HOME/instances/<name>/` 下。省略名称时，`dshInstancePath` 的解析结果与 `dshHomePath` 完全相同，因此单服务器部署保持原有的扁平布局。名称是一个路径安全的分段；调用方在自己的解析边界处验证它。
+
 ### 解析共享 agents 根目录
 
 ```ts
@@ -81,7 +92,7 @@ agentsHomeDisplay(agents)            // ~/.agents, or $DSH_AGENTS_HOME for any c
 
 ### 解析规则
 
-`resolveDshHome` 先读显式覆盖值，然后读 `$DSH_HOME`，最后回退到操作系统主目录拼接 `.dsh`。`resolveAgentsHome` 对 `$DSH_AGENTS_HOME` 与 `~/.agents` 读取同样的三层值。选中的值经过波浪号展开并规范化为绝对路径；`dshHomePath` 用 Node 的平台路径规则拼接子路径段。`dshHomeDisplay` 与 `agentsHomeDisplay` 把解析出的路径与默认根目录比较并返回符号标签，因此已配置的根目录绝不泄露其绝对路径。
+`resolveDshHome` 先读显式覆盖值，然后读 `$DSH_HOME`，最后回退到操作系统主目录拼接 `.dsh`。`resolveAgentsHome` 对 `$DSH_AGENTS_HOME` 与 `~/.agents` 读取同样的三层值。选中的值经过波浪号展开并规范化为绝对路径；`dshHomePath` 用 Node 的平台路径规则拼接子路径段，而传入名称时 `dshInstancePath` 会在其前面插入 `instances/<name>`。`dshHomeDisplay` 与 `agentsHomeDisplay` 把解析出的路径与默认根目录比较并返回符号标签，因此已配置的根目录绝不泄露其绝对路径。
 
 ### 规范化机制
 

@@ -1,6 +1,7 @@
 ## Menu
 
 - menu "模型与推理等级":
+  - text: 提供商 DeepSeek
   - menuitem "模型 DeepSeek-V4-Flash"
   - text: 启用智能体团队协作
   - button "关于智能体团队协作"

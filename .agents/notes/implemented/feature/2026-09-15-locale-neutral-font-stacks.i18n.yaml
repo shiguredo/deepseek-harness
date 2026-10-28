@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-15-locale-neutral-font-stacks.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-15-locale-neutral-font-stacks.md
+/agent-note-locale-neutral-font-stacks-for-cjk-text:
+  en: 22c459bca25e983d
+  zh: d3b0d697a6f2cd32
+/agent-note-locale-neutral-font-stacks-for-cjk-text/problem:
+  en: cb958be182e34ba5
+  zh: 079827287bf5097a
+/agent-note-locale-neutral-font-stacks-for-cjk-text/decision:
+  en: a93a026df549b3aa
+  zh: 06c834b2cee471e4
+/agent-note-locale-neutral-font-stacks-for-cjk-text/alternatives-considered:
+  en: 660f53c1870d578a
+  zh: e556e1768277398b
+/agent-note-locale-neutral-font-stacks-for-cjk-text/consequences:
+  en: 456f88114cb0405b
+  zh: d6fe88e732911d2e
+/agent-note-locale-neutral-font-stacks-for-cjk-text/testing:
+  en: a0e9cde3e36f8525
+  zh: 109f1b4c44fef8cc

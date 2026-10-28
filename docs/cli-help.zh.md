@@ -186,6 +186,10 @@ Options:
   --host <host>                  bind address: one concrete IPv4 or IPv6 literal
                                  of a local interface; wildcard addresses are
                                  rejected
+  --instance                     namespace this server's Session and durable
+                                 stores under $DSH_HOME/instances/<port>, so
+                                 concurrent servers sharing one home stay
+                                 separate; requires an explicit nonzero --port
   --no-open                      do not open the Web UI in the default browser
   --port <port>                  listen port; pass 0 to let the OS pick a free
                                  one
@@ -204,6 +208,7 @@ Examples:
   dsh --profile web                          serve on the composed host and port
   dsh --profile web --no-open                serve without opening a browser
   dsh --profile web --port 8080              serve on another port
+  dsh --profile web --instance --port 8080   keep this server's Sessions in $DSH_HOME/instances/8080
   dsh --profile web --host 10.0.0.7          bind one local interface address
   dsh --profile web --public-url https://app.example/ui/ --trusted-host app.example
                                              advertise a prefix-stripping HTTPS proxy entry and admit its authority

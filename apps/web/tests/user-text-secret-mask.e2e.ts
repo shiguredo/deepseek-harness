@@ -60,11 +60,17 @@ describe('web e2e: credential mask in user text', () => {
       return { mask: middle(value!.lastElementChild!), control: middle(control!) }
     })
     expect(Math.abs(centers.control - centers.mask)).toBeLessThanOrEqual(1)
-    const masked = { run: await run.boundingBox(), bubble: await text.boundingBox() }
+    // Character shaping inside and outside the mask differs by a fraction of a
+    // pixel, so compare the geometry at an eighth of a pixel: a visible move
+    // still fails, shaping noise does not.
+    const geometry = (box: { x: number; y: number; width: number; height: number } | null) => box === null
+      ? null
+      : Object.fromEntries(Object.entries(box).map(([key, value]) => [key, Math.round(value * 8) / 8]))
+    const masked = { run: geometry(await run.boundingBox()), bubble: geometry(await text.boundingBox()) }
     await page.getByRole('button', { name: 'Show secret', exact: true }).click()
     await expect.poll(() => text.textContent()).toBe(PROMPT)
     // The monospace run keeps one mask character per original character, so revealing does not move the line.
-    expect({ run: await run.boundingBox(), bubble: await text.boundingBox() }).toEqual(masked)
+    expect({ run: geometry(await run.boundingBox()), bubble: geometry(await text.boundingBox()) }).toEqual(masked)
     await page.getByRole('button', { name: 'Hide secret', exact: true }).click()
     await expect.poll(() => text.textContent()).not.toContain(KEY)
     expect(tripwire.pageErrors).toEqual([])

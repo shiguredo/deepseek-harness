@@ -238,12 +238,13 @@ describe('llm-deepseek real dynamic composition', () => {
     expect(SessionLogDeepSeek.acceptedThrough(session)).toBe(-1)
   })
 
-  it('sends the canonical session suffix by default through Loader composition', async () => {
+  it('sends the canonical session suffix when the contribution is enabled through Loader composition', async () => {
     vi.stubEnv('DEEPSEEK_API_KEY', 'entry-key')
     const server = await mockServer([{ kind: 'sse', events: textEvents }])
     const { ctx } = await loadComposition({
       withDynamic: false,
       baseURL: server.url,
+      enableSessionLog: true,
     })
     const session = ctx.sessions.create(SessionId('extension-composition-enabled'))
     session.append('turn/start', { turn: 1 })
@@ -271,7 +272,8 @@ describe('llm-deepseek real dynamic composition', () => {
   it.each([false, true])('applies a registered upload exclusion through HTTP with consumer first=%s', async (exclusionFirst) => {
     vi.stubEnv('DEEPSEEK_API_KEY', 'entry-key')
     const server = await mockServer([{ kind: 'sse', events: textEvents }, { kind: 'sse', events: textEvents }])
-    const { ctx } = await loadComposition({ withDynamic: false, baseURL: server.url, exclusionFirst })
+    // The contribution is opt-in: this test covers exclusion semantics once enabled.
+    const { ctx } = await loadComposition({ withDynamic: false, baseURL: server.url, exclusionFirst, enableSessionLog: true })
     const session = ctx.sessions.create(SessionId('excluded-composition'))
     session.append('turn/start', { turn: 1 })
 

@@ -546,6 +546,39 @@ interface LlmModelBadge {
 ```
 
 ```ts type-equiv
+/** One local wall-clock window an adapter routes a model through another provider. */
+interface LlmRoutingWindow {
+  /** Inclusive local start as `HH:mm`. */
+  from: string
+  /** Exclusive local end as `HH:mm`; earlier than {@link from} crosses midnight. */
+  to: string
+  /** IANA time zone the window is read in; absence means the reader's own zone. */
+  timeZone?: string
+  /**
+   * Local weekdays the window applies to, named by the day it starts in that
+   * zone; absence applies it every day. A window crossing midnight belongs to
+   * the day it starts, so an after-midnight reading reads the day before.
+   */
+  days?: readonly string[]
+  /** Provider route that serves this window's requests. */
+  provider: string
+  /**
+   * Model id the serving provider receives; absence keeps the routed model's
+   * own id, which is how a window that only moves the endpoint is declared.
+   */
+  model?: string
+}
+```
+
+```ts type-equiv
+/** Time windows a deployment configured for one model entry. */
+interface LlmModelRouting {
+  /** The windows in configuration order; the model is routed in any of them. */
+  windows: readonly LlmRoutingWindow[]
+}
+```
+
+```ts type-equiv
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 interface LlmModelInfo {
   /** Provider route that owns this model entry. */
@@ -558,6 +591,8 @@ interface LlmModelInfo {
   description?: string
   /** Accepted request modalities; absent means unknown, while an explicit omission is negative capability. */
   inputModalities?: readonly ModelModality[]
+  /** Windows in which the route's requests go to another provider; absent means none. */
+  routing?: LlmModelRouting
   /**
    * Selector label advertised by catalog discovery; exact-route resolution
    * omits it, and no model request or Session event carries it.
@@ -565,6 +600,8 @@ interface LlmModelInfo {
   badge?: LlmModelBadge
 }
 ```
+
+An adapter that serves one model through more than one provider declares the local windows in `LlmModelInfo.routing`, so a selector can mark the model while one is active; the declaration is display metadata, not a second routing authority.
 
 Correctness-sensitive metadata is resolved separately from the advisory catalog and is owned by the adapter serving the exact route. Context capacity, adapter call defaults, reasoning choices, and the system prompt update mode share one exact-model result so consumers do not repeat authoritative model resolution. `SystemPromptUpdate` has the single value `'in-history'`: the model reads the latest `system` message at any position of `messages` as the complete effective system prompt, so the agent loop can append a changed prompt after the cached history instead of rewriting message 0 ([decision rule](../../packages/core/agent-loop/README.md#understand-the-implementation)); an absent mode means only a leading system message is read, and `normalizeModelInfo` rejects any other value with `INVALID_MODEL_INFO`.
 
@@ -866,7 +903,22 @@ The [wire reference](../deepseek-llm-api-wire-extensions.md) defines the exact r
 
 ## Service and provider contracts
 
-`LlmAdapter` is the provider contract: subclass, implement `stream()`, and register one adapter instance with `ctx.llm.registerAdapter(providers, adapter)`. `GenerateOptions.provider` selects the registered adapter; `GenerateOptions.model` is passed to that adapter and need not be registered at lifecycle start. Duplicate provider routes fail atomically. Optional `providerRetryPolicy()` is captured per route with normal defaults, while `providerInfo()` and asynchronous `listModels()` feed `LlmRuntime.listProviders()` / `listModels()` with detached selector metadata. That catalog is advisory rather than a request whitelist: the adapter remains authoritative and may accept unlisted model ids. One asynchronous `resolveModel()` query returns exact model identity plus optional correctness-sensitive context capacity, an adapter-configured `defaultMaxTokens`, and ordered model-owned reasoning ids with an optional deployment default; absent fields mean unavailable metadata or provider-owned behavior, not invalid catalog membership. The resolver receives optional cancellation and must settle promptly after abort. `LlmRuntime.resolveModelInfo()` validates and detaches the aggregate. At the final adapter boundary, `resolveCallConfig()` materializes the output default only when `maxTokens` is absent and validates and materializes reasoning, so direct calls cannot bypass either configured behavior; direct dispatch captures one registration before awaiting that resolution. The agent loop instead uses `prepareCall()` to keep the same registration across model resolution, durable header logging, and dispatch, retain detached context metadata from that exact lookup, and report which config fields the adapter defaulted. Adapter lookup happens at the terminal continuation of the `llm/stream` waterfall, so a listener may short-circuit the call or route a mutable one-shot request before lookup. AgentLoop observes a request attempt once the outer waterfall returns a stream handle; that limited boundary does not prove a lazy terminal adapter was constructed or began provider I/O. The `block-start` / `block-end` `index` correlation and the assembler together mean an adapter only has to emit well-formed chunks — block reassembly is not each adapter's problem. [architecture.md](../architecture.md#turn-flow) shows where `ctx.llm.stream()` and the `llm/stream` waterfall sit in one turn.
+`LlmAdapter` is the provider contract: subclass, implement `stream()`, and register one adapter instance with `ctx.llm.registerAdapter(providers, adapter)`. `GenerateOptions.provider` selects the registered adapter; `GenerateOptions.model` is passed to that adapter and need not be registered at lifecycle start. Duplicate provider routes fail atomically. Optional `alternateRoute()` lets an adapter hand one call to another registered route — a windowed provider substitution, for example — while the requested provider and model stay the call's identity and the executing route resolves its own credential. Optional `providerRetryPolicy()` is captured per route with normal defaults, while `providerInfo()` and asynchronous `listModels()` feed `LlmRuntime.listProviders()` / `listModels()` with detached selector metadata. That catalog is advisory rather than a request whitelist: the adapter remains authoritative and may accept unlisted model ids. One asynchronous `resolveModel()` query returns exact model identity plus optional correctness-sensitive context capacity, an adapter-configured `defaultMaxTokens`, and ordered model-owned reasoning ids with an optional deployment default; absent fields mean unavailable metadata or provider-owned behavior, not invalid catalog membership. The resolver receives optional cancellation and must settle promptly after abort. `LlmRuntime.resolveModelInfo()` validates and detaches the aggregate. At the final adapter boundary, `resolveCallConfig()` materializes the output default only when `maxTokens` is absent and validates and materializes reasoning, so direct calls cannot bypass either configured behavior; direct dispatch captures one registration before awaiting that resolution. The agent loop instead uses `prepareCall()` to keep the same registration across model resolution, durable header logging, and dispatch, retain detached context metadata from that exact lookup, and report which config fields the adapter defaulted. Adapter lookup happens at the terminal continuation of the `llm/stream` waterfall, so a listener may short-circuit the call or route a mutable one-shot request before lookup. AgentLoop observes a request attempt once the outer waterfall returns a stream handle; that limited boundary does not prove a lazy terminal adapter was constructed or began provider I/O. The `block-start` / `block-end` `index` correlation and the assembler together mean an adapter only has to emit well-formed chunks — block reassembly is not each adapter's problem. [architecture.md](../architecture.md#turn-flow) shows where `ctx.llm.stream()` and the `llm/stream` waterfall sit in one turn.
+
+```ts type-equiv
+/**
+ * A route the LLM service executes one call through in place of the route the
+ * caller named. Returned by {@link LlmAdapter.alternateRoute}, it lets an
+ * adapter hand a call to a route another adapter owns — a time-windowed
+ * substitution, say — while the call keeps the requested route's identity.
+ */
+interface LlmAlternateRoute {
+  /** Registered provider route that executes the call. */
+  readonly provider: string
+  /** Exact model id that route receives. */
+  readonly model: string
+}
+```
 
 ```ts type-equiv
 /** One model call whose config and adapter registration were resolved together. */
@@ -935,6 +987,24 @@ declare abstract class LlmAdapter {
    * @returns the same target used by request serialization, before provider-internal processing.
    */
   imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget;
+  /**
+   * The route one call executes through when this adapter cannot serve it
+   * itself. The LLM service resolves the returned route through the registry
+   * and dispatches there, while the call keeps the requested provider and model
+   * as its identity: the Session log, the model picker, and replay state do not
+   * follow the substitution. The executing route owns its credential, so this
+   * seam carries no key.
+   *
+   * Called once per call, before the credential await, by both
+   * {@link prepareCall} and a direct {@link stream}. Return `undefined` for
+   * local dispatch; a returned route no adapter serves fails the call with
+   * `NO_ADAPTER`. Implementations answer from state they already resolved and
+   * perform no I/O.
+   * @param _provider - provider route the caller named.
+   * @param _model - exact model id the caller named.
+   * @returns the route that executes the call, or `undefined` to execute locally.
+   */
+  alternateRoute(_provider: string, _model: string): LlmAlternateRoute | undefined;
   /**
    * List models this adapter can currently advertise for one owned provider.
    * Core routing accepts unlisted model ids; catalog-driven entry points such

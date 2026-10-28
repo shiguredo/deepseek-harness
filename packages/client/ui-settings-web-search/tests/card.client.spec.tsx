@@ -263,6 +263,7 @@ describe('WebSearchCard', () => {
       },
     })
     expect(searchMenu().textContent).toBe('perplexity (not loaded)')
+    expect(screen.getByText(en.providerMissingHint)).toBeTruthy()
     expect(zh.providerMissing).toBe('{id}（未加载）')
     expect(fetchMenu().textContent).toBe('jina')
     expect(screen.getAllByText(en.pluginProviderHint)).toHaveLength(1)
@@ -277,6 +278,7 @@ describe('WebSearchCard', () => {
     expect(searchMenu().textContent).toBe('Exa')
     expect(fetchMenu().textContent).toBe(en.providerAuto)
     expect(screen.getByText(en.pluginProviderHint)).toBeTruthy()
+    expect(screen.queryByText(en.providerMissingHint)).toBeNull()
   })
 
   it('offers automatic selection where the deployment composes no provider', () => {

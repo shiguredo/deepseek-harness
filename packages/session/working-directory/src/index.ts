@@ -13,6 +13,9 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+// The projection key declaration lives in the package's pure-type outlet,
+// re-exported here so root consumers keep the augmentation.
+export type * from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -37,13 +40,6 @@ declare module '@deepseek-ai/dsh-session/types' {
       /** Absolute directory used by subsequent directory-based operations. */
       cwd: string
     }
-  }
-}
-
-declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionMap {
-    /** Recorded current directory for Session observations, or null when none is recorded. */
-    workingDirectory: string | null
   }
 }
 

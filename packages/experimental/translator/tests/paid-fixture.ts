@@ -139,7 +139,7 @@ export async function paidFixture(cleanups: Array<() => Promise<void>>, options:
     ] : [],
     ...options.withSessionLog === true ? [
       { id: 'deepseek-llm-api-extensions', name: '@deepseek-ai/dsh-deepseek-llm-api-extensions' },
-      { id: 'session-log-deepseek', name: '@deepseek-ai/dsh-session-log-deepseek' },
+      { id: 'session-log-deepseek', name: '@deepseek-ai/dsh-session-log-deepseek', config: { enabled: true } },
     ] : [],
   ]
   await writeFile(configPath, JSON.stringify(rows()))

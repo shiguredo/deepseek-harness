@@ -25,18 +25,26 @@ const BUNDLE_EXPECTED = join(SNAPSHOT_DIR, 'bundle.expected.md')
 const FIXTURE_PLUGINS = fileURLToPath(new URL('./fixtures/plugins', import.meta.url))
 const MODE = webSnapshotMode()
 const UNUSED_KEY_ENV = 'DSH_PLUGIN_CONFIG_E2E_UNUSED_KEY'
+/** Shared Ollama Cloud key the harness environment supplies, so the web providers register. */
+const OLLAMA_KEY_ENV = 'OLLAMA_CLOUD_API_KEY'
 
 describe('web e2e: plugin configuration pages', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
+  let previousOllamaKey: string | undefined
 
   beforeAll(async () => {
     // The live-client fixture is a bundle with a browser half; switched on
     // below, that half registers its row's configuration into the page.
     // Legacy Messages search names an unset credential so the goldens show the
     // unconfigured key whatever keys the host environment carries.
+    // The Ollama Cloud web providers register while the shared key resolves,
+    // and that key belongs to the model route: supply it the way a deployment
+    // does, through the launching environment.
+    previousOllamaKey = process.env[OLLAMA_KEY_ENV]
+    process.env[OLLAMA_KEY_ENV] = 'e2e-ollama-key'
     scaffold = await launchWebScaffold({
       extraOverlayPath: fileURLToPath(new URL('./pin-browse-picker.overlay.yml', import.meta.url)),
       deepSeekSearch: { apiKeyEnv: UNUSED_KEY_ENV },
@@ -54,6 +62,8 @@ describe('web e2e: plugin configuration pages', () => {
   afterAll(async () => {
     await browser?.close()
     await scaffold?.close()
+    if (previousOllamaKey === undefined) Reflect.deleteProperty(process.env, OLLAMA_KEY_ENV)
+    else process.env[OLLAMA_KEY_ENV] = previousOllamaKey
   })
 
   /**
@@ -92,7 +102,8 @@ describe('web e2e: plugin configuration pages', () => {
     const panel = await openPlugins()
 
     // Every page the shipped web composition exposes: the shell executor, the
-    // agent loop, subagent selection, and the DeepSeek search provider.
+    // agent loop, subagent selection, and the web search and fetch provider. This
+    // fork's own cards (the Ollama Cloud web providers, push guard) live in the shiguredo group.
     await panel.getByRole('button', { name: '查看 网页搜索与获取', exact: true }).waitFor({ timeout: 20_000 })
     const basic = panel.locator('[data-plugin-group="basic"]')
     expect(await basic.locator('[data-plugin-item]').count()).toBe(4)
@@ -100,6 +111,12 @@ describe('web e2e: plugin configuration pages', () => {
       .toEqual(['subagent', 'web-search', 'agent-loop', 'shell'])
     for (const title of ['子智能体', '网页搜索与获取', 'Agent 循环', '终端']) {
       expect(await basic.getByRole('button', { name: `查看 ${title}`, exact: true }).count()).toBe(1)
+    }
+    const shiguredo = panel.locator('[data-plugin-group="shiguredo"]')
+    expect(await shiguredo.locator(':scope > ul > li').evaluateAll(cards => cards.map(card => card.getAttribute('data-plugin-item'))))
+      .toEqual(['web-ollama-api', 'git-push-guard'])
+    for (const title of ['使用 Ollama Cloud 的网页搜索与页面获取', 'Git 推送防护']) {
+      expect(await shiguredo.getByRole('button', { name: `查看 ${title}`, exact: true }).count()).toBe(1)
     }
     // A card carries the one-liner; the fields wait for the page.
     expect(await basic.getByText('限制每条命令最多能跑多久、最多输出多少内容。', { exact: true }).count()).toBe(1)
@@ -172,13 +189,17 @@ describe('web e2e: plugin configuration pages', () => {
     expect(await fetchMenu.textContent()).toBe('本机直接获取')
     expect(await panel.getByRole('button', { name: '网页搜索提供方 DeepSeek Search API', exact: true }).count()).toBe(1)
     expect(await panel.getByRole('button', { name: '网页获取提供方 本机直接获取', exact: true }).count()).toBe(1)
-    expect(await entries(searchMenu)).toEqual(['DeepSeek Search API', 'DeepSeek（旧版）'])
-    expect(await entries(fetchMenu)).toEqual(['本机直接获取', 'DeepSeek Fetch API'])
+    // The Ollama Cloud providers register while the launching environment's
+    // shared key resolves, so this deployment lists them beside the DeepSeek
+    // entries.
+    expect(await entries(searchMenu)).toEqual(['DeepSeek Search API', 'DeepSeek（旧版）', 'Ollama Cloud'])
+    expect(await entries(fetchMenu)).toEqual(['本机直接获取', 'DeepSeek Fetch API', 'Ollama Cloud'])
     expect(await settingsDocument()).not.toContain('searchProvider:')
     // The page fixes the menu order itself; the Loader imports plugins concurrently, so the
     // Host's registration order is not the YAML row order and only its membership is checked here.
     const hostWeb = scaffold.ctx.get('web') as { listProviders(): Record<'search' | 'fetch', { id: string }[]> } | undefined
-    expect(hostWeb?.listProviders().search.map(provider => provider.id).sort()).toEqual(['deepseek-official', 'deepseek-search-api'])
+    expect(hostWeb?.listProviders().search.map(provider => provider.id).sort())
+      .toEqual(['deepseek-official', 'deepseek-search-api', 'ollama-cloud-search'])
     expect(await panel.getByRole('link', { name: '网页搜索与获取指南', exact: true }).getAttribute('href'))
       .toBe('https://api-docs.deepseek.com/zh-cn/guides/search')
     // Each section shows the description its selected provider registered with the Host, in the active language.
@@ -234,7 +255,7 @@ describe('web e2e: plugin configuration pages', () => {
     await openPage(panel, '网页搜索与获取')
     expect(await searchMenu.textContent()).toBe('DeepSeek（旧版）')
     expect(await messagesEndpoint.inputValue()).toBe('https://messages.test/anthropic/v1')
-    expect(await entries(searchMenu)).toEqual(['DeepSeek Search API', 'DeepSeek（旧版）'])
+    expect(await entries(searchMenu)).toEqual(['DeepSeek Search API', 'DeepSeek（旧版）', 'Ollama Cloud'])
     expect(await save.isDisabled()).toBe(true)
     expect(await settingsDocument()).toContain('searchProvider: deepseek-official')
     await choose(searchMenu, 'DeepSeek Search API')
@@ -246,6 +267,52 @@ describe('web e2e: plugin configuration pages', () => {
     expect(await settingsDocument()).not.toMatch(/ApiKeyEnv:|searchBaseURL:|fetchBaseURL:/)
     expect(tripwire.pageErrors).toEqual([])
   })
+
+  it('selects both Ollama Cloud providers and sets the result count from its own page', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-ollama-search-settings'))
+    const panel = await openPlugins()
+    const title = '使用 Ollama Cloud 的网页搜索与页面获取'
+    await openPage(panel, title)
+    const toggle = panel.getByRole('switch', { name: '网页搜索与抓取都使用 Ollama Cloud', exact: true })
+    const results = panel.getByLabel('每次搜索结果数', { exact: true })
+
+    // The shipped composition selects DeepSeek search and local HTTP fetch, so
+    // the switch starts off. The page carries no key or endpoint control: the
+    // endpoints are fixed and the key is the Ollama Cloud model route's.
+    expect(await toggle.getAttribute('aria-checked')).toBe('false')
+    expect(await results.inputValue()).toBe('5')
+    expect(await panel.getByLabel('搜索 API 地址', { exact: true }).count()).toBe(0)
+    expect(await panel.getByLabel('API Key', { exact: true }).count()).toBe(0)
+    // The launching environment supplies the shared key, so the providers
+    // register and the switch is available.
+    expect(await toggle.isDisabled()).toBe(false)
+
+    // The switch stages the selection; the result count stages the section the
+    // providers read, which saves first so the switch never points at a count
+    // that has not landed.
+    await toggle.click()
+    await results.fill('12')
+    await panel.getByRole('button', { name: '保存', exact: true }).click()
+    await expect.poll(() => panel.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(true)
+    await expect.poll(settingsDocument).toContain('searchProvider: ollama-cloud-search')
+    await expect.poll(settingsDocument).toContain('fetchProvider: ollama-cloud-fetch')
+    await expect.poll(settingsDocument).toContain('maxResults: 12')
+    // The plugin no longer declares an endpoint or a key reference: the legacy
+    // Messages search row is the only `apiKeyEnv` this document carries.
+    expect(await settingsDocument()).not.toMatch(/searchBaseURL:|fetchBaseURL:/)
+
+    await openPlugins()
+    await openPage(panel, title)
+    expect(await toggle.getAttribute('aria-checked')).toBe('true')
+    expect(await results.inputValue()).toBe('12')
+    await toggle.click()
+    await panel.getByRole('button', { name: '恢复默认', exact: true }).first().click()
+    await panel.getByRole('button', { name: '保存', exact: true }).click()
+    await expect.poll(() => panel.getByRole('button', { name: '保存', exact: true }).isDisabled()).toBe(true)
+    await expect.poll(settingsDocument).not.toContain('searchProvider: ollama-cloud-search')
+    await expect.poll(settingsDocument).not.toContain('maxResults: 12')
+    await panel.getByRole('button', { name: '返回插件', exact: true }).click()
+  }, 120_000)
 
   it('saves subagent limits and resets them to the deployment defaults', async () => {
     const panel = await openPlugins()

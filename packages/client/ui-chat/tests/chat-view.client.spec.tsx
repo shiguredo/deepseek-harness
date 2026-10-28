@@ -15,7 +15,7 @@ import type {
   ChatViewSlotProps, CommandNode, CompactionSummaryNode, ContextMessageNode, ConversationNode,
   LegacyConversationSlice, ModelRetryNode, StartedToolCall, SteeringMessageNode,
   ToolCallBlock, ToolResultNode, TurnErrorNode, TurnMaxTokensNode,
-  TranscriptViewMode, UserContentInput, UserMessageNode,
+  ClockTimeZone, TranscriptViewMode, UserContentInput, UserMessageNode,
 } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {
   SessionListState, SessionSnapshot,
@@ -439,6 +439,7 @@ function makeHarness(
   const collapseTiming = createSnapshotStore<CollapseTiming>('completion')
   const foldedReplies = createSnapshotStore<FoldedReplies>('all')
   const performanceUsage = createSnapshotStore<'compact' | 'detailed'>('detailed')
+  const clockTimeZone = createSnapshotStore<ClockTimeZone>('local')
   const originRenderer = createSnapshotStore<UserChainState>({ renderer: undefined })
   const t = makeTranslate(zh, commonZh)
   const toolOwners: ToolOwner[] = []
@@ -536,6 +537,7 @@ function makeHarness(
     useInteractionIds: bindSnapshotSelector(createSnapshotStore<readonly string[]>([])),
     dispatchInteraction: () => null,
     usePresentation: bindSnapshotSelector(derivePresentationPolicy(transcriptView, collapseTiming, foldedReplies)),
+    useClockTimeZone: bindSnapshotSelector(clockTimeZone),
     // The fixture implements the concrete flow dispatch behind the generic slot signature.
     renderSlot: renderSlot as ChatViewSlotProps['renderSlot'],
     SessionProvider: SessionProviderStub,
@@ -585,6 +587,7 @@ function makeHarness(
     },
     setTranscriptView: (mode: TranscriptViewMode) => { transcriptView.set(mode) },
     setCollapseTiming: (timing: CollapseTiming) => { collapseTiming.set(timing) },
+    setClockTimeZone: (zone: ClockTimeZone) => { clockTimeZone.set(zone) },
     setFoldedReplies: (replies: FoldedReplies) => { foldedReplies.set(replies) },
     setNodeRenderer: (renderer: NodeRenderer) => { nodeSlotOverride = renderer },
     setImageRenderer: (renderer: ImageRenderer) => { imageSlotOverride = renderer },
@@ -1939,7 +1942,7 @@ describe('ChatView', () => {
     const bubble = userRow.querySelector('[data-message-bubble]')
     const text = within(userRow).getByText('question').firstChild
     const copy = within(userRow).getByRole('button', { name: '复制' })
-    const actions = copy.closest('[data-clock]')
+    const actions = copy.closest('[data-variant="user"]')
     const steeringBubble = steeringRow.querySelector('[data-message-bubble]')
     const steeringText = within(steeringRow).getByText('direction').firstChild
     const steeringCopy = within(steeringRow).getByRole('button', { name: '复制' })
@@ -1958,7 +1961,7 @@ describe('ChatView', () => {
       expect(userRow.querySelector('[data-message-bubble]')).toBe(bubble)
       expect(within(userRow).getByText('question').firstChild).toBe(text)
       expect(within(userRow).getByRole('button', { name: '复制' })).toBe(copy)
-      expect(copy.closest('[data-clock]')).toBe(actions)
+      expect(copy.closest('[data-variant="user"]')).toBe(actions)
       expect(view.container.querySelector('[data-chat-flow-kind="steering"]')).toBe(steeringRow)
       expect(steeringRow.querySelector('[data-message-bubble]')).toBe(steeringBubble)
       expect(within(steeringRow).getByText('direction').firstChild).toBe(steeringText)

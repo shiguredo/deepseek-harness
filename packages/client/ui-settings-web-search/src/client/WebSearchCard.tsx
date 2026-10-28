@@ -212,6 +212,9 @@ function ProviderSelect(props: {
 }) {
   const { t, section } = props
   const current = section.options.find(option => option.id === section.selected)
+  // A selected id the Host does not register renders as "not loaded"; say why
+  // and what fixes it, since no provider settings can appear for it.
+  const missing = current?.missing === true
   const items = [
     ...section.auto ? [{ id: AUTO_ID, label: t('providerAuto') }] : [],
     ...section.options.map(option => ({ id: option.id, label: providerLabel(t, option) })),
@@ -221,6 +224,7 @@ function ProviderSelect(props: {
       <Dropdown id={props.id} labelledBy={props.labelledBy} items={items} selectedId={section.selected}
         valueLabel={current === undefined ? t('providerAuto') : providerLabel(t, current)} disabled={props.disabled}
         onSelect={(id) => { props.onSelect(props.field, id) }} />
+      {missing && <p className={styles.missing} role="status">{t('providerMissingHint')}</p>}
       {props.description !== undefined && <p className={styles.hint}>{props.description}</p>}
       {props.hint !== undefined && <p className={styles.hint}>{props.hint}</p>}
       {props.providersFailed && <ReadFailure message={t('providersFailed')} retry={t('retry')} onRetry={props.onRetry} />}

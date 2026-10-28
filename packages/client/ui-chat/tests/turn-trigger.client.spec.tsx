@@ -31,7 +31,7 @@ describe('Turn trigger notices', () => {
     const node = trigger({ kind: 'retry' })
     node.data.content = []
     expect(turnTriggerDetails(node.data)).toEqual({ title: 'message.continuation.requested', icon: 'continue', compact: true })
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(locale)} />)
     expect(view.getByText(title)).toBeDefined()
     expect(view.queryByRole('button')).toBeNull()
     expect(view.container.querySelector('[data-generation-continuation] svg')).not.toBeNull()
@@ -55,7 +55,7 @@ describe('Turn trigger notices', () => {
     const details = turnTriggerDetails(node.data)
     expect(details).toEqual({ title: `message.trigger.${icon}`, icon })
     const t = makeTranslate(en)
-    const view = render(<TurnTriggerNodeView node={node} t={t} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={t} />)
     expect(view.getByRole('button').textContent).toContain(title)
     expect(view.getByRole('button').querySelector('svg')).not.toBeNull()
     expect(view.container.querySelector('time')?.dateTime).toBe('2023-11-14T22:13:20.000Z')
@@ -68,7 +68,7 @@ describe('Turn trigger notices', () => {
     const node = trigger({ kind: 'agent-message', form: 'relay', senderSessionId: 'sender' })
     node.data.content = [{ type: 'text', text: 'Team message from reviewer-2:' }, { type: 'text', text: 'Ready.' }]
     expect(turnTriggerDetails(node.data)).toEqual({ title: 'message.trigger.agent', icon: 'agent' })
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(locale)} />)
     expect(view.getByRole('button').textContent).toContain(title)
     fireEvent.click(view.getByRole('button'))
     expect(view.container.querySelector('[data-context-text]')?.textContent).toContain('Team message from reviewer-2:')
@@ -79,7 +79,7 @@ describe('Turn trigger notices', () => {
     { locale: zh, title: '自动化任务' },
   ])('uses the automation task label $title and shared clock', ({ locale, title }) => {
     const node = trigger({ kind: 'schedule' })
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(locale)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(locale)} />)
     expect(view.getByRole('button').textContent).toContain(title)
     const reference = render(<IconClockOutlineRegular size={14} />)
     expect(view.getByRole('button').querySelector('svg')?.outerHTML)
@@ -97,13 +97,13 @@ describe('Turn trigger notices', () => {
   ])('presents only the recorded %s outcome in both locales', (stopReason, english, chinese) => {
     const source = { kind: 'subagent-settled', stopReason, senderSessionId: 'child-1' }
     const node = trigger(source)
-    const view = render(<TurnTriggerNodeView node={node} t={makeTranslate(en)} />)
+    const view = render(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(en)} />)
     expect(view.getByRole('button').textContent).toContain(english)
     expect(view.getByRole('button').textContent).not.toContain(' · ')
     const reference = render(<IconUsersOutlineRegular size={14} />)
     expect(view.getByRole('button').querySelector('svg')?.outerHTML)
       .toBe(reference.container.querySelector('svg')?.outerHTML)
-    view.rerender(<TurnTriggerNodeView node={node} t={makeTranslate(zh)} />)
+    view.rerender(<TurnTriggerNodeView node={node} clockTimeZone="local" t={makeTranslate(zh)} />)
     expect(view.getByRole('button').textContent).toContain(chinese)
     expect(view.getByRole('button').textContent).not.toContain(' · ')
     fireEvent.click(view.getByRole('button'))
@@ -119,7 +119,7 @@ describe('Turn trigger notices', () => {
   })
 
   it('opens the recorded notice body and closes it independently of the Turn', () => {
-    const view = render(<TurnTriggerNodeView node={trigger({ kind: 'schedule' })} t={makeTranslate(en)} />)
+    const view = render(<TurnTriggerNodeView node={trigger({ kind: 'schedule' })} clockTimeZone="local" t={makeTranslate(en)} />)
     const button = view.getByRole('button')
     expect(button.getAttribute('aria-expanded')).toBe('false')
     expect(view.container.querySelector('[data-context-text]')).toBeNull()

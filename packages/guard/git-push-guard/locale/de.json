@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git-Push-Schutz",
+    "description": "Fragt vor einem Git-Push nach Bestätigung, mit einem Schalter pro Sitzung und einem Standard für neue Sitzungen."
+  }
+}

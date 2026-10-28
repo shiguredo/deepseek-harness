@@ -26,5 +26,6 @@
 - textbox "Cmd/Ctrl+Enter steers all queued messages"
 - button "Add files or run commands"
 - 'button "Access mode, current: Custom"': Custom
+- button "Push guard ON" [pressed]
 - button "Stop generating"
 - button "Send message" [disabled]

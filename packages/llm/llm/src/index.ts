@@ -19,6 +19,8 @@ import type {
   LlmModelContext,
   LlmModelDiscoveryRequest,
   LlmModelInfo,
+  LlmModelRouting,
+  LlmRoutingWindow,
   LlmResolvedModelInfo,
   LlmProviderInfo,
   ModelModality,
@@ -200,6 +202,19 @@ export interface PreparedAdapterCall {
 }
 
 /**
+ * A route the LLM service executes one call through in place of the route the
+ * caller named. Returned by {@link LlmAdapter.alternateRoute}, it lets an
+ * adapter hand a call to a route another adapter owns — a time-windowed
+ * substitution, say — while the call keeps the requested route's identity.
+ */
+export interface LlmAlternateRoute {
+  /** Registered provider route that executes the call. */
+  readonly provider: string
+  /** Exact model id that route receives. */
+  readonly model: string
+}
+
+/**
  * Provider-wire adapter for the harness message and stream vocabulary. Register implementations
  * with `ctx.llm.registerAdapter(providers, adapter)`. Every provider HTTP request must include
  * `attributionHeaders()`; prove the headers are added in the wire request or library header hook. The direct-fetch
@@ -247,6 +262,27 @@ export abstract class LlmAdapter {
    */
   imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget {
     return { width: image.width, height: image.height, maxBytes: image.bytes }
+  }
+
+  /**
+   * The route one call executes through when this adapter cannot serve it
+   * itself. The LLM service resolves the returned route through the registry
+   * and dispatches there, while the call keeps the requested provider and model
+   * as its identity: the Session log, the model picker, and replay state do not
+   * follow the substitution. The executing route owns its credential, so this
+   * seam carries no key.
+   *
+   * Called once per call, before the credential await, by both
+   * {@link prepareCall} and a direct {@link stream}. Return `undefined` for
+   * local dispatch; a returned route no adapter serves fails the call with
+   * `NO_ADAPTER`. Implementations answer from state they already resolved and
+   * perform no I/O.
+   * @param _provider - provider route the caller named.
+   * @param _model - exact model id the caller named.
+   * @returns the route that executes the call, or `undefined` to execute locally.
+   */
+  alternateRoute(_provider: string, _model: string): LlmAlternateRoute | undefined {
+    return undefined
   }
 
   /**
@@ -709,6 +745,46 @@ export class LlmRuntime extends TypertRemoteService {
   }
 
   /**
+   * Detach one adapter-owned routing declaration.
+   * @param routing - declared windows, when the adapter reports any.
+   * @param code - failure code naming this call's validation site.
+   * @param subject - provider and model, for the diagnostic.
+   * @returns a detached copy, or `undefined` when the adapter declared none.
+   */
+  private detachedRouting(
+    routing: LlmModelRouting | undefined,
+    code: 'INVALID_CATALOG' | 'INVALID_MODEL_INFO',
+    subject: string,
+  ): LlmModelRouting | undefined {
+    if (routing === undefined) return undefined
+    if (!Array.isArray(routing.windows) || routing.windows.length === 0) {
+      throw new LlmError(`adapter returned invalid routing metadata for ${subject}`, code)
+    }
+    // The runtime check above narrows the array to `any[]`; re-annotating it
+    // keeps the detached copy's element type, and its validation, declared.
+    const windows: readonly LlmRoutingWindow[] = routing.windows
+    return {
+      windows: windows.map((entry) => {
+        if (typeof entry.from !== 'string' || typeof entry.to !== 'string'
+          || typeof entry.provider !== 'string' || entry.provider.length === 0
+          || (entry.timeZone !== undefined && typeof entry.timeZone !== 'string')
+          || (entry.model !== undefined && (typeof entry.model !== 'string' || entry.model.length === 0))
+          || (entry.days !== undefined && !isDayList(entry.days))) {
+          throw new LlmError(`adapter returned invalid routing window for ${subject}`, code)
+        }
+        return {
+          from: entry.from,
+          to: entry.to,
+          provider: entry.provider,
+          ...entry.model === undefined ? {} : { model: entry.model },
+          ...entry.timeZone === undefined ? {} : { timeZone: entry.timeZone },
+          ...entry.days === undefined ? {} : { days: [...entry.days] },
+        }
+      }),
+    }
+  }
+
+  /**
    * Discover models advertised by one registered provider. Catalog membership
    * does not constrain core routing. Catalog-driven entry points may restrict
    * selection and submission to the advertised models.
@@ -734,6 +810,7 @@ export class LlmRuntime extends TypertRemoteService {
       }
       seen.add(model.id)
       const inputModalities = this.detachedModalities(model.inputModalities)
+      const routing = this.detachedRouting(model.routing, 'INVALID_CATALOG', `provider "${provider}"`)
       const badge = model.badge
       return {
         provider: model.provider,
@@ -741,6 +818,7 @@ export class LlmRuntime extends TypertRemoteService {
         name: model.name,
         ...model.description === undefined ? {} : { description: model.description },
         ...inputModalities === undefined ? {} : { inputModalities },
+        ...routing === undefined ? {} : { routing },
         ...badge === undefined ? {} : {
           badge: { text: typeof badge.text === 'string' ? badge.text : { ...badge.text }, tone: badge.tone },
         },
@@ -805,6 +883,11 @@ export class LlmRuntime extends TypertRemoteService {
     // Capability metadata rides through: an explicit modality omission is
     // negative capability downstream preflights act on (image admission).
     const inputModalities = this.detachedModalities(resolved.inputModalities)
+    const routing = this.detachedRouting(
+      resolved.routing,
+      'INVALID_MODEL_INFO',
+      `provider "${provider}" model "${model}"`,
+    )
     // Widened: adapters derive this mode from catalog config, so the value is checked as a string.
     const systemPromptUpdate: string | undefined = resolved.systemPromptUpdate
     if (systemPromptUpdate !== undefined && systemPromptUpdate !== 'in-history') {
@@ -835,6 +918,7 @@ export class LlmRuntime extends TypertRemoteService {
       name: resolved.name,
       ...resolved.description === undefined ? {} : { description: resolved.description },
       ...inputModalities === undefined ? {} : { inputModalities },
+      ...routing === undefined ? {} : { routing },
       ...context === undefined ? {} : { context: { contextWindow: context.contextWindow } },
       ...defaultMaxTokens === undefined ? {} : { defaultMaxTokens },
       ...resolved.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: resolved.systemPromptUpdate },
@@ -964,10 +1048,11 @@ export class LlmRuntime extends TypertRemoteService {
   ): Promise<PreparedLlmCall> {
     signal?.throwIfAborted()
     const { provider, model, ...controls } = config
-    const registration = this.registration(provider)
-    const adapterCall = await registration.adapter.prepareCall(provider, model, signal)
+    const target = this.dispatchTarget(provider, model)
+    const adapterCall = await target.executing.adapter.prepareCall(target.provider, target.model, signal)
     signal?.throwIfAborted()
-    const modelInfo = this.normalizeModelInfo(registration, model, adapterCall.model)
+    const described = this.normalizeModelInfo(target.executing, target.model, adapterCall.model)
+    const modelInfo = target.redirected ? this.executedModelInfo(described, provider, model) : described
     const proposed = configure === undefined
       ? config
       : { ...configure(deepFreeze(structuredClone(controls)), deepFreeze(modelInfo)), provider, model }
@@ -988,7 +1073,9 @@ export class LlmRuntime extends TypertRemoteService {
     let dispatched = false
     return Object.freeze({
       config: resolvedConfig,
-      retryPolicy: registration.retryPolicy,
+      // Recovery belongs to the route the caller named: a substitution changes
+      // where one request runs, not which route's retry policy governs it.
+      retryPolicy: target.requested.retryPolicy,
       adapterDefaults,
       ...context === undefined ? {} : { context },
       ...modelInfo.inputModalities === undefined
@@ -1008,10 +1095,15 @@ export class LlmRuntime extends TypertRemoteService {
         }
         dispatched = true
         return this.streamWithRegistration(options, {
-          registration,
+          registration: target.executing,
           config: resolvedConfig,
           modelInfo,
-          dispatch: options => adapterCall.stream(options),
+          // The executing adapter reads its route from the request, so the
+          // dispatched copy names that route; the caller's config and the
+          // Session log keep the requested one.
+          dispatch: options => adapterCall.stream(target.redirected
+            ? { ...options, provider: target.provider, model: target.model }
+            : options),
         })
       },
     })
@@ -1021,6 +1113,59 @@ export class LlmRuntime extends TypertRemoteService {
     const registration = this.adapters.get(provider)
     if (!registration) throw new LlmError(`no adapter registered for provider "${provider}"`, 'NO_ADAPTER')
     return registration
+  }
+
+  /**
+   * The registration one call executes through, resolved once before any
+   * adapter I/O. An adapter may hand a call to a route it cannot serve itself;
+   * that route's adapter executes it while the requested provider and model
+   * stay the call's identity.
+   * @param provider - provider route the caller named.
+   * @param model - exact model id the caller named.
+   * @returns the requested and executing registrations, the executing route, and whether substitution applies.
+   * @throws {LlmError} `NO_ADAPTER` when the requested route is unregistered, or when the named alternate has no adapter.
+   */
+  private dispatchTarget(provider: string, model: string): DispatchTarget {
+    const requested = this.registration(provider)
+    const alternate = requested.adapter.alternateRoute(provider, model)
+    if (alternate === undefined) {
+      return { requested, executing: requested, provider, model, redirected: false }
+    }
+    try {
+      return {
+        requested,
+        executing: this.registration(alternate.provider),
+        provider: alternate.provider,
+        model: alternate.model,
+        redirected: true,
+      }
+    } catch (error) {
+      throw new LlmError(
+        `provider "${provider}" model "${model}" executes on provider "${alternate.provider}", which no adapter`
+        + ' serves; configure that provider route or remove the substitution',
+        'NO_ADAPTER', { cause: error },
+      )
+    }
+  }
+
+  /**
+   * Describe a call another route executes under the identity the caller named.
+   * Capacities, modalities, and update modes follow the executing model, which
+   * is what goes on the wire; the provider, model id, and routing declaration
+   * stay the requested route's, so a substitution renames neither the Session
+   * log entry nor an advertised window.
+   * @param executed - exact model metadata the executing route returned.
+   * @param provider - provider route the caller named.
+   * @param model - exact model id the caller named.
+   * @returns the metadata with the requested identity stamped on it.
+   */
+  private executedModelInfo(
+    executed: LlmResolvedModelInfo,
+    provider: string,
+    model: string,
+  ): LlmResolvedModelInfo {
+    const { routing: _routing, ...rest } = executed
+    return { ...rest, provider, id: model }
   }
 
   /** Remove replay state whose historical route is owned by another adapter. */
@@ -1071,17 +1216,29 @@ export class LlmRuntime extends TypertRemoteService {
   ): AsyncGenerator<StreamChunk> {
     let iterator: AsyncIterator<StreamChunk>
     try {
-      const registration = prepared?.registration ?? this.registration(options.provider)
-      const adapter = registration.adapter
+      let registration: AdapterRegistration
+      let adapter: LlmAdapter
       let modelInfo: LlmResolvedModelInfo
       let resolvedConfig: LlmCallConfig
       let dispatch: (options: GenerateOptions) => AsyncIterable<StreamChunk>
       if (prepared === undefined) {
-        const adapterCall = await adapter.prepareCall(options.provider, options.model, options.signal)
-        modelInfo = this.normalizeModelInfo(registration, options.model, adapterCall.model)
+        const target = this.dispatchTarget(options.provider, options.model)
+        registration = target.executing
+        adapter = registration.adapter
+        const adapterCall = await adapter.prepareCall(target.provider, target.model, options.signal)
+        const described = this.normalizeModelInfo(registration, target.model, adapterCall.model)
+        modelInfo = target.redirected
+          ? this.executedModelInfo(described, options.provider, options.model)
+          : described
         resolvedConfig = this.resolveCallWithInfo(options, modelInfo).config
-        dispatch = options => adapterCall.stream(options)
+        // The executing adapter reads its route from the request, so the
+        // dispatched copy names that route.
+        dispatch = options => adapterCall.stream(target.redirected
+          ? { ...options, provider: target.provider, model: target.model }
+          : options)
       } else {
+        registration = prepared.registration
+        adapter = registration.adapter
         modelInfo = prepared.modelInfo
         resolvedConfig = prepared.config
         dispatch = prepared.dispatch
@@ -1195,6 +1352,15 @@ function adapterFailureChunk(error: unknown, signal?: AbortSignal): StreamChunk 
   }
 }
 
+/**
+ * Whether one routing window's `days` is a list of non-empty day names.
+ * @param value - the value an adapter returned.
+ * @returns whether the value is a usable day list.
+ */
+function isDayList(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every(day => typeof day === 'string' && day.length > 0)
+}
+
 /** Copy a directory entry, including its arrays, so neither side can mutate the other's copy. */
 function detachDirectoryEntry(entry: LlmConfigurableProvider): LlmConfigurableProvider {
   const { nativeAuth } = entry
@@ -1210,6 +1376,20 @@ interface AdapterRegistration {
   readonly adapter: LlmAdapter
   readonly provider: LlmProviderInfo
   readonly retryPolicy: ResolvedRetryPolicy
+}
+
+/** One call's adapter selection: the route the caller named and the route that executes. */
+interface DispatchTarget {
+  /** Registration for the provider the caller named; it owns recovery and the call's identity. */
+  readonly requested: AdapterRegistration
+  /** Registration that executes the call. */
+  readonly executing: AdapterRegistration
+  /** Executing provider route. */
+  readonly provider: string
+  /** Exact model id the executing route receives. */
+  readonly model: string
+  /** Whether the executing route differs from the requested one. */
+  readonly redirected: boolean
 }
 
 interface PreparedDispatch {

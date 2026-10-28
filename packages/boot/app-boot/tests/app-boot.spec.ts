@@ -1045,6 +1045,38 @@ describe('boot', () => {
     }
   })
 
+  it('exposes dshInstancePath to Loader config expressions', async () => {
+    const dir = tmp()
+    const dshHome = join(dir, 'home')
+    vi.stubEnv('DSH_HOME', dshHome)
+    writeFileSync(join(dir, 'capture.mjs'), [
+      'export const name = "capture"',
+      'export function apply(ctx, config) {',
+      '  ctx.provide("capturedPaths", config)',
+      '}',
+      '',
+    ].join('\n'))
+    writeFileSync(join(dir, 'cordis.yml'), [
+      '- id: capture',
+      '  name: ./capture.mjs',
+      '  config:',
+      "    named: !!js dshInstancePath('lab', 'sessions')",
+      "    shared: !!js dshInstancePath(undefined, 'sessions')",
+      '',
+    ].join('\n'))
+    let ctx: Context | undefined
+    try {
+      ctx = await boot(NAME, join(dir, 'cordis.yml'))
+      expect(ctx.get('capturedPaths')).toEqual({
+        named: join(dshHome, 'instances', 'lab', 'sessions'),
+        shared: join(dshHome, 'sessions'),
+      })
+    } finally {
+      await ctx?.fiber.dispose()
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('returns instead of asserting over a tree a surface disposed mid-startup', async () => {
     // A surface can dispose the root fiber while boot() is still awaiting the
     // Loader, before the last entry settles. The Loader service goes with the

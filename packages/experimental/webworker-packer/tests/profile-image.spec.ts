@@ -47,9 +47,11 @@ describe('profile roster', () => {
 
 describe('platform home patch', () => {
   it('keeps the composed JSONL row config and sets the plaintext compression the Worker requires', () => {
+    // The Web bundle scopes Session state to `--instance`, which resolves to the
+    // flat home layout when the server runs without one.
     expect(platformHomePatch(repoRoot, 'web')).toEqual([{
       id: 'session-persistence-jsonl',
-      config: { root: { __jsExpr: "dshHomePath('sessions')" }, compression: 'none' },
+      config: { root: { __jsExpr: "dshInstancePath(ctx.webStartup.instance, 'sessions')" }, compression: 'none' },
     }])
   })
 })

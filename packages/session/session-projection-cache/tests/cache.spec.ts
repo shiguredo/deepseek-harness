@@ -435,6 +435,21 @@ describe('SessionProjectionCache write policy', () => {
     expect((await storedRows(root, armed.id))?.['cache-test/marks']?.seq).toBe(-1)
   })
 
+  it('awaits an in-flight checkpoint before closing the domain', async () => {
+    const { ctx, fiber } = await harness({ config: { writeEveryEvents: 100, writeIntervalMs: 60_000 } })
+    const pending = Promise.withResolvers<undefined>()
+    const write = vi.spyOn(ctx.sessionProjectionCache, 'write').mockImplementation(() => pending.promise)
+    ctx.sessions.create(SessionId('draining'))
+    expect(write).toHaveBeenCalledOnce()
+    let disposed = false
+    const disposing = fiber.dispose().then(() => { disposed = true })
+    await Promise.resolve()
+    expect(disposed).toBe(false)
+    pending.resolve(undefined)
+    await disposing
+    expect(disposed).toBe(true)
+  })
+
   it('contains a durable write failure: logs a warning, event path unharmed, next write self-heals', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-projcache-'))
     roots.push(root)

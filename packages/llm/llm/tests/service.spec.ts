@@ -23,6 +23,7 @@ import type {
   LlmModelContext,
   LlmModelInfo,
   LlmModelReasoningInfo,
+  LlmModelRouting,
   LlmProviderInfo,
   LlmResolvedModelInfo,
   SystemPromptUpdate,
@@ -72,6 +73,7 @@ class CatalogAdapter extends ScriptedAdapter {
     private readonly reasoning: Readonly<Record<string, LlmModelReasoningInfo>> = {},
     private readonly defaultMaxTokens: Readonly<Record<string, number>> = {},
     private readonly systemPromptUpdate: Readonly<Record<string, string>> = {},
+    private readonly routing: Readonly<Record<string, LlmModelRouting>> = {},
   ) {
     super(SCRIPT)
   }
@@ -95,6 +97,7 @@ class CatalogAdapter extends ScriptedAdapter {
       ...this.contexts[model] === undefined ? {} : { context: this.contexts[model] },
       ...this.reasoning[model] === undefined ? {} : { reasoning: this.reasoning[model] },
       ...this.defaultMaxTokens[model] === undefined ? {} : { defaultMaxTokens: this.defaultMaxTokens[model] },
+      ...this.routing[model] === undefined ? {} : { routing: this.routing[model] },
       ...this.systemPromptUpdate[model] === undefined
         ? {}
         : { systemPromptUpdate: this.systemPromptUpdate[model] as SystemPromptUpdate },
@@ -1448,6 +1451,68 @@ describe('LlmRuntime', () => {
     await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
   })
 
+  it('detaches and carries routing windows from both catalog reads', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    const routing: LlmModelRouting = {
+      windows: [
+        { from: '21:00', to: '03:00', timeZone: 'Asia/Tokyo', provider: 'opencode-go', model: 'kimi-k3' },
+        { from: '09:00', to: '17:00', provider: 'ollama-cloud', days: ['sat', 'sun'] },
+      ],
+    }
+    const model: LlmModelInfo = { provider: 'route', id: 'm', name: 'M', routing }
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [model],
+      {}, {}, {}, {},
+      { m: routing },
+    ))
+    const [listed] = await ctx.llm.listModels('route')
+    expect(listed?.routing).toEqual(routing)
+    expect(listed?.routing).not.toBe(routing)
+    expect(listed?.routing?.windows).not.toBe(routing.windows)
+    expect(listed?.routing?.windows[1]?.days).not.toBe(routing.windows[1]?.days)
+    const resolved = await ctx.llm.resolveModelInfo('route', 'm')
+    expect(resolved.routing).toEqual(routing)
+    expect(resolved.routing).not.toBe(routing)
+  })
+
+  // The table carries values a catalog must refuse: a wrong-typed field or an
+  // absent one, which no valid `LlmModelRouting` can express.
+  it.each<{ routing: unknown; label: string }>([
+    { routing: { windows: [] }, label: 'no windows' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', timeZone: 1 }] }, label: 'non-string time zone' },
+    { routing: { windows: [{ from: 1, to: '03:00' }] }, label: 'non-string start' },
+    { routing: { windows: [{ from: '21:00', to: 1 }] }, label: 'non-string end' },
+    { routing: { windows: [{ from: '21:00', to: '03:00' }] }, label: 'missing provider' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: '' }] }, label: 'empty provider' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: 'mon' }] }, label: 'non-array days' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: ['mon', 1] }] }, label: 'non-string day' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', days: [''] }] }, label: 'empty day' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', model: '' }] }, label: 'empty model' },
+    { routing: { windows: [{ from: '21:00', to: '03:00', provider: 'p', model: 1 }] }, label: 'non-string model' },
+  ])('rejects invalid routing metadata in a catalog read ($label)', async ({ routing }) => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [{ provider: 'route', id: 'm', name: 'M', routing } as LlmModelInfo],
+    ))
+    await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
+  })
+
+  it('rejects invalid routing metadata in an exact model read', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
+      { id: 'route', name: 'Route' },
+      [{ provider: 'route', id: 'm', name: 'M' }],
+      {}, {}, {}, {},
+      { m: { windows: [] } },
+    ))
+    await expect(ctx.llm.resolveModelInfo('route', 'm')).rejects.toMatchObject({ code: 'INVALID_MODEL_INFO' })
+  })
+
   it('lets llm/stream waterfall listeners wrap the underlying stream', async () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
@@ -1707,6 +1772,109 @@ describe('LlmRuntime', () => {
     expect(ctx.llm.listProviders()).toEqual([{ id: 'm2', name: 'm2' }])
     handle()
     expect(ctx.llm.listProviders()).toEqual([])
+  })
+})
+
+describe('alternate route dispatch', () => {
+  /** One destination route: answers describes from its own catalog and records each execution. */
+  class DestinationAdapter extends ScriptedAdapter {
+    /** Every call this destination actually executed, as `provider/model`. */
+    readonly calls: string[] = []
+
+    override providerRetryPolicy() {
+      return resolveRetryPolicy({ mode: 'always' }, 'destination retryPolicy')
+    }
+
+    override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+      return Promise.resolve({
+        provider,
+        id: model,
+        name: `${provider}:${model}`,
+        inputModalities: ['text'],
+        context: { contextWindow: 33_000 },
+        reasoning: {
+          efforts: [{ id: ReasoningEffortId('low'), name: 'Low' }],
+          defaultEffort: ReasoningEffortId('low'),
+        },
+      })
+    }
+
+    override stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+      this.calls.push(`${options.provider}/${options.model}`)
+      return super.stream(options)
+    }
+  }
+
+  /** One requested route that hands every call to `alternate`. */
+  class RedirectingAdapter extends ScriptedAdapter {
+    /** Every question the LLM service asked this adapter. */
+    readonly asked: { provider: string; model: string }[] = []
+
+    constructor(private readonly alternate: { provider: string; model: string } | undefined) {
+      super(SCRIPT)
+    }
+
+    override alternateRoute(provider: string, model: string) {
+      this.asked.push({ provider, model })
+      return this.alternate
+    }
+  }
+
+  /**
+   * Register one redirecting route beside its destination.
+   * @param alternate - the route the requested adapter hands calls to.
+   * @returns the requested adapter, the destination adapter, and the runtime.
+   */
+  async function harness(alternate: { provider: string; model: string } | undefined) {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    const requested = new RedirectingAdapter(alternate)
+    ctx.llm.registerAdapter(['requested'], requested)
+    const destination = new DestinationAdapter(SCRIPT)
+    ctx.llm.registerAdapter(['destination'], destination)
+    return { ctx, requested, destination }
+  }
+
+  it('dispatches a prepared call through the route the adapter names, keeping the requested identity', async () => {
+    const { ctx, requested, destination } = await harness({ provider: 'destination', model: 'served-model' })
+    const prepared = await ctx.llm.prepareCall({ provider: 'requested', model: 'asked-model' })
+
+    expect(requested.asked).toEqual([{ provider: 'requested', model: 'asked-model' }])
+    // The call stays the requested route's for logging and pickers, while the
+    // capabilities describe what actually executes.
+    expect(prepared.config).toMatchObject({ provider: 'requested', model: 'asked-model' })
+    expect(prepared.context).toEqual({ contextWindow: 33_000 })
+    expect(prepared.inputModalities).toEqual(['text'])
+    // Recovery belongs to the requested route, not the substituted one.
+    expect(prepared.retryPolicy.mode).toBe('normal')
+
+    await collect(prepared.stream({ ...prepared.config, messages: [] }))
+    expect(destination.calls).toEqual(['destination/served-model'])
+  })
+
+  it('dispatches a direct stream through the named route', async () => {
+    const { ctx, destination } = await harness({ provider: 'destination', model: 'served-model' })
+    await collect(ctx.llm.stream({ provider: 'requested', model: 'asked-model', messages: [] }))
+    expect(destination.calls).toEqual(['destination/served-model'])
+  })
+
+  it('keeps local dispatch when the adapter names no route', async () => {
+    const { ctx, destination } = await harness(undefined)
+    const prepared = await ctx.llm.prepareCall({ provider: 'requested', model: 'asked-model' })
+    await collect(prepared.stream({ ...prepared.config, messages: [] }))
+    expect(destination.calls).toEqual([])
+    expect(prepared.context).toBeUndefined()
+  })
+
+  it('fails a call whose alternate route no adapter serves', async () => {
+    const { ctx } = await harness({ provider: 'absent', model: 'served-model' })
+    await expect(ctx.llm.prepareCall({ provider: 'requested', model: 'asked-model' }))
+      .rejects.toMatchObject({ code: 'NO_ADAPTER' })
+    await expect(ctx.llm.prepareCall({ provider: 'requested', model: 'asked-model' }))
+      .rejects.toThrow('executes on provider "absent"')
+    const chunks = await collect(ctx.llm.stream({ provider: 'requested', model: 'asked-model', messages: [] }))
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0]).toMatchObject({ type: 'finish', reason: { kind: 'error', failure: { code: 'NO_ADAPTER' } } })
   })
 })
 

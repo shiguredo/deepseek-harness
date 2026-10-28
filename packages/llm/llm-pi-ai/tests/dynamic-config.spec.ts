@@ -304,6 +304,34 @@ describe('request-level dynamic profiles', () => {
     expect(server.paths).toEqual(['/v1/responses', '/v1/responses'])
   })
 
+  it('accepts a peak destination another adapter registers and refuses one no adapter serves', async () => {
+    const dir = await home()
+    const ctx = await boot(dir, {})
+    // The native DeepSeek route is the destination the Models page offers.
+    ctx.llm.registerAdapter(['deepseek-official'], new StubAdapter())
+    const window = (provider: string): LlmPiAi.Options => ({ providers: { 'ollama-cloud': {
+      models: [{ id: 'deepseek-v4.1-flash:1017', peak: [{ provider, model: 'deepseek-flash' }] }],
+    } } })
+
+    // A destination the installed catalog does not describe must name a route
+    // this deployment already registers; a typo is refused at the write.
+    await expect(configurations.get(ctx)!.update(window('missing-route')))
+      .rejects.toThrow(/peak provider "missing-route" is not a registered route/)
+    await configurations.get(ctx)!.update(window('deepseek-official'))
+    expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['deepseek-official', 'ollama-cloud'])
+    const [listed] = await ctx.llm.listModels('ollama-cloud')
+    expect(listed?.routing).toEqual({
+      windows: [{
+        from: '12:00',
+        to: '18:00',
+        timeZone: 'UTC',
+        days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+        provider: 'deepseek-official',
+        model: 'deepseek-flash',
+      }],
+    })
+  })
+
   it('ignores a settings document that merely reorders its provider keys', async () => {
     const dir = await home()
     const ctx = await boot(dir, { providers: { openai: {}, anthropic: {} } })

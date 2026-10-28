@@ -42,6 +42,14 @@
     - text: 实验性 在会话侧栏集中跟踪关联的 GitHub PR：查看检查状态、评审意见与代码差异，并把修改建议交给智能体继续处理。也可查看本地改动，用独立工作树隔离任务。GitHub 功能需要本机安装 gh 并登录。
     - status
     - switch "启用 变更请求与工作树"
+- heading "时雨堂内置插件设置" [level=3]
+- list:
+  - listitem:
+    - button "查看 使用 Ollama Cloud 的网页搜索与页面获取": 使用 Ollama Cloud 的网页搜索与页面获取
+    - text: 设置 Ollama Cloud 的网页搜索与抓取提供方。
+  - listitem:
+    - button "查看 Git 推送防护": Git 推送防护
+    - text: 在 Git 推送执行前请求确认。
 - heading "已安装插件" [level=3]
 - list:
   - listitem:
