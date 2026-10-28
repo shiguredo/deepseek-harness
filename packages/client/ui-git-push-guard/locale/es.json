@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Protección de push de Git",
+    "description": "Añade el chip del compositor que cambia la protección de push de una sesión y una tarjeta de ajustes de plugins integrados que fija el valor predeterminado de las sesiones nuevas; el paquete Host pide confirmación antes de que se ejecute un git push."
+  }
+}

@@ -162,6 +162,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   workspaceFiles: 'workspace.md',
   workspaceChanges: 'deliverables.md',
   terminalController: 'workspace.md',
+  workspaceGit: 'workspace.md',
   directoryPickerController: 'workspace.md',
 }
 
@@ -196,6 +197,7 @@ export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
   launcherSessionQueryPath: 'not a service: launcher-provided boot-context value (string | undefined) — packages/session-query/session-query-sqlite/README.md owns this launcher contract',
   dshHomePath: 'not a service: boot-provided root accessor function (typeof dshHomePath | undefined) for Loader !!js config expressions — packages/boot/app-boot/README.md owns the boot contract',
   dshPath: 'not a service: boot-provided root accessor function (typeof dshPath | undefined) for Loader !!js config expressions — packages/boot/app-boot/README.md owns the boot contract',
+  dshInstancePath: 'not a service: boot-provided instance-scoped path accessor function (typeof dshInstancePath | undefined) for Loader !!js config expressions — packages/boot/app-boot/README.md owns the boot contract',
   launchEnvironment: 'not a service: launcher-provided root accessor value (LaunchEnvironmentSnapshot | undefined) — packages/util/launch-environment/README.md owns this launcher contract',
   pluginPackages: 'profile-boot-owned package resolver service used by optional consumers — packages/boot/app-boot/README.md owns this internal API',
   fileUpload: 'client-side browser upload service — packages/client/file-upload/README.md owns the API',
@@ -1180,6 +1182,9 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   AgentTerminalRequest: 'Agent terminal allocation fields are owned by packages/api/terminal-controller/README.md',
   TerminalScreenRequest: 'Browser terminal screen reads are owned by packages/api/terminal-controller/README.md',
   TerminalScreenPage: 'Browser terminal screen reads are owned by packages/api/terminal-controller/README.md',
+  WorkspaceGitScope: 'Host workspace git lookup contract is owned by packages/api/workspace-git/README.md',
+  WorkspaceGitStatus: 'Host workspace git endpoint contract is owned by packages/api/workspace-git/README.md',
+  WorkspaceGitGithub: 'Host workspace git endpoint contract is owned by packages/api/workspace-git/README.md',
 }
 
 /** Repository data policy consumed by the Cordis catalog projector. */

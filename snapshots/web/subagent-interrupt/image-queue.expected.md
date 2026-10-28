@@ -19,12 +19,12 @@
 - button "Stopped" [disabled] [expanded]
 - button "Injected context"
 - paragraph: partial
-- text: Stopped
+- text: Stopped {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}} Keep working until I stop you again. {{clock}}
+- text: Keep working until I stop you again. {{clock}}
 - button "Copy"
 - paragraph: partial
 - status: Deep diving
@@ -49,6 +49,7 @@
 - textbox "Cmd/Ctrl+Enter steers all queued messages"
 - button "Add files or run commands"
 - 'button "Access mode, current: Custom"': Custom
+- button "Push guard ON" [pressed]
 - button "Stop generating"
 - button "Send message" [disabled]
 - button "1 turns 1 steps"

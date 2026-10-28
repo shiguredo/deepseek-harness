@@ -1,15 +1,20 @@
 /* Base variables referenced by the token sheets and component CSS but defined
  * upstream (deepsuite theme/global.css) — supplied here so the composite
- * --dsw-font-* variables resolve and motion rides the upstream curve. Code
- * font stack deliberately omits a bare `monospace` tail (Windows CJK falls
- * back to SimSun otherwise). */
+ * --dsw-font-* variables resolve and motion rides the upstream curve. Both
+ * stacks stay locale-neutral: no CJK family is pinned, so the browser picks
+ * the glyph set its page language names (Japanese text on a `ja` page takes
+ * Japanese glyph forms instead of the Chinese ones a pinned `PingFang SC` /
+ * `Microsoft YaHei` would give). The code stack deliberately omits a bare
+ * `monospace` tail (Windows CJK then falls back to SimSun) and ends in the
+ * generic sans instead. The theme font settings write the user's lists
+ * (--dsh-font-family-text / -code) ahead of these stacks on body. */
 :root {
-  --dsh-font-family-text-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --dsh-font-family-text-default: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
   --dsw-font-family: var(--dsh-font-family-text-default);
   --dsw-font-family-brand: 'Montserrat', var(--dsh-font-family-text-default);
   --dsh-font-family-code-default: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
-    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+    'Liberation Mono', Menlo, Courier, sans-serif;
   --ds-font-family-code: var(--dsh-font-family-code-default);
   --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ds-transition-duration: 0.2s;

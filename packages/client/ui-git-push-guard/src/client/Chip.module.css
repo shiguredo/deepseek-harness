@@ -1,0 +1,55 @@
+/* Composer tool-row chip: the same compact capsule as the other ambient
+   controls, tinted by the Session's own guard setting. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0.5px solid var(--dsw-alias-border-l1);
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip svg {
+  flex: none;
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+}
+
+.chip:disabled {
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .chip:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.on {
+  border-color: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-brand-primary);
+}
+
+@media (hover: hover) {
+  .chip.on:not(:disabled):hover {
+    background: var(--dsw-alias-interactive-bg-hover-accent);
+  }
+}
+
+.failed {
+  color: var(--dsw-alias-state-error-primary);
+}

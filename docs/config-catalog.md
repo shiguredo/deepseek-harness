@@ -406,6 +406,23 @@ export interface SearchLimits {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-api-workspace-files -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-api-workspace-git -->
+<a id="deepseek-aidsh-api-workspace-git"></a>
+
+## `@deepseek-ai/dsh-api-workspace-git`
+
+- `inject`: `sandboxPolicy` · `sessions` · `subprocess` · `typert`
+- `source`: [`packages/api/workspace-git/src/index.ts:54`](../packages/api/workspace-git/src/index.ts)
+
+```ts config-catalog
+/** Deployment bounds on one git invocation. */
+export interface Config {
+  /** Deadline in milliseconds for one `git` invocation. */
+  readonly timeoutMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-api-workspace-git -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-attachment-local -->
 <a id="deepseek-aidsh-attachment-local"></a>
 
@@ -1670,6 +1687,25 @@ export type Config = LocalConfig
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-fs-sandbox -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-git-push-guard -->
+<a id="deepseek-aidsh-git-push-guard"></a>
+
+## `@deepseek-ai/dsh-git-push-guard`
+
+- `inject`: `webServer` · `tools` · `systemPrompt` · `userQuestions`
+- `source`: [`packages/guard/git-push-guard/src/index.ts:40`](../packages/guard/git-push-guard/src/index.ts)
+
+```ts config-catalog
+/** Plugin configuration. */
+export interface Config {
+  /** Absolute state file path; defaults to `$DSH_HOME/push-guard/state.json`. */
+  readonly stateFile?: string
+  /** Whether a new session starts with the guard enabled. Defaults to true. */
+  readonly defaultEnabled?: boolean
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-git-push-guard -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-goal -->
 <a id="deepseek-aidsh-goal"></a>
 
@@ -2064,7 +2100,7 @@ export interface Config extends ProtocolConfig, ModelListingConfig {
 
 - `inject`: `llm`
 - `refs`: `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`) · `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/llm/llm-pi-ai/src/config.ts:251`](../packages/llm/llm-pi-ai/src/config.ts)
+- `source`: [`packages/llm/llm-pi-ai/src/config.ts:257`](../packages/llm/llm-pi-ai/src/config.ts)
 
 ```ts config-catalog
 /** Plugin configuration: the provider routes this instance owns. */
@@ -2220,6 +2256,13 @@ export interface PiAiModelProfile {
   reasoningEfforts?: false | PiAiReasoningEfforts
   /** pi-ai wire-compatibility switches for this model, winning over the route's per field; one its protocol does not declare is refused. */
   compat?: PiAiCompatProfile
+  /**
+   * Destinations the model's published peak window routes to, in priority
+   * order. The period belongs to the model's price policy and ships with the
+   * catalog, so configuration names only where requests go meanwhile. An empty
+   * list is the same as omitting the field.
+   */
+  peak?: PiAiPeakProvider[]
 }
 
 /**
@@ -2335,6 +2378,32 @@ export type PiAiModality = Model<Api>['input'][number]
  * from the dict is not offered.
  */
 export type PiAiReasoningEfforts = Partial<Record<ModelThinkingLevel, string | null>>
+
+/** One provider a peak window may serve a model with. */
+export interface PiAiPeakProvider {
+  /**
+   * Provider route that serves the window's requests. A route the installed
+   * pi-ai catalog describes runs inside this adapter, with or without a profile
+   * of its own; any other one is executed by the route the deployment
+   * registers under this id.
+   */
+  provider: string
+  /**
+   * Model id the candidate receives. Omission keeps the routed model's own id,
+   * so a window that only moves the endpoint names no model. A window may route
+   * to another model of the same provider, or to a model of another one.
+   */
+  model?: string
+  /**
+   * Credential reference (environment-variable name) resolved per request
+   * through the credential seam, for a destination resolved from the installed
+   * catalog. Omission uses the candidate route's own `apiKeyEnv` when the
+   * candidate is a configured route, and otherwise defers to pi-ai's
+   * provider-native ambient discovery. A destination that executes on its own
+   * registered route authenticates through that route and refuses this field.
+   */
+  apiKeyEnv?: string
+}
 
 /** One reasoning-dispatch wire format a profile may name. */
 export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFormat']>
@@ -3199,7 +3268,7 @@ export interface JsonRpcConfig {
 ```ts config-catalog
 /** Session-log request contribution configuration. */
 export interface Config {
-  /** Contribute `dsh_session_log` to official DeepSeek requests. Defaults to `true`. */
+  /** Contribute `dsh_session_log` to official DeepSeek requests. Defaults to `false`, so the field is opt-in. */
   enabled: Volatile<boolean>
   /**
    * Largest serialized `dsh_session_log` field, in UTF-8 bytes, that one request carries.
@@ -5062,6 +5131,24 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-web-fetch-http -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-web-ollama-api -->
+<a id="deepseek-aidsh-web-ollama-api"></a>
+
+## `@deepseek-ai/dsh-web-ollama-api`
+
+- `inject`: `web`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/web/web-ollama-api/src/index.ts:40`](../packages/web/web-ollama-api/src/index.ts)
+
+```ts config-catalog
+/** Live plugin config: the one value a deployment varies, editable from the settings page. */
+export interface Config {
+  /** Default result count when a search request carries no `maxResults`. Defaults to 5. */
+  maxResults: Volatile<number>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-web-ollama-api -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-web-search-deepseek -->
 <a id="deepseek-aidsh-web-search-deepseek"></a>
 
@@ -5078,7 +5165,7 @@ export interface Config {
   apiKey: Volatile<string | undefined>
   /** Credential reference resolved for each search; defaults to `DEEPSEEK_API_KEY`. */
   apiKeyEnv: Volatile<string>
-  /** Anthropic-compatible endpoint base; `/messages` is appended. */
+  /** Anthropic-compatible endpoint base or full endpoint; `/messages` is appended when the value is not already it. */
   baseURL: Volatile<string | undefined>
   /** Anthropic-format model name. Defaults to `deepseek-v4-flash`. */
   model: Volatile<string>
@@ -5146,7 +5233,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-working-directory`
 
 - `inject`: `fs` · `sessionProjections` · `systemPrompt`
-- `source`: [`packages/session/working-directory/src/index.ts:70`](../packages/session/working-directory/src/index.ts)
+- `source`: [`packages/session/working-directory/src/index.ts:66`](../packages/session/working-directory/src/index.ts)
 
 ```ts config-catalog
 /** Deployment default for Sessions without an original project directory. */
@@ -5222,6 +5309,8 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-entry-customization` | — | [`packages/client/ui-entry-customization/src/index.ts`](../packages/client/ui-entry-customization/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-file-actions` | — | [`packages/client/ui-file-actions/src/index.ts`](../packages/client/ui-file-actions/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-file-drag` | — | [`packages/client/ui-file-drag/src/index.ts`](../packages/client/ui-file-drag/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-git-branch` | — | [`packages/client/ui-git-branch/src/index.ts`](../packages/client/ui-git-branch/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-git-push-guard` | — | [`packages/client/ui-git-push-guard/src/index.ts`](../packages/client/ui-git-push-guard/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-goal` | — | [`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
@@ -5248,6 +5337,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-settings-shell` | — | [`packages/client/ui-settings-shell/src/index.ts`](../packages/client/ui-settings-shell/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-subagent` | — | [`packages/client/ui-settings-subagent/src/index.ts`](../packages/client/ui-settings-subagent/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-web-search` | — | [`packages/client/ui-settings-web-search/src/index.ts`](../packages/client/ui-settings-web-search/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-settings-web-search-ollama` | — | [`packages/client/ui-settings-web-search-ollama/src/index.ts`](../packages/client/ui-settings-web-search-ollama/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-shortcuts` | — | [`packages/client/ui-shortcuts/src/index.ts`](../packages/client/ui-shortcuts/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-sidebar` | — | [`packages/client/ui-sidebar/src/index.ts`](../packages/client/ui-sidebar/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-sidebar-browser` | — | [`packages/client/ui-sidebar-browser/src/index.ts`](../packages/client/ui-sidebar-browser/src/index.ts) |

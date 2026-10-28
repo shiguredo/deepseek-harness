@@ -27,8 +27,9 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { QuotaNoticeInjected } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { PerformanceUsageRowInjected } from '../src/client/settings/PerformanceUsageRow.tsx'
+import type { ClockTimeZoneRowInjected } from '../src/client/settings/ClockTimeZoneRow.tsx'
 import { CHAT_SETTINGS_NAMESPACE, type ChatSettings } from '../src/chat-settings.ts'
-import { ActivityPill, UsagePill } from '../src/client/chat/StatsPills.tsx'
+import { StatsPills } from '../src/client/chat/StatsPills.tsx'
 import { createFlowMotion, type InputFoldDriver } from '../src/client/chat/flow-motion.ts'
 import { CHAT_FLOW_INJECT, CHAT_NODE_INJECT } from '../src/client/apply.ts'
 import { UserContent } from '../src/client/chat/UserContent.tsx'
@@ -141,9 +142,9 @@ describe('Chat apply wiring', () => {
     expect(b.runtime.slots.spec('conversation.chat.node'))
       .toMatchObject({ kind: 'keyed', scope: 'session' })
     expect(b.runtime.slots.entries('conversation.composer.dock').map(row => row.options.id))
-      .toEqual(['activity', 'usage'])
+      .toEqual(['stats'])
     expect(b.runtime.slots.entries('settings.general.item').map(row => row.options.id))
-      .toEqual(['transcript-view', 'link-opening', 'composer-enter', 'performance-usage'])
+      .toEqual(['transcript-view', 'link-opening', 'clock-time-zone', 'composer-enter', 'performance-usage'])
     expect(b.runtime.slots.spec('conversation.chat.markdown.fence')).toMatchObject({ kind: 'hoc', scope: 'session' })
     expect(b.runtime.slots.entries('conversation.chat.markdown.fence').map(row => [row.options.key, row.options.id]))
       .toEqual([
@@ -195,20 +196,20 @@ describe('Chat apply wiring', () => {
     expect(() => b.runtime.factoryOf('conversation.chat.user.content')).toThrow('no definition')
   })
 
-  it('lets another registrant replace one composer stats pill by id', async () => {
+  it('lets another registrant replace the composer stats row by id', async () => {
     const b = await bench()
     onTestFinished(() => b.runtime.dispose())
-    function PluginActivity() { return null }
+    function PluginStats() { return null }
     const dispose = b.runtime.ctx.slots.register({
-      name: 'conversation.composer.dock', id: 'activity', order: 0, priority: -1,
-    }, PluginActivity)
+      name: 'conversation.composer.dock', id: 'stats', order: 0, priority: -1,
+    }, PluginStats)
     const winners = (): Record<string, unknown> => Object.fromEntries(
       b.runtime.slots.entriesOfSlot('conversation.composer.dock')
         .map((entry): [string, unknown] => [entry.options.id ?? '', entry.component]),
     )
-    expect(winners()).toEqual({ activity: PluginActivity, usage: UsagePill })
+    expect(winners()).toEqual({ stats: PluginStats })
     dispose()
-    expect(winners()).toEqual({ activity: ActivityPill, usage: UsagePill })
+    expect(winners()).toEqual({ stats: StatsPills })
   })
 
   it.each([
@@ -231,7 +232,7 @@ describe('Chat apply wiring', () => {
     expect(b.chatSettings.set).toHaveBeenCalledWith('transcriptView', choice)
 
     b.chatSettings.publish({
-      status: 'ready', value: { linkOpening: 'sidebar', transcriptView: 'compact', performanceUsage: 'detailed' }, revision: 1, writable: true,
+      status: 'ready', value: { linkOpening: 'sidebar', transcriptView: 'compact', performanceUsage: 'detailed', clockTimeZone: 'local' }, revision: 1, writable: true,
     })
     expect(face.hooks.transcriptView.getSnapshot()).toBe('compact')
   })
@@ -248,11 +249,11 @@ describe('Chat apply wiring', () => {
       setCollapseTiming('next-input')
       expect(hooks.collapseTiming.getSnapshot()).toBe('next-input')
       expect(b.chatSettings.set).toHaveBeenCalledExactlyOnceWith('collapseTiming', 'next-input')
-      b.chatSettings.publish({ status: 'ready', value: { linkOpening: 'sidebar', transcriptView: 'standard', performanceUsage: 'detailed', collapseTiming: 'next-input' }, revision: 1, writable: true })
+      b.chatSettings.publish({ status: 'ready', value: { linkOpening: 'sidebar', transcriptView: 'standard', performanceUsage: 'detailed', collapseTiming: 'next-input', clockTimeZone: 'local' }, revision: 1, writable: true })
       expect(hooks.transcriptView.getSnapshot()).toBe('standard')
       expect(hooks.collapseTiming.getSnapshot()).toBe('next-input')
       expect(b.runtime.slots.entries('settings.general.item').map(entry => entry.options.id))
-        .toEqual(['transcript-view', 'link-opening', 'composer-enter', 'performance-usage'])
+        .toEqual(['transcript-view', 'link-opening', 'clock-time-zone', 'composer-enter', 'performance-usage'])
 
       await b.chat.dispose()
       expect(b.runtime.slots.entries('settings.general.item').some(entry => entry.options.id === 'transcript-view')).toBe(false)
@@ -266,10 +267,32 @@ describe('Chat apply wiring', () => {
       expect(remountedHooks.transcriptView.getSnapshot()).toBe('standard')
       expect(b.chatSettings.set).toHaveBeenCalledExactlyOnceWith('collapseTiming', 'next-input')
       expect(b.runtime.slots.entries('settings.general.item').map(entry => entry.options.id))
-        .toEqual(['transcript-view', 'link-opening', 'composer-enter', 'performance-usage'])
+        .toEqual(['transcript-view', 'link-opening', 'clock-time-zone', 'composer-enter', 'performance-usage'])
     } finally {
       await b.runtime.dispose()
     }
+  })
+
+  it('shares one clock-zone preference between the settings row and the Chat view', async () => {
+    const b = await bench()
+    const row = b.runtime.slots.entries('settings.general.item').find(entry => entry.options.id === 'clock-time-zone')!
+    expect(row.options.order).toBe(18)
+    const face = row.inject!() as object as ClockTimeZoneRowInjected
+    expect(face.hooks.clockTimeZone.getSnapshot()).toBe('local')
+    face.setClockTimeZone('jst')
+    expect(face.hooks.clockTimeZone.getSnapshot()).toBe('jst')
+    expect(b.chatSettings.set).toHaveBeenCalledWith('clockTimeZone', 'jst')
+
+    // The row publishes the shared live store; the Chat view reads that same
+    // store through its own inject face, asserted in apply-inject.client.spec.
+    b.chatSettings.publish({
+      status: 'ready',
+      value: { linkOpening: 'sidebar', transcriptView: 'compact', performanceUsage: 'detailed', clockTimeZone: 'utc' },
+      revision: 1,
+      writable: true,
+    })
+    expect(face.hooks.clockTimeZone.getSnapshot()).toBe('utc')
+    await b.runtime.dispose()
   })
 
   it('shares the accepted performance preference with settings, composer, and turn tails', async () => {
@@ -279,7 +302,7 @@ describe('Chat apply wiring', () => {
     expect(face.hooks.performanceUsage.getSnapshot()).toBe('detailed')
     face.setPerformanceUsage('compact')
     expect(b.chatSettings.set).toHaveBeenCalledWith('performanceUsage', 'compact')
-    b.chatSettings.publish({ value: { linkOpening: 'sidebar', transcriptView: 'compact', performanceUsage: 'compact' } })
+    b.chatSettings.publish({ value: { linkOpening: 'sidebar', transcriptView: 'compact', performanceUsage: 'compact', clockTimeZone: 'local' } })
     expect(face.hooks.performanceUsage.getSnapshot()).toBe('compact')
     for (const entry of [
       ...b.runtime.slots.entries('conversation.composer.dock'),

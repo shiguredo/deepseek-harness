@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { assertServiceable, Config, resolveProfiles, type Options } from '../src/config.ts'
+import { assertServiceable, Config, resolveProfiles, type Options, type PiAiProviderProfile } from '../src/config.ts'
+import type { PiAiPeakProvider } from '../src/peak.ts'
 
 /** Validate one hand-declared route, with the caller's fields layered onto it. */
 const routeWith = (profile: Record<string, unknown>): (() => unknown) =>
@@ -82,6 +83,43 @@ describe('modality schema boundary', () => {
     const absent = configWith({})() as Materialized
     expect(absent.providers['acme-gateway']?.models?.[0]?.input).toEqual([])
     expect(absent.providers['acme-gateway']?.defaultInput).toEqual(['text'])
+  })
+})
+
+describe('peak destination routes', () => {
+  /** One Ollama Cloud model routed to the caller's destination. */
+  const peakWindow = (peak: PiAiPeakProvider): Options => ({
+    providers: Config({
+      providers: { 'ollama-cloud': { models: [{ id: 'deepseek-v4.1-flash:1017', peak: [peak] }] } },
+    }).providers.get() as Record<string, PiAiProviderProfile>,
+  })
+
+  it('accepts a destination the installed catalog describes without asking the registry', () => {
+    expect(() => {
+      assertServiceable(peakWindow({ provider: 'opencode-go', model: 'deepseek-v4.1-flash' }), undefined, () => false)
+    }).not.toThrow()
+  })
+
+  it('refuses a destination no adapter registers', () => {
+    expect(() => {
+      assertServiceable(peakWindow({ provider: 'deepseek-official', model: 'deepseek-flash' }), undefined, () => false)
+    }).toThrow(/peak provider "deepseek-official" is not a registered route/)
+  })
+
+  it('accepts a destination another adapter registers', () => {
+    expect(() => {
+      assertServiceable(
+        peakWindow({ provider: 'deepseek-official', model: 'deepseek-flash' }),
+        undefined,
+        provider => provider === 'deepseek-official',
+      )
+    }).not.toThrow()
+  })
+
+  it('skips the registry check when the caller supplies no lookup', () => {
+    expect(() => {
+      assertServiceable(peakWindow({ provider: 'deepseek-official', model: 'deepseek-flash' }))
+    }).not.toThrow()
   })
 })
 

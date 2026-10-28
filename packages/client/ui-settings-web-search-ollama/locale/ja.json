@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ollama Cloud を利用した Web 検索とページ取得",
+    "description": "このデプロイが Ollama Cloud 経由で Web 検索とページ取得を行うかどうかと、検索が使う結果件数を設定します。"
+  }
+}

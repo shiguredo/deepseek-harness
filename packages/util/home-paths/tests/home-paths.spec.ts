@@ -7,6 +7,7 @@ import {
   DEFAULT_AGENTS_HOME_DISPLAY,
   DEFAULT_DSH_HOME_DISPLAY,
   DSH_HOME_DIR_NAME,
+  INSTANCES_DIR_NAME,
   agentsHomeDisplay,
   canonicalizeWatchPath,
   defaultAgentsHome,
@@ -15,6 +16,7 @@ import {
   dshHomeDisplay,
   dshHomePath,
   dshPath,
+  dshInstancePath,
   expandHomePath,
   resolveAgentsHome,
   resolveDshHome,
@@ -56,6 +58,15 @@ describe('dsh path helpers', () => {
     vi.stubEnv('DSH_HOME', '~/env-dsh')
     expect(dshHomePath()).toBe(join(homedir(), 'env-dsh'))
     expect(dshHomePath('storages', 'cache')).toBe(join(homedir(), 'env-dsh', 'storages', 'cache'))
+  })
+
+  it('joins child segments onto a named instance, or the shared home when none is named', () => {
+    vi.stubEnv('DSH_HOME', '~/env-dsh')
+    expect(INSTANCES_DIR_NAME).toBe('instances')
+    expect(dshInstancePath(undefined)).toBe(join(homedir(), 'env-dsh'))
+    expect(dshInstancePath(undefined, 'sessions')).toBe(join(homedir(), 'env-dsh', 'sessions'))
+    expect(dshInstancePath('lab')).toBe(join(homedir(), 'env-dsh', 'instances', 'lab'))
+    expect(dshInstancePath('lab', 'sessions')).toBe(join(homedir(), 'env-dsh', 'instances', 'lab', 'sessions'))
   })
 
   it('labels a resolved home by whether it is the default root', () => {

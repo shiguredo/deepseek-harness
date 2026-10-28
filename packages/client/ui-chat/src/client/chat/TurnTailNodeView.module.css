@@ -4,6 +4,13 @@
   gap: 16px;
 }
 
+/* The timestamp line hugs the action row it dates, at the same 2px step the
+   user bubble keeps between its clock and bubble. The root gap still separates
+   the whole footer block from the content above. */
+.clock {
+  margin-bottom: -18px;
+}
+
 .actions {
   /* With tail content, this adds to the root gap; without it, the Chat flow's
      preceding-item offset supplies the other 16px. */

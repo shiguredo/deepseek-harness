@@ -109,6 +109,8 @@ export class SessionProjectionCache extends Service {
 
   private table?: KvTable<SessionId, CheckpointRecord>
   private readonly dirty = new Map<Session, DirtyState>()
+  /** Fail-soft checkpoints already past the throttle gate, keyed for the disposal drain. */
+  private readonly inFlight = new Set<Promise<void>>()
 
   constructor(ctx: Context, public config: Config) {
     super(ctx, 'sessionProjectionCache')
@@ -117,7 +119,12 @@ export class SessionProjectionCache extends Service {
   /** Open the domain and install the write-behind listeners. */
   protected async [Service.init](): Promise<void> {
     const domain = await this.ctx.storageDomain.open(projectionCacheDomainSpec)
-    this.ctx.effect(() => () => domain.close(), 'sessionProjectionCache.domainClose')
+    // One disposer owns the close so the in-flight drain always precedes it,
+    // whatever order sibling plugins tear down in.
+    this.ctx.effect(() => async () => {
+      await this.drainInFlight()
+      await domain.close()
+    }, 'sessionProjectionCache.shutdown')
     this.table = domain.table('sessions')
     this.installWritePath()
   }
@@ -315,18 +322,18 @@ export class SessionProjectionCache extends Service {
     // one), count/interval throttle the in-turn stream.
     this.ctx.on('session/event', (session: Session, event: SessionEvent) => {
       if (event.type === 'turn/end') {
-        void this.flushSoft(session, 'turn/end')
+        this.flushSoft(session, 'turn/end')
         return
       }
       const state = this.dirty.get(session) ?? { pending: 0, timer: undefined }
       this.dirty.set(session, state)
       state.pending += 1
       if (state.pending >= this.config.writeEveryEvents) {
-        void this.flushSoft(session, 'count threshold')
+        this.flushSoft(session, 'count threshold')
         return
       }
       state.timer ??= setTimeout(() => {
-        void this.flushSoft(session, 'interval')
+        this.flushSoft(session, 'interval')
       }, this.config.writeIntervalMs)
     })
 
@@ -336,7 +343,7 @@ export class SessionProjectionCache extends Service {
     // the store, would leave the seed-derived values (the title) unreadable
     // on the cold list. The creation write captures the seed-derived cut.
     this.ctx.on('session/created', (session: Session) => {
-      void this.flushSoft(session, 'create')
+      this.flushSoft(session, 'create')
     })
 
     // Detach (the live-to-cold moment): the final mandatory point. After
@@ -344,7 +351,7 @@ export class SessionProjectionCache extends Service {
     // flushSoft's synchronous prefix reads and resets the dirty state, so
     // dropping it (timer already cleared by markClean) right after is safe.
     this.ctx.on('session/disposed', (session: Session) => {
-      void this.flushSoft(session, 'detach')
+      this.flushSoft(session, 'detach')
       this.markClean(session)
       this.dirty.delete(session)
     })
@@ -362,17 +369,22 @@ export class SessionProjectionCache extends Service {
     }, 'sessionProjectionCache.timers')
   }
 
+  /** Await every checkpoint already past the throttle gate; the timers disposer runs first. */
+  private async drainInFlight(): Promise<void> {
+    await Promise.allSettled([...this.inFlight])
+  }
+
   /**
    * One fail-soft durable checkpoint. Every caller has work by construction:
    * the throttle triggers only fire dirty (markClean clears the timer with
    * the counter) and the mandatory points write unconditionally.
    */
-  private async flushSoft(session: Session, trigger: string): Promise<void> {
-    try {
-      await this.write(session)
-    } catch (error) {
+  private flushSoft(session: Session, trigger: string): void {
+    const work = this.write(session).catch((error: unknown) => {
       this.ctx.logger.warn(`session projection cache: ${trigger} write for "${session.id}" failed (cache stays stale): ${String(error)}`)
-    }
+    })
+    this.inFlight.add(work)
+    void work.finally(() => { this.inFlight.delete(work) })
   }
 
   /** Reset one session's dirty bookkeeping (its checkpoint is being written). */

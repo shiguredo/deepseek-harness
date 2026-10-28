@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Web search and page fetch with Ollama Cloud",
+    "description": "Decide whether this deployment searches and fetches the web through Ollama Cloud, and the result count its search applies."
+  }
+}

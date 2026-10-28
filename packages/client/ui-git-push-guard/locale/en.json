@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git push guard",
+    "description": "Adds the composer chip that switches the push guard for one Session and a built-in plugins settings card that sets the default for new Sessions; the Host package asks for confirmation before a git push runs."
+  }
+}
