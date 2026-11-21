@@ -41,7 +41,7 @@ async function collect(events: AsyncIterable<AssistantMessageEvent>): Promise<{ 
 
 const context = normalizeContext({ messages: [{ role: 'user', content: 'hi', timestamp: 0 }] })
 
-describe('streamed tool-call arguments (patched pi-ai)', () => {
+describe('streamed tool-call arguments', () => {
   it('preserves an empty Responses message after parallel tool calls with its replay metadata', async () => {
     const calls = [0, 1, 2].map(index => ({ type: 'function_call', call_id: `call_${index}`, id: `item_${index}`, name: 'read', arguments: '{}' }))
     const empty = { type: 'message', id: 'message_empty', role: 'assistant', content: [{ type: 'output_text', text: '', annotations: [] }] }
@@ -71,7 +71,7 @@ describe('streamed tool-call arguments (patched pi-ai)', () => {
     expect(server.requests).toHaveLength(1)
   })
 
-  it('openai-completions parses arguments once, at the end of the call', async () => {
+  it('openai-completions streams tool-call arguments incrementally and finalizes them', async () => {
     const server = await mockServer([{ events: [
       JSON.stringify({ choices: [{
         delta: {
@@ -89,11 +89,15 @@ describe('streamed tool-call arguments (patched pi-ai)', () => {
     const events = streamCompletions(model('openai-completions', server.url), context, { apiKey: 'test-key' })
     const { partials, final } = await collect(events)
     expect(partials).toHaveLength(fragments.length)
-    expect(partials.every(partial => JSON.stringify(partial) === '{}')).toBe(true)
+    // pi-ai reads each delta once, so a partial shows what has arrived so far:
+    // the file name appears whole early, and the long content grows.
+    expect(partials.every(partial => typeof partial === 'object' && partial !== null)).toBe(true)
+    expect((partials.at(-1) as { content?: string }).content?.length ?? 0)
+      .toBeGreaterThan((partials[0] as { content?: string }).content?.length ?? 0)
     expect(final).toEqual(args)
   })
 
-  it('anthropic-messages parses arguments once, at the end of the call', async () => {
+  it('anthropic-messages streams tool-call arguments incrementally and finalizes them', async () => {
     const server = await mockServer([{ events: [
       anthropicMessageStart,
       frame({ type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_1', name: 'write', input: {} } }),
@@ -107,11 +111,15 @@ describe('streamed tool-call arguments (patched pi-ai)', () => {
     const events = streamAnthropic(model('anthropic-messages', server.url), context, { apiKey: 'test-key' })
     const { partials, final } = await collect(events)
     expect(partials).toHaveLength(fragments.length)
-    expect(partials.every(partial => JSON.stringify(partial) === '{}')).toBe(true)
+    // pi-ai reads each delta once, so a partial shows what has arrived so far:
+    // the file name appears whole early, and the long content grows.
+    expect(partials.every(partial => typeof partial === 'object' && partial !== null)).toBe(true)
+    expect((partials.at(-1) as { content?: string }).content?.length ?? 0)
+      .toBeGreaterThan((partials[0] as { content?: string }).content?.length ?? 0)
     expect(final).toEqual(args)
   })
 
-  it('openai-responses parses arguments once, at the end of the call', async () => {
+  it('openai-responses streams tool-call arguments incrementally and finalizes them', async () => {
     const item = { type: 'function_call', call_id: 'call_1', id: 'fc_1', name: 'write' }
     const server = await mockServer([{ events: [
       '{"type":"response.created","response":{"id":"resp_1"}}',
@@ -126,7 +134,11 @@ describe('streamed tool-call arguments (patched pi-ai)', () => {
     const events = streamResponses(model('openai-responses', server.url), context, { apiKey: 'test-key' })
     const { partials, final } = await collect(events)
     expect(partials).toHaveLength(fragments.length)
-    expect(partials.every(partial => JSON.stringify(partial) === '{}')).toBe(true)
+    // pi-ai reads each delta once, so a partial shows what has arrived so far:
+    // the file name appears whole early, and the long content grows.
+    expect(partials.every(partial => typeof partial === 'object' && partial !== null)).toBe(true)
+    expect((partials.at(-1) as { content?: string }).content?.length ?? 0)
+      .toBeGreaterThan((partials[0] as { content?: string }).content?.length ?? 0)
     expect(final).toEqual(args)
   })
 })

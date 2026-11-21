@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-rc.1/ollama-cloud-web-provider/guide.md
+/:
+  en: 53c5abdc6f1a12a3
+  zh: 43b4eac751fb4c17
+/ollama-cloud-web-provider-id-and-configuration:
+  en: e4a47ee658b12be9
+  zh: fcd28c602b691d5f
+/ollama-cloud-web-provider-id-and-configuration/change:
+  en: 982a11afc84dfe81
+  zh: 9b49e8226cc655a2
+/ollama-cloud-web-provider-id-and-configuration/migration:
+  en: 41a83f37a1081fc0
+  zh: 969aa1670452e867

@@ -27,8 +27,8 @@ import {
 } from '@deepseek-ai/dsh-schedule'
 import type { ScheduleId } from '@deepseek-ai/dsh-schedule/client'
 import type {
-  InternalScheduleError, ScheduleEditRequest, ScheduleTargetRequest, ScheduleToolError,
-  ScheduleCatalogEntry, ScheduleDeliveryReceipt, ScheduleRecord, SubagentSessionError,
+  InternalScheduleError, ScheduleEditRequest, ScheduleModelSelection, ScheduleTarget, ScheduleTargetRequest,
+  ScheduleToolError, ScheduleCatalogEntry, ScheduleDeliveryReceipt, ScheduleRecord, SubagentSessionError,
 } from '@deepseek-ai/dsh-schedule'
 import { brandString } from '@deepseek-ai/dsh-brand'
 
@@ -40,12 +40,23 @@ export const name = 'tool-schedule'
  * composition keeps that service off. */
 export const inject = ['tools', 'systemPrompt']
 
+const MODEL_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string', required: true },
+    model: { type: 'string', required: true },
+    reasoningEffort: { type: 'string' },
+  },
+} as const
+
 const SESSION_CREATE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
     cwd: { type: 'string' },
     agentPreset: { type: 'string' },
+    model: MODEL_SCHEMA,
   },
 } as const
 
@@ -159,16 +170,17 @@ const CONFLICT_SCHEMA = {
 /** Errors every tool can return: a delegated caller and a withheld failure. */
 const CALLER_ERRORS = ['subagent_session', 'internal_error'] as const
 
-/** Errors of a new title, prompt, or recurrence. */
+/** Errors of a new title, prompt, recurrence, rule selector, or creation model. */
 const CREATE_ERRORS = [
-  'invalid_prompt', 'invalid_rule', 'invalid_time_zone', 'not_future', 'frequency_too_high', ...CALLER_ERRORS,
+  'invalid_selector', 'invalid_prompt', 'invalid_rule', 'invalid_time_zone', 'not_future', 'frequency_too_high',
+  'model_unavailable', ...CALLER_ERRORS,
 ] as const
 
 /** Errors of an invalid page request. */
 const LIST_ERRORS = ['invalid_rule', ...CALLER_ERRORS] as const
 
-/** Errors of a changed field or an invalid field combination. */
-const EDIT_ERRORS = ['invalid_selector', ...CREATE_ERRORS] as const
+/** An update accepts the same field, selector, and creation-model failures as a create. */
+const EDIT_ERRORS = CREATE_ERRORS
 
 /** Error result of one tool, limited to the codes that its output schema declares. */
 interface DeclaredError<C extends ScheduleToolError['code']> {
@@ -201,7 +213,9 @@ const MANAGEMENT_AUTHORIZATION =
 
 const CREATE_DESCRIPTION =
   'Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session '
-  + 'as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC '
+  + 'as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions '
+  + 'that a new_once or new target creates. '
+  + 'The result includes the task id and the next occurrence as scheduledAt in UTC '
   + 'and scheduledAtLocal in the zone of rrule. '
   + 'After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.'
 
@@ -210,7 +224,9 @@ const LIST_DESCRIPTION =
 
 const VIEW_DESCRIPTION = 'View one scheduled task by id.'
 
-const EDIT_DESCRIPTION = 'Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.'
+const EDIT_DESCRIPTION = 'Update, pause, resume, or delete one scheduled task by id. '
+  + 'Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. '
+  + 'Deleting does not retract queued messages.'
 
 const TITLE_HELP = `Task name of at most ${MAX_TITLE_LENGTH} characters in the user's language: action plus object. `
   + 'Omit timing, status, ids, and bracketed suffixes.'
@@ -247,7 +263,8 @@ function targetHelp(newSessionIntervalSeconds: number): string {
       : `, at most once every ${newSessionIntervalSeconds} seconds`
   return 'this_session delivers to this session; '
     + 'new_once delivers to the same new session every time, opened at the first delivery; new opens a different '
-    + `new session for every delivery${spacing}. New sessions use this session's working directory and preset. `
+    + `new session for every delivery${spacing}. New sessions use this session's working directory and preset, `
+    + 'and any model selected by provider, model, and reasoning_effort. '
     + 'With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence '
     + 'that passed meanwhile is delivered. '
     + 'Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, '
@@ -255,7 +272,15 @@ function targetHelp(newSessionIntervalSeconds: number): string {
 }
 
 /** Edit parameters that only an update accepts. */
-const PATCH_FIELDS = ['title', 'prompt', 'rrule', 'target', 'active'] as const
+const PATCH_FIELDS = ['title', 'prompt', 'rrule', 'target', 'active', 'provider', 'model', 'reasoning_effort'] as const
+
+const PROVIDER_HELP = 'Provider id of the model used for each session that a new_once or new target creates; '
+  + 'requires model. Omit both to use the default model. An existing session target keeps its own model.'
+
+const MODEL_HELP = 'Model id within that provider; requires provider.'
+
+const REASONING_EFFORT_HELP = 'Reasoning effort id for the selected model; requires provider and model. '
+  + 'Omit to use the model\'s default.'
 
 /** Deterministic model content for every canonical Schedule value. */
 function renderValue(_args: unknown, value: unknown): ContentBlock[] {
@@ -346,6 +371,72 @@ function targetFor(agent: Agent, target: typeof TARGET_CHOICES[number]): Schedul
   }
 }
 
+/** Model-facing creation route fields shared by `schedule_create` and `schedule_edit`. */
+interface ModelSelectionArgs {
+  readonly provider?: string
+  readonly model?: string
+  readonly reasoning_effort?: string
+}
+
+/**
+ * Read the optional creation model route from tool arguments.
+ *
+ * A route needs provider and model together; an effort is meaningful only for a complete route. A route applies to
+ * the Sessions a creating target makes, so an existing-Session destination refuses it.
+ * @param args - `provider`, `model`, and `reasoning_effort` arguments.
+ * @returns The creation model route, or undefined when the call names no model.
+ * @throws ScheduleInputError `invalid_selector` when a value is empty or the route is incomplete.
+ */
+function modelFor(args: ModelSelectionArgs): ScheduleModelSelection | undefined {
+  const { provider, model, reasoning_effort: effort } = args
+  if (provider === undefined && model === undefined && effort === undefined) return undefined
+  if (provider === undefined || model === undefined) {
+    throw new ScheduleInputError('invalid_selector',
+      'provider and model must be supplied together; reasoning_effort also requires both.')
+  }
+  if (provider === '' || model === '' || effort === '') {
+    throw new ScheduleInputError('invalid_selector',
+      'provider, model, and reasoning_effort must be non-empty when present.')
+  }
+  return { provider, model, ...(effort === undefined ? {} : { reasoningEffort: effort }) }
+}
+
+/**
+ * Add an optional model route to the creation values of a destination.
+ * @param target - Destination resolved from the model target choice.
+ * @param model - Model route selected by the call, if any.
+ * @returns The destination, with the route on the creation values of a creating target.
+ * @throws ScheduleInputError `invalid_selector` when an existing-Session destination carries a model route.
+ */
+function withCreationModel(
+  target: ScheduleTargetRequest,
+  model: ScheduleModelSelection | undefined,
+): ScheduleTargetRequest {
+  if (model === undefined) return target
+  if (target.kind === 'session') {
+    throw new ScheduleInputError('invalid_selector',
+      'this_session delivers to an existing session, which keeps its own model; provider, model, and reasoning_effort apply only to new_once and new targets.')
+  }
+  const create = { ...target.create, model }
+  return target.kind === 'new_once' ? { kind: 'new_once', create } : { kind: 'new', create }
+}
+
+/**
+ * Replace only the creation model route of a stored destination.
+ * @param target - Stored destination of the edited task.
+ * @param model - Replacement model route.
+ * @returns Destination request that keeps the stored directory and preset.
+ * @throws ScheduleInputError `invalid_selector` when the task delivers to an existing Session.
+ */
+function retargetModel(target: ScheduleTarget, model: ScheduleModelSelection): ScheduleTargetRequest {
+  if (target.kind === 'session') {
+    throw new ScheduleInputError('invalid_selector',
+      'This task delivers to an existing session, which keeps its own model; supply target new_once or new with provider and model to select a model.')
+  }
+  const create = { ...target.create, model }
+  return target.kind === 'new_once' ? { kind: 'new_once', create } : { kind: 'new', create }
+}
+
 /**
  * Register the four Schedule tools and shared guidance in the mounting scope.
  *
@@ -387,12 +478,18 @@ function registerScheduleTools(ctx: Context): void {
       prompt: { type: 'string', required: true, description: 'Instruction delivered at each occurrence.' },
       rrule: { type: 'string', required: true, description: RRULE_HELP },
       target: { type: 'string', required: true, enum: TARGET_CHOICES, description: targetDescription },
+      provider: { type: 'string', description: PROVIDER_HELP },
+      model: { type: 'string', description: MODEL_HELP },
+      reasoning_effort: { type: 'string', description: REASONING_EFFORT_HELP },
     },
     output: { schema: CREATE_OUTPUT_SCHEMA, render: renderValue },
     execute(args, exec) {
-      return runForCaller(exec, CREATE_ERRORS, agent => ctx.schedule.create({
-        title: args.title, prompt: args.prompt, timing: { kind: 'rrule', rrule: args.rrule }, target: targetFor(agent, args.target),
-      }, agent.session.id, exec.signal).then(modelTask))
+      return runForCaller(exec, CREATE_ERRORS, (agent) => {
+        const target = withCreationModel(targetFor(agent, args.target), modelFor(args))
+        return ctx.schedule.create({
+          title: args.title, prompt: args.prompt, timing: { kind: 'rrule', rrule: args.rrule }, target,
+        }, agent.session.id, exec.signal).then(modelTask)
+      })
     },
     presentCall: args => present('Create scheduled task', 'other', args.title),
   }))
@@ -454,7 +551,11 @@ function registerScheduleTools(ctx: Context): void {
       rrule: { type: 'string', description: 'New recurrence in the schedule_create rrule format.' },
       target: { type: 'string', enum: TARGET_CHOICES, description: 'Omit to retain the destination and its creation settings. '
         + 'Providing target replaces them; new_once reserves a different Session. New targets capture this Session\'s '
-        + 'working directory and preset. Choices are the same as schedule_create.' },
+        + 'working directory and preset, and any model selected by provider, model, and reasoning_effort. '
+        + 'Choices are the same as schedule_create.' },
+      provider: { type: 'string', description: PROVIDER_HELP },
+      model: { type: 'string', description: MODEL_HELP },
+      reasoning_effort: { type: 'string', description: REASONING_EFFORT_HELP },
       active: { type: 'boolean', description: 'false pauses the task; true resumes only if its timing has a future occurrence. '
         + 'Otherwise provide a new rrule.' },
       expectedUpdatedAt: {
@@ -465,7 +566,7 @@ function registerScheduleTools(ctx: Context): void {
     },
     output: { schema: EDIT_OUTPUT_SCHEMA, render: renderValue },
     execute(args, exec) {
-      return runForCaller(exec, EDIT_ERRORS, (agent) => {
+      return runForCaller(exec, EDIT_ERRORS, async (agent) => {
         const id = brandString<ScheduleId>(args.id)
         const expected = args.expectedUpdatedAt === undefined ? {} : { expectedUpdatedAt: args.expectedUpdatedAt }
         let request: ScheduleEditRequest
@@ -475,15 +576,26 @@ function registerScheduleTools(ctx: Context): void {
           }
           request = { id, action: 'delete', ...expected }
         } else {
+          const model = modelFor(args)
+          let target: ScheduleTargetRequest | undefined
+          if (args.target !== undefined) {
+            target = withCreationModel(targetFor(agent, args.target), model)
+          } else if (model !== undefined) {
+            const current = await ctx.schedule.view({ id })
+            // A miss keeps the edit result the same as an edit of a missing task.
+            if (!('kind' in current)) return current
+            target = retargetModel(current.target, model)
+          }
           const patch = {
             ...(args.title === undefined ? {} : { title: args.title }),
             ...(args.prompt === undefined ? {} : { prompt: args.prompt }),
             ...(args.rrule === undefined ? {} : { timing: { kind: 'rrule' as const, rrule: args.rrule } }),
-            ...(args.target === undefined ? {} : { target: targetFor(agent, args.target) }),
+            ...(target === undefined ? {} : { target }),
             ...(args.active === undefined ? {} : { active: args.active }),
           }
           if (Object.keys(patch).length === 0) {
-            throw new ScheduleInputError('invalid_selector', 'update requires at least one of title, prompt, rrule, target, or active.')
+            throw new ScheduleInputError('invalid_selector',
+              'update requires at least one of title, prompt, rrule, target, active, provider, model, or reasoning_effort.')
           }
           request = { id, action: 'update', patch, ...expected }
         }

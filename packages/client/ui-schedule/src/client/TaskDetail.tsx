@@ -15,6 +15,7 @@ import { DeliveryHistory, type DeliveryHistoryInjected } from './DeliveryHistory
 import type { CatalogDeleteOutcome, CatalogSnapshot } from './catalog-source.ts'
 import { TaskEditorFields, draftTarget, newTaskDraft, projectChoices, reapplyTaskDraft, taskDraft, taskDraftIssue, taskDraftPatch } from './TaskEditorFields.tsx'
 import type { TaskEditorDraft } from './TaskEditorFields.tsx'
+import type { ModelCatalogSnapshot } from './model-catalog.ts'
 import type { TaskEditorStoreProps } from './editor-store.ts'
 import { timingFromDraft } from './editor-timing.ts'
 import { formatAvailableAt, nextRunParts, recordTimeZone } from './schedule-format.ts'
@@ -25,14 +26,15 @@ import { RELATIVE_CLOCK_PERIOD_MS, useRelativeClock } from './relative-clock.ts'
 import css from './TaskManagerPage.module.css'
 
 /** Localized reason the Host refused an edit, or reason the wiring could not confirm it. */
-export type HostEditFailure = 'host.saveError' | 'host.conflict' | 'host.notFuture' | 'host.invalidRule' | 'detail.missing'
+export type HostEditFailure = 'host.saveError' | 'host.conflict' | 'host.modelUnavailable'
+  | 'host.notFuture' | 'host.invalidRule' | 'detail.missing'
 
 /** Localized reason the Host refused a run, or reason the wiring could not confirm it. */
 export type HostRunFailure = 'host.runError' | 'host.executionPending' | 'detail.missing'
 
 /** Creation keeps a failed draft and never creates or activates its destination Session. */
 export type TaskCreateOutcome = { readonly created: ScheduleCatalogEntry }
-  | { readonly failed: 'host.createError' | 'host.notFuture' | 'host.invalidRule' }
+  | { readonly failed: 'host.createError' | 'host.modelUnavailable' | 'host.notFuture' | 'host.invalidRule' }
 
 /** Target-based mutations supplied by the owning plugin's Remote wiring. */
 export interface HostTaskActions {
@@ -78,6 +80,11 @@ export interface TaskDetailInjected extends DeliveryHistoryInjected {
    * @param id - Session linked to the shown task.
    */
   readonly onOpenSession: (id: SessionId) => void
+  /**
+   * Reread the Host model catalog after a failed read.
+   * @returns Resolution after the read publishes its result.
+   */
+  readonly onRetryModelCatalog: () => Promise<void>
 }
 
 /** One task's detail, as the Tasks page and the task tab both compose it. */
@@ -88,6 +95,8 @@ type TaskDetailCommonProps = TaskDetailInjected
   & {
     /** Element id shared by the detail panels and any control that points at them. */
     readonly id: string
+    /** Shared Host model catalog the destination fields choose a creation route from. */
+    readonly modelCatalog: ModelCatalogSnapshot
     /** Catalog query state; loading disables saved-task actions. */
     readonly status: 'loading' | 'ready' | 'error'
     /** Tasks with a deletion in flight. */
@@ -145,12 +154,14 @@ export interface TaskDetailController {
  * @param injected - detail actions, localized copy, and framework readers.
  * @param catalog - the owner's authoritative task catalog snapshot.
  * @param taskId - task the owner selected, or undefined when it selected none.
+ * @param modelCatalog - the owner's shared Host model catalog snapshot.
  * @returns the shown task and catalog row, its element id, its confirmation, and the detail props.
  */
 export function useTaskDetail(
   injected: TaskDetailInjected & TaskEditorStoreProps & PropsLocale<'schedule.manager'> & Pick<PropsRuntime<'main'>, 'useSessions' | 'useWorkspaces'>,
   catalog: CatalogSnapshot<ScheduleCatalogEntry>,
   taskId: ScheduleId | undefined,
+  modelCatalog: ModelCatalogSnapshot,
 ): TaskDetailController {
   const [retained, setRetained] = useState<ScheduleCatalogEntry | null>(null)
   const [tab, setTab] = useState<TaskDetailTab>('rule')
@@ -174,6 +185,7 @@ export function useTaskDetail(
       status: catalog.status,
       deleting: catalog.deleting,
       id,
+      modelCatalog,
       onRetainTask: setRetained,
       tab,
       onTabChange: setTab,
@@ -194,7 +206,8 @@ export function TaskDetail(props: TaskDetailProps): ReactNode {
 
 function TaskDetailView(props: TaskDetailProps): ReactNode {
   const { task, id, tab, onTabChange, onClose, onDelete, onConfirm, confirmId, onDeleted,
-    onRetry, onOpenSession, loadHistory, status, deleting, useSessions, useWorkspaces, t, hostActions } = props
+    onRetry, onOpenSession, loadHistory, status, deleting, useSessions, useWorkspaces, modelCatalog,
+    onRetryModelCatalog, t, hostActions } = props
   const sessions = useSessions(snapshot => snapshot)
   const workspaces = useWorkspaces(snapshot => snapshot)
   const key = task === undefined ? 'new' : `task:${task.id}`
@@ -389,7 +402,7 @@ function TaskDetailView(props: TaskDetailProps): ReactNode {
             : failure !== null && <p className={css.saveFailure} role="alert">{t(failure)}</p>}
           <TaskEditorFields draft={draft} onChange={setDraft}
             disabled={pending || executionActive || deletingTask} held={actionHold}
-            projects={projects} original={base} t={t} />
+            projects={projects} original={base} modelCatalog={modelCatalog} onRetryModelCatalog={onRetryModelCatalog} t={t} />
           {draft.target === 'new'
             && <NewSessionLimit load={hostActions.loadNewSessionInterval} t={t} />}
           {failure === null && issue !== undefined && issue !== 'incomplete'

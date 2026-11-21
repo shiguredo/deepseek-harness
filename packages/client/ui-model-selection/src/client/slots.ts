@@ -38,6 +38,12 @@ export interface ModelMenuControls {
 /** Root-menu controls for opening plugin-owned settings panes. */
 export type ModelMenuOptions = ModelMenuControls & {
   /**
+   * The selection the menu is showing, so a row can speak about the model it
+   * describes. Null while nothing is selected — a blank Session whose catalog
+   * has not resolved a default yet.
+   */
+  current: ModelSelection | null
+  /**
    * Open pane.key in conversation.input.model.pane with pane.title as its localized accessible name.
    * The root button's data-model-menu-pane must match pane.key for focus return.
    */

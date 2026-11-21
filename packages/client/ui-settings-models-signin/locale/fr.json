@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Connexion des fournisseurs dans Modèles",
+    "description": "Ajoute la section de compte de chaque carte de fournisseur dans Modèles : liste les flux d’autorisation du Host, en démarre un, affiche l’étape du navigateur et le collage de l’URL quand le navigateur est sur une autre machine, et déconnecte."
+  }
+}

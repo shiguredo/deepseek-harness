@@ -15,7 +15,7 @@ import type {
   ScheduleEditRequest, ScheduleEditResult, ScheduleId, ScheduleInputErrorCode, ScheduleRunRequest, ScheduleRunResult,
   ScheduleCatalogEntry, ScheduleCreateRequest, ScheduleDeleteInactiveResult,
 } from '@deepseek-ai/dsh-schedule/client'
-import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ModelCatalog, RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
 import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import type { CatalogInjected } from '../src/client/catalog-source.ts'
 import { ScheduleDeleteToast, type DeleteToastSource } from '../src/client/DeleteToast.tsx'
@@ -77,7 +77,8 @@ function sidebarStubs(): SidebarStubs {
 
 interface RemoteStubInput {
   schedule?: object
-  $on: (event: 'schedule/changed', listener: () => void) => () => void
+  session?: object
+  $on: (event: string, listener: () => void) => () => void
 }
 
 // A Service preserves the associated namespace lookup used by the real Gateway.
@@ -118,6 +119,10 @@ async function baseContext(
     binding: () => undefined,
   } as never)
   ctx.provide('workspaces', { list: { getSnapshot: () => workspaces } } as never)
+  // The task editor's model and effort rows read the Host catalog through `remote.session`.
+  ctx.provide('remote.session', (remote.session ?? {
+    modelCatalog: vi.fn(async () => ({ ok: true, value: EMPTY_MODEL_CATALOG })),
+  }) as never)
   ctx.provide('conversation', {} as never)
   await ctx.plugin({ inject: localeInject, apply: applyLocale }).await()
   return ctx
@@ -143,6 +148,14 @@ function declareTranscriptSeats(ctx: Context): () => void {
 }
 
 type Entry = ScheduleCatalogEntry
+
+/** Model catalog the task editor reads; the component suites cover its rows. */
+const EMPTY_MODEL_CATALOG: ModelCatalog = {
+  default: { provider: 'deepseek', model: 'deepseek-chat' },
+  routableProviders: [],
+  groups: [],
+  failures: [],
+}
 
 const COLD_SESSION = 'cold-original' as SessionId
 
@@ -205,7 +218,7 @@ describe('ui-schedule browser half', () => {
 
   it('declares only the services used by registration', () => {
     expect(inject).toEqual([
-      'slots', 'locale', 'remote', 'remote.schedule', 'conversation', 'uiConversation', 'uiWorkspace', 'sessions',
+      'slots', 'locale', 'remote', 'remote.schedule', 'remote.session', 'conversation', 'uiConversation', 'uiWorkspace', 'sessions',
       'workspaces', 'sidebarRightTabs', 'sidebarRight', 'remoteAccess',
     ])
   })
@@ -255,13 +268,16 @@ describe('ui-schedule browser half', () => {
     const id = 'catalog-reminder' as ScheduleId
     const list = vi.fn().mockResolvedValue({ ok: true, value: [] })
     const remove = vi.fn().mockResolvedValue({ ok: true, value: { id, deleted: true } })
-    let onChanged: (() => void) | undefined
+    const listeners = new Map<string, Set<() => void>>()
     const unsubscribe = vi.fn()
     const subscribe = vi.fn((event: string, listener: () => void) => {
-      expect(event).toBe('schedule/changed')
-      onChanged = listener
+      const eventListeners = listeners.get(event) ?? new Set<() => void>()
+      eventListeners.add(listener)
+      listeners.set(event, eventListeners)
       return unsubscribe
     })
+    /** Emit one changed event to the catalog source's live subscription. */
+    const changed = (): void => { for (const listener of listeners.get('schedule/changed') ?? []) listener() }
     const ctx = await baseContext({ schedule: { catalog: list, edit: remove }, $on: subscribe })
     declareHeader(ctx)
     const fiber = ctx.plugin({ inject: [...inject], apply })
@@ -279,7 +295,7 @@ describe('ui-schedule browser half', () => {
       await face.onDelete(id)
       expect(remove).toHaveBeenCalledWith({ id, action: 'delete' })
       expect(list).toHaveBeenCalledTimes(2)
-      onChanged!()
+      changed()
       await Promise.resolve()
       expect(list).toHaveBeenCalledTimes(3)
       ctx.emit('connection/reset')
@@ -366,6 +382,62 @@ describe('ui-schedule browser half', () => {
     }
   })
 
+  it('reads the Host model catalog once for the page and the task tab, then rereads it on invalidation', async () => {
+    const modelCatalog = vi.fn(async () => ({ ok: true, value: EMPTY_MODEL_CATALOG }))
+    const events = new Map<string, Set<() => void>>()
+    const ctx = await baseContext({ session: { modelCatalog }, $on: (event, listener) => {
+      const eventListeners = events.get(event) ?? new Set<() => void>()
+      eventListeners.add(listener)
+      events.set(event, eventListeners)
+      return () => { eventListeners.delete(listener) }
+    } })
+    const owner = ctx.slots.register({
+      name: 'root',
+      children: {
+        'sidebar.right.pane.tab': { kind: 'keyed', scope: 'session' },
+        main: { kind: 'keyed', scope: 'root' },
+      },
+    } as never, Empty)
+    const fiber = ctx.plugin({ inject: [...inject], apply })
+    await fiber.await()
+    /** Emit one Host event to every listener this plugin registered for it. */
+    const emit = (event: string): void => { for (const listener of events.get(event) ?? []) listener() }
+    try {
+      const panel = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
+      const body = injectedFace(ctx.slots.entries('sidebar.right.pane.tab')[0]!, 'tab-session' as never) as ScheduleTaskTabInjected
+      const disposePage = panel.hooks.modelCatalog.subscribe(vi.fn())
+      const disposeTab = body.hooks.modelCatalog.subscribe(vi.fn())
+      await vi.waitFor(() => { expect(panel.hooks.modelCatalog.getSnapshot().status).toBe('ready') })
+      expect(panel.hooks.modelCatalog.getSnapshot().catalog).toEqual(EMPTY_MODEL_CATALOG)
+      expect(modelCatalog).toHaveBeenCalledOnce()
+      // A provider, model, settings, or credential change rereads the shared catalog once.
+      const rereadEvents = ['llm/adapters-updated', 'llm/models-updated', 'settings/document-updated',
+        'credentials/record-updated', 'credentials/reference-updated']
+      for (const [index, event] of rereadEvents.entries()) {
+        emit(event)
+        // Wait for this read to settle so the next event is not folded into its in-flight request.
+        await vi.waitFor(() => {
+          expect(modelCatalog).toHaveBeenCalledTimes(index + 2)
+          expect(panel.hooks.modelCatalog.getSnapshot().status).toBe('ready')
+        })
+      }
+      // The retry row and a connection reset reach the same source.
+      await panel.onRetryModelCatalog()
+      expect(modelCatalog).toHaveBeenCalledTimes(rereadEvents.length + 2)
+      ctx.emit('connection/reset')
+      await vi.waitFor(() => {
+        expect(modelCatalog).toHaveBeenCalledTimes(rereadEvents.length + 3)
+        expect(panel.hooks.modelCatalog.getSnapshot().status).toBe('ready')
+      })
+      disposePage()
+      disposeTab()
+    } finally {
+      await fiber.dispose()
+      owner()
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('registers the task tab type, its body, and its chip under one id', async () => {
     const sidebar = sidebarStubs()
     const ctx = await baseContext(undefined, sidebar)
@@ -426,6 +498,9 @@ describe('ui-schedule browser half', () => {
       expect(chip.taskBindings).toBe(body.taskBindings)
       expect(chip.hooks.catalog).toBe(body.hooks.catalog)
       const panel = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
+      // The page, the tab body, and its chip read the ONE model catalog the plugin owns.
+      expect(panel.hooks.modelCatalog).toBe(body.hooks.modelCatalog)
+      expect(chip.hooks.modelCatalog).toBe(body.hooks.modelCatalog)
       expect(Object.keys(managerLocales).sort()).toEqual(['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'zh'])
       for (const [language, dictionary] of Object.entries(managerLocales)) {
         expect(dictionary['host.createPrompt']).not.toContain('\n')
@@ -548,9 +623,9 @@ describe('ui-schedule browser half', () => {
     const history = vi.fn().mockResolvedValue(historyResult)
     const remove = vi.fn().mockResolvedValue({ ok: true, value: { id: record.id, deleted: true } })
     let onChanged: (() => void) | undefined
-    const ctx = await baseContext({ schedule: { catalog, history, edit: remove }, $on: (_event, listener) => {
-      onChanged = listener
-      return () => { onChanged = undefined }
+    const ctx = await baseContext({ schedule: { catalog, history, edit: remove }, $on: (event, listener) => {
+      if (event === 'schedule/changed') onChanged = listener
+      return () => { if (onChanged === listener) onChanged = undefined }
     } })
     const openSession = vi.spyOn(ctx.uiWorkspace, 'openSession')
     const fiber = ctx.plugin({ inject: [...inject], apply })
@@ -806,6 +881,7 @@ describe('Host task Remote injection', () => {
     ['a rule that runs too often', refusal('frequency_too_high'), 'host.invalidRule', 'host.invalidRule'],
     ['an unknown time zone', refusal('invalid_time_zone'), 'host.invalidRule', 'host.invalidRule'],
     ['a time past the supported range', refusal('time_out_of_range'), 'host.invalidRule', 'host.invalidRule'],
+    ['an unavailable model route', refusal('model_unavailable'), 'host.modelUnavailable', 'host.modelUnavailable'],
     ['an invalid name or instruction', refusal('invalid_prompt'), 'host.saveError', 'host.createError'],
     ['a Remote failure', { ok: false, error }, 'host.saveError', 'host.createError'],
   ] as const)(

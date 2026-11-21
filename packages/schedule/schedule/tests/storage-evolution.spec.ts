@@ -153,6 +153,27 @@ it('keeps v1 bytes after an invalid timing replacement and upgrades on a valid S
   expect(document.tables.tasks[id]?.record).toEqual(cron)
 })
 
+it('reads and preserves a creation model route in a v2 target', async () => {
+  const model = { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' }
+  const saved = await store({ record: cron, target: { kind: 'new', create: { model } } }, 2)
+  const test = await saved.open()
+  expect(await test.service.view({ id })).toMatchObject({ target: { kind: 'new', create: { model } } })
+  expect(await readFile(saved.file, 'utf8')).toBe(saved.bytes)
+  await test.service.edit({ id, action: 'update', patch: { title: 'Routed' } })
+  expect(storedUnit(await readFile(saved.file, 'utf8')).tables.tasks[id]?.target).toEqual({ kind: 'new', create: { model } })
+})
+
+it.each([
+  { provider: '', model: 'deepseek-pro' },
+  { provider: 'deepseek-official', model: '' },
+  { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: '' },
+  { provider: 'deepseek-official', model: 'deepseek-pro', unreachable: true },
+])('rejects a malformed creation model route %j without changing storage', async (model) => {
+  const saved = await store({ record: cron, target: { kind: 'new', create: { model } } }, 2)
+  await expect(saved.open()).rejects.toThrow()
+  expect(await readFile(saved.file, 'utf8')).toBe(saved.bytes)
+})
+
 it('recognizes inactive rows as ended and resumes Cron through its normal evaluator', async () => {
   const saved = await store({ record: cron, sessionId: 'original', status: 'inactive' })
   const test = await saved.open()

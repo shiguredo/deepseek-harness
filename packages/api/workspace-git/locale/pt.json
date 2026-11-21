@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Serviço Git do espaço de trabalho",
+    "description": "Lê a branch, o diretório da árvore de trabalho e o repositório GitHub de origem do checkout onde fica o espaço de trabalho da sessão."
+  }
+}

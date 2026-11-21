@@ -26,10 +26,11 @@ function isTranscriptEcho(item: PendingInput): boolean {
 export const ChatFlow = memo(function ChatFlow({
   entries, pendingInputs, lastInputTurn, deferCollapse,
   useSession, useChat, useChatNode, useChatNodeBottom, useChatNodeProcess, useChatGroup, usePresentation, useConnectionState,
-  useStore, actions, renderSlot, renderFactorySlot, t, useGroupAction, useGroupHeaderAction,
+  useStore, actions, renderSlot, renderFactorySlot, t, useGroupAction, useGroupHeaderAction, useClockTimeZone,
   cwd, openFile, inspectCall, forkAt, loadImage,
 }: ChatFlowSlotProps) {
   const nodeStore = useChat(snapshot => snapshot.nodes)
+  const clockTimeZone = useClockTimeZone(zone => zone)
   const running = useSession(snapshot => snapshot.running)
   const disconnected = useConnectionState(state => state === 'disconnected' || state === 'connecting')
   const latestTurnAnchor = useChat(snapshot => snapshot.navigation.items().at(-1)?.anchorKey)
@@ -47,7 +48,7 @@ export const ChatFlow = memo(function ChatFlow({
   const seatProps = {
     nodeStore, useChatNode, useChatNodeBottom, useChatNodeProcess, usePresentation,
     useStore, actions, renderSlot, t, useGroupAction, deferCollapse,
-    cwd, openFile, inspectCall, forkAt, loadImage,
+    cwd, clockTimeZone, openFile, inspectCall, forkAt, loadImage,
   }
   const rows = entries.map((entry) => {
     switch (entry.kind) {
@@ -72,7 +73,7 @@ export const ChatFlow = memo(function ChatFlow({
   const pendingRows: ReactElement[] = []
   for (const [index, item] of pendingInputs.entries()) {
     const row = isLocalSubmission(item)
-      ? <PendingSubmissionBubble key={item.requestId} submission={item}
+      ? <PendingSubmissionBubble key={item.requestId} submission={item} clockTimeZone={clockTimeZone}
         loadImage={loadImage} renderFactorySlot={renderFactorySlot} t={t} />
       : <PendingSteeringBubble key={item.id} content={item.content}
         loadImage={loadImage} renderFactorySlot={renderFactorySlot} t={t} />

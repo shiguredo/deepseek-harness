@@ -7,6 +7,13 @@
   gap: 6px;
 }
 
+/* The timestamp line sits under the stack it dates, hugging it at the same
+   2px step the session list keeps between its own metadata lines: the row's
+   6px flex gap drops to 2px, and the icon row below keeps its own gap. */
+.clock {
+  margin-top: -4px;
+}
+
 .userStack {
   display: flex;
   flex-direction: column;

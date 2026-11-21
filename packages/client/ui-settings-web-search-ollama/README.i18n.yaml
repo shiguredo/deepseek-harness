@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-settings-web-search-ollama/README.md
+/:
+  en: 4cf3e3b0ef7eac39
+  zh: a983d592970accce
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama:
+  en: 4e31d5f5d7dd44d4
+  zh: 43eca2b15af35dfc
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/summary:
+  en: 2e5b3b4ac14d223f
+  zh: 0b823c2fda874a74
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/use-this-package:
+  en: 4e8921a408960528
+  zh: d630ed6c0d09577e
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/understand-the-implementation:
+  en: 881bfe1977d95dcc
+  zh: cd1d5f27d1951913
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/further-exploration:
+  en: a656df0162445d1b
+  zh: ecc5ccca9ba5a96e
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/model-experience:
+  en: 6b7c6f82ab6c8435
+  zh: 622e537de3cd96d8
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/model-experience/kv-cache-effect:
+  en: ca75c51c89c2c9b0
+  zh: 6e1c9a8fdde89577
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/known-limitations-and-deferred-work:
+  en: fc792ac2e3218409
+  zh: d1c4c21c24735d79
+/deepseek-ai-dsh-client-ui-settings-web-search-ollama/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: e88aeb617ffb74ea

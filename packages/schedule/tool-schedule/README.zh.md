@@ -37,12 +37,12 @@ kind: "package-reference"
 
 ### 四个工具
 
-- `schedule_create(title, prompt, rrule, target)` —— 创建一个任务，四项输入均为必填。`title` 不超过 120 个字符，使用用户的语言命名动作与对象；时间、状态和 id 保留在各自字段中。`prompt` 是每个发生时点投递的指令，`rrule` 是 [Schedule 所支持的 RFC 5545 子集](../../../docs/subsystems/schedule.zh.md#rrule-input)中的一行 `DTSTART` 与一行 `RRULE`。返回任务及其生成的 id。
+- `schedule_create(title, prompt, rrule, target, provider?, model?, reasoning_effort?)` —— 创建一个任务，`title`、`prompt`、`rrule` 与 `target` 为必填。`title` 不超过 120 个字符，使用用户的语言命名动作与对象；时间、状态和 id 保留在各自字段中。`prompt` 是每个发生时点投递的指令，`rrule` 是 [Schedule 所支持的 RFC 5545 子集](../../../docs/subsystems/schedule.zh.md#rrule-input)中的一行 `DTSTART` 与一行 `RRULE`。可选的 `provider`、`model` 与 `reasoning_effort` 为 `new_once` 或 `new` 目标创建的 Session 选择模型；`provider` 与 `model` 须同时提供，`reasoning_effort` 需要两者，`this_session` 拒绝该选择。返回任务及其生成的 id。
 - `schedule_list(active?, limit?, offset?)` —— 列出宿主全部任务中的一页，包括其他 Session 创建的任务。活动任务按下一个发生时点排在前面，暂停与已结束的任务随后，按最新时间在前。`active: true` 只保留活动任务，`active: false` 只保留暂停与已结束的任务；`limit` 取 1 到 500，默认 100。
 - `schedule_view(id)` —— 按 id 读取一个任务。未知 id 返回 `{ id, code: 'schedule_not_found' }`。
-- `schedule_edit(id, action, ...)` —— `update` 至少改变 `title`、`prompt`、`rrule`、`target` 与 `active` 中的一项；`active: false` 暂停任务，`active: true` 恢复任务。恢复需要未来发生时点；旧规则耗尽时须提供新的 `rrule`。带有 `expectedUpdatedAt` 时，如果任务在那次读取之后发生过改变，更新或删除返回 `schedule_conflict` 且不做任何改变。`delete` 不接受任何补丁字段，并移除任务及其已保存的投递。
+- `schedule_edit(id, action, ...)` —— `update` 至少改变 `title`、`prompt`、`rrule`、`target`、`active`、`provider`、`model` 与 `reasoning_effort` 中的一项；`active: false` 暂停任务，`active: true` 恢复任务。恢复需要未来发生时点；旧规则耗尽时须提供新的 `rrule`。仅提供 `provider`、`model` 与 `reasoning_effort` 时，保留新建任务的目录与 preset 并替换其模型；目标为已有 Session 的任务拒绝该选择。带有 `expectedUpdatedAt` 时，如果任务在那次读取之后发生过改变，更新或删除返回 `schedule_conflict` 且不做任何改变。`delete` 不接受任何补丁字段，并移除任务及其已保存的投递。
 
-`target` 选择接收每次投递的 Session：`this_session` 投递到调用方 Session，`new_once` 在首次投递时创建一个 Session 并在之后复用它，`new` 为每次投递创建一个 Session。编辑时省略该字段可保留目的地与设置。提供该字段会替换目的地；`new_once` 预留另一个 Session，两种新建目标都会保存编辑者的工作目录与组合后的 preset。
+`target` 选择接收每次投递的 Session：`this_session` 投递到调用方 Session，`new_once` 在首次投递时创建一个 Session 并在之后复用它，`new` 为每次投递创建一个 Session。编辑时省略该字段可保留目的地与设置。提供该字段会替换目的地；`new_once` 预留另一个 Session，两种新建目标都会保存编辑者的工作目录与组合后的 preset。`provider`、`model` 与 `reasoning_effort` 为新建目标创建的每个 Session 选择模型，而不是默认模型；已有 Session 保留自己的模型。
 
 ### 最小配置
 
@@ -60,7 +60,7 @@ kind: "package-reference"
 <details>
 <summary>实现内部细节——点击展开</summary>
 
-插件在解析到 `ctx.schedule` 的作用域内注册四个 `defineTool` 定义与一个 `tool:schedule` system prompt 段落，因此由 preset 挂载决定可见性，并由 Cordis effect 的所有权随挂载一并释放。当请求作用域中的 `ctx.tools.get()` 既看不到 `schedule_create` 也看不到 `schedule_edit` 时，该段落为空；preset 过滤了这些工具的委派作用域也包括在内。此查询同时适用于 Native 与 PTC 呈现方式。执行时读取 `exec.agent` 作为执行操作的 Session。委派深度守卫先运行，`schedule_edit` 的参数校验随后运行，二者都在服务调用之前完成。当工具的输出 schema 声明了某个 `ScheduleInputError` 的错误码时，该错误保留其错误码；其他任何失败都变为 `internal_error`，因此存储细节不会到达模型。模型内容为返回值的规范 JSON，而持久化、调度、Session 恢复与投递都由宿主服务负责。
+插件在解析到 `ctx.schedule` 的作用域内注册四个 `defineTool` 定义与一个 `tool:schedule` system prompt 段落，因此由 preset 挂载决定可见性，并由 Cordis effect 的所有权随挂载一并释放。当请求作用域中的 `ctx.tools.get()` 既看不到 `schedule_create` 也看不到 `schedule_edit` 时，该段落为空；preset 过滤了这些工具的委派作用域也包括在内。此查询同时适用于 Native 与 PTC 呈现方式。执行时读取 `exec.agent` 作为执行操作的 Session。委派深度守卫先运行，`schedule_edit` 的参数校验随后运行，二者都在服务调用之前完成。只提供模型、不提供 target 的更新通过 `ctx.schedule.view` 读取当前任务，保留该任务的创建目录与 preset，因此服务收到的是一次完整的目标替换。当工具的输出 schema 声明了某个 `ScheduleInputError` 的错误码时，该错误保留其错误码；其他任何失败都变为 `internal_error`，因此存储细节不会到达模型。模型内容为返回值的规范 JSON，而持久化、调度、Session 恢复与投递都由宿主服务负责。
 
 ### 源码映射
 
@@ -110,7 +110,7 @@ Native 和 PTC 模式下，每次组装 prompt 只加入一句固定文本。同
 
 #### What the model sees
 
-只要本包在调用方 Agent 的作用域内可见，模型就会收到生成的 [`schedule_create`、`schedule_list`、`schedule_view` 与 `schedule_edit` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-schedule)。目录展示默认配置；当 `new` 投递的配置间隔超过一分钟时，`schedule_create` 的 `target` 描述会加上该间隔。
+只要本包在调用方 Agent 的作用域内可见，模型就会收到生成的 [`schedule_create`、`schedule_list`、`schedule_view` 与 `schedule_edit` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-schedule)。目录展示默认配置；当 `new` 投递的配置间隔超过一分钟时，`schedule_create` 的 `target` 描述会加上该间隔。两个修改工具始终暴露可选的 `provider`、`model` 与 `reasoning_effort` 参数。
 
 #### Token effect
 
@@ -124,7 +124,7 @@ Native 和 PTC 模式下，每次组装 prompt 只加入一句固定文本。同
 
 #### What the model sees
 
-每次调用返回一个规范 JSON 文本块。`schedule_create` 返回任务；`schedule_list` 返回 `{ items, shown, total, limit, offset }`；`schedule_view` 返回任务或 `{ id, code: 'schedule_not_found' }`；`schedule_edit` 返回更新的任务、`{ id, deleted: true }`、`{ id, code: 'schedule_not_found' }` 或 `{ id, code: 'schedule_conflict' }`。任务结果用 `kind` 区分七种时间类型，并保留权威时间字段。结果包含 `id`、`title`、`prompt`、`scheduledAt`、`scheduledAtLocal`、`target`、`status`，可选的 `updatedAt` 用于版本比较；可选的 `lastDelivery` 包含 `scheduledAt`、`deliveredAt` 与 `targetSessionId`。模型输入继续暴露 RRULE；拒绝调用返回带已声明输出错误码的 `{ code, message }`。
+每次调用返回一个规范 JSON 文本块。`schedule_create` 返回任务；`schedule_list` 返回 `{ items, shown, total, limit, offset }`；`schedule_view` 返回任务或 `{ id, code: 'schedule_not_found' }`；`schedule_edit` 返回更新的任务、`{ id, deleted: true }`、`{ id, code: 'schedule_not_found' }` 或 `{ id, code: 'schedule_conflict' }`。任务结果用 `kind` 区分七种时间类型，并保留权威时间字段。结果包含 `id`、`title`、`prompt`、`scheduledAt`、`scheduledAtLocal`、`target`、`status`，可选的 `updatedAt` 用于版本比较；可选的 `lastDelivery` 包含 `scheduledAt`、`deliveredAt` 与 `targetSessionId`。新建目标的 `create` 携带 `cwd`、`agentPreset` 以及选定的 `model`（`provider`、`model` 与可选的 `reasoningEffort`）。模型输入继续暴露 RRULE；拒绝调用返回带已声明输出错误码的 `{ code, message }`，无法解析的创建模型路由返回 `model_unavailable`。
 
 #### Token effect
 
@@ -142,6 +142,8 @@ Native 和 PTC 模式下，每次组装 prompt 只加入一句固定文本。同
 - **每次调用都需要调用方 Agent** —— 未携带 Agent 的派发返回 `internal_error`，而不会猜测某个 Session。
 - **每个工具都能触及宿主的全部任务** —— `schedule_list` 返回其他 Session 创建的任务，`schedule_view` 与 `schedule_edit` 按 id 读取、改变和删除任意任务。授权说明约束模型行为；宿主不校验用户意图，也不增加按 Session 的归属检查。不应管理宿主任务的 agent 所用 preset 应省略这一行。
 - **删除不会撤回已排队的消息** —— 宿主已经投递的消息在 `schedule_edit` 删除之后仍留在目标 Session 收件箱中。
+- **模型选择只作用于新建的 Session** —— `this_session` 与 `session` 目标保留目标 Session 的模型，因此两个修改工具对它们拒绝 `provider`、`model` 与 `reasoning_effort`。新建 Session 的任务接受只修改模型的 `schedule_edit`。
+- **已保存的路由之后可能不可用** —— Host 在接受任务时校验创建模型路由。若投递时 provider、model 或 reasoning effort 不可用，该投递会报告自己的失败，任务仍然保留。
 - **任务时间由宿主负责** —— 这些工具不提供时钟来源、投递重试或执行结果；这些限制属于该服务。
 - **每个工具都拒绝被委派的调用方** —— 四个工具都会在调用服务之前读取调用方 Agent 的委派深度，当该深度大于零时返回 `{ code: 'subagent_session', message: 'A delegated subagent cannot use scheduled tasks.' }`。该守卫位于本包内，读取来自 `@deepseek-ai/dsh-subagent` 的 `delegationDepthOf`，即委派封顶本身执行的同一份记账，因此在任何挂载这些工具的 preset 下都成立。
 - **被委派的子 agent 仍能看到这四个工具** —— 子 agent 加入父方的 preset，因此其请求携带这四个 schema 及其 token 成本；阻止它管理任务的是上述拒绝，而不是省略 schema。

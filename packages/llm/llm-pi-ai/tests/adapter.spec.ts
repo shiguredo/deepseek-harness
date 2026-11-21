@@ -810,7 +810,7 @@ describe('provider profile lifecycle', () => {
             // which is what an unrecognized private URL resolves to. Most
             // OpenAI-compatible gateways reject that role.
             { id: 'acme-think', reasoningEfforts: { off: null, high: 'high' }, compat: { supportsDeveloperRole: false } },
-            { id: 'acme-guess', reasoningEfforts: { off: null, high: 'high' } },
+            { id: 'acme-declared', reasoningEfforts: { off: null, high: 'high' }, compat: { supportsDeveloperRole: true } },
           ],
         },
       },
@@ -827,10 +827,11 @@ describe('provider profile lifecycle', () => {
       return request.messages.map(message => message.role)
     }
 
+    // The switch decides the role: the same route, same endpoint, and same
+    // reasoning declaration reach it as `system` or `developer` only because
+    // a model says which this gateway accepts.
     expect(await roles('acme-think')).toEqual(['system'])
-    // The switch is the only thing that changes it: the same route, same
-    // endpoint, same reasoning declaration still gets pi-ai's guess.
-    expect(await roles('acme-guess')).toEqual(['developer'])
+    expect(await roles('acme-declared')).toEqual(['developer'])
   })
 
   it('sends a declared off value as the effort parameter instead of omitting it', async () => {

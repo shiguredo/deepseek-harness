@@ -2,24 +2,36 @@
 import type { ReactNode } from 'react'
 import { useId, useRef, useState } from 'react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ModelCatalog, ModelReasoning } from '@deepseek-ai/dsh-api-remotes/client'
 import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ScheduleCatalogEntry, SchedulePatch, ScheduleTargetRequest } from '@deepseek-ai/dsh-schedule/client'
+import type {
+  ScheduleCatalogEntry, ScheduleModelSelection, SchedulePatch, ScheduleTargetRequest,
+} from '@deepseek-ai/dsh-schedule/client'
 import { Cron, RRule } from '@deepseek-ai/dsh-util-time'
 import clsx from 'clsx'
 import { DEFAULT_WORKSPACE_DIRECTORY, workspaceDisplayTitle } from '@deepseek-ai/dsh-api-workspace-controller/default-workspace'
-import { IconClockOutlineRegular, Input, PathLabel } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconClockOutlineRegular, Input, PathLabel } from '@deepseek-ai/dsh-client-ui-primitives'
 import { ClockPicker } from './ClockPicker.tsx'
 import { DatePicker } from './DatePicker.tsx'
 import { defaultTiming, rruleFromDraft, timingFromDraft, timingFromRecord } from './editor-timing.ts'
 import type { FrequencyPreset, TimingDraft } from './editor-timing.ts'
+import { findModelRoute, modelRouteId, modelRoutes } from './model-catalog.ts'
+import type { ModelCatalogSnapshot } from './model-catalog.ts'
 import { RuleSelectRow, RuleZoneRow } from './RuleSelectRow.tsx'
 import { formatScheduleFrequency, zoneLabel } from './schedule-format.ts'
 import type { FrequencyZone } from './schedule-format.ts'
+import type { TaskMenuEntry } from './TaskMenu.tsx'
 import { RuleStepper, RuleWeekdayRow } from './TaskRuleControls.tsx'
 import { IconCalendarOutlineRegular } from './CalendarIcon.tsx'
 import type { TaskManagerKey } from './task-manager-locales.ts'
 import css from './TaskManagerPage.module.css'
+
+/** Menu row that stands for an unspecified creation model, so the Host default applies. */
+const HOST_DEFAULT_MODEL = 'host-default'
+
+/** Menu row that stands for an unspecified reasoning effort, so the model default applies. */
+const MODEL_DEFAULT_EFFORT = 'effort-default'
 
 /** Local form values; only Save writes a task. */
 export interface TaskEditorDraft extends TimingDraft {
@@ -28,6 +40,8 @@ export interface TaskEditorDraft extends TimingDraft {
   readonly target: 'session' | 'new_once' | 'new'
   readonly sessionId: string
   readonly cwd: string
+  /** Creation model route of a new destination; null follows the Host default. */
+  readonly model: ScheduleModelSelection | null
 }
 
 /** Registered Workspaces offered as the directory of a created Session. */
@@ -47,7 +61,7 @@ export function projectChoices(workspaces: WorkspaceSnapshot['items'], defaultNa
 
 /** Initialize a new task without creating or activating a Session. */
 export function newTaskDraft(): TaskEditorDraft {
-  return { ...defaultTiming(), title: '', prompt: '', target: 'new_once', sessionId: '', cwd: '' }
+  return { ...defaultTiming(), title: '', prompt: '', target: 'new_once', sessionId: '', cwd: '', model: null }
 }
 
 /** Seed an edit without normalizing unsupported stored rules. */
@@ -56,6 +70,7 @@ export function taskDraft(task: ScheduleCatalogEntry): TaskEditorDraft {
     ...timingFromRecord(task), title: task.title, prompt: task.prompt,
     target: task.target.kind, sessionId: task.target.kind === 'session' ? task.target.sessionId : '',
     cwd: task.target.kind === 'session' ? '' : task.target.create.cwd ?? '',
+    model: task.target.kind === 'session' ? null : task.target.create.model ?? null,
   }
 }
 
@@ -89,6 +104,7 @@ export function taskDraftPatch(draft: TaskEditorDraft, original: ScheduleCatalog
   const seeded = taskDraft(original)
   const timingChanged = JSON.stringify(timingFromDraft(draft)) !== JSON.stringify(timingFromDraft(seeded))
   const targetChanged = draft.target !== seeded.target || draft.sessionId !== seeded.sessionId || draft.cwd !== seeded.cwd
+    || JSON.stringify(draft.model) !== JSON.stringify(seeded.model)
   return {
     ...(draft.title.trim() === seeded.title.trim() ? {} : { title: draft.title.trim() }),
     ...(draft.prompt.trim() === seeded.prompt.trim() ? {} : { prompt: draft.prompt.trim() }),
@@ -99,14 +115,16 @@ export function taskDraftPatch(draft: TaskEditorDraft, original: ScheduleCatalog
 
 /** Reapply changed field groups only after the user chooses to review a newer revision. */
 export function reapplyTaskDraft(draft: TaskEditorDraft, latest: ScheduleCatalogEntry, changes: SchedulePatch): TaskEditorDraft {
-  const { title, prompt, target, sessionId, cwd, ...timing } = draft
+  const { title, prompt, target, sessionId, cwd, model, ...timing } = draft
   const { title: latestTitle, prompt: latestPrompt, target: latestTarget,
-    sessionId: latestSessionId, cwd: latestCwd, ...latestTiming } = taskDraft(latest)
+    sessionId: latestSessionId, cwd: latestCwd, model: latestModel, ...latestTiming } = taskDraft(latest)
   return {
     ...(changes.timing === undefined ? latestTiming : timing),
     title: changes.title === undefined ? latestTitle : title,
     prompt: changes.prompt === undefined ? latestPrompt : prompt,
-    ...(changes.target === undefined ? { target: latestTarget, sessionId: latestSessionId, cwd: latestCwd } : { target, sessionId, cwd }),
+    ...(changes.target === undefined
+      ? { target: latestTarget, sessionId: latestSessionId, cwd: latestCwd, model: latestModel }
+      : { target, sessionId, cwd, model }),
   }
 }
 
@@ -117,22 +135,116 @@ export function draftTarget(draft: TaskEditorDraft, original?: ScheduleCatalogEn
   const create = {
     ...(draft.cwd === '' ? {} : { cwd: draft.cwd }),
     ...((previous?.cwd ?? '') === draft.cwd && previous?.agentPreset !== undefined ? { agentPreset: previous.agentPreset } : {}),
+    // A null model removes the stored override instead of writing the Host default as an explicit route.
+    ...(draft.model === null ? {} : { model: draft.model }),
   }
   return { kind: draft.target, create }
+}
+
+/**
+ * Render one model row with its provider leading the name, so a model id that
+ * several providers serve stays unambiguous.
+ * @param provider - provider display name, or its id when the catalog omits the route.
+ * @param model - model display name, or its id when the catalog omits the route.
+ * @returns the caption-toned provider, a separator, and the model name.
+ */
+function providerRouteLabel(provider: string, model: string): ReactNode {
+  return <><span className={css.modelMenuProvider}>{provider}</span>{' · '}{model}</>
+}
+
+/**
+ * Rows of the model menu: the Host default, a saved route the catalog omits,
+ * then every advertised model under its provider.
+ * @param catalog - successfully read catalog, if any.
+ * @param saved - saved route that is not advertised, or null when the selection is unset or found.
+ * @param labels - localized rows for the Host default and the omitted saved route.
+ * @returns the menu rows in display order.
+ */
+function modelMenuItems(
+  catalog: ModelCatalog | undefined,
+  saved: ScheduleModelSelection | null,
+  labels: { readonly hostDefault: string; readonly saved: string },
+): TaskMenuEntry[] {
+  const items: TaskMenuEntry[] = [{ id: HOST_DEFAULT_MODEL, label: labels.hostDefault }]
+  if (saved !== null) {
+    items.push({ type: 'label', id: 'saved-model', text: labels.saved })
+    items.push({ id: modelRouteId(saved), label: providerRouteLabel(saved.provider, saved.model) })
+  }
+  for (const provider of catalog?.groups ?? []) {
+    for (const model of provider.models) {
+      items.push({ id: modelRouteId({ provider: provider.id, model: model.id }), label: providerRouteLabel(provider.name, model.name) })
+    }
+  }
+  return items
+}
+
+/**
+ * Rows of the effort menu: the unspecified choice when the model advertises no
+ * default, one stored level the catalog omits, then every advertised level.
+ * @param reasoning - advertised reasoning metadata of the selected model.
+ * @param stored - effort saved with the current route, if any.
+ * @param unsetLabel - localized row for the unspecified effort.
+ * @returns the menu rows in display order.
+ */
+function effortMenuItems(reasoning: ModelReasoning, stored: string | undefined, unsetLabel: string): TaskMenuEntry[] {
+  const items: TaskMenuEntry[] = reasoning.defaultEffort === undefined
+    ? [{ id: MODEL_DEFAULT_EFFORT, label: unsetLabel }] : []
+  if (stored !== undefined && !reasoning.efforts.some(level => level.id === stored)) {
+    items.push({ id: `effort:${stored}`, label: stored })
+  }
+  for (const level of reasoning.efforts) items.push({ id: `effort:${level.id}`, label: level.name })
+  return items
+}
+
+/**
+ * Reasoning effort row of one creation model route.
+ * @param props.model - selected creation route.
+ * @param props.reasoning - advertised effort levels of that route.
+ * @param props.disabled - whether the row rejects input.
+ * @param props.onChange - replaces the selected route with the chosen effort.
+ * @param props.t - task-manager translations.
+ * @returns the labelled effort menu row.
+ */
+function TaskEffortRow({ model, reasoning, disabled, onChange, t }: {
+  readonly model: ScheduleModelSelection
+  readonly reasoning: ModelReasoning
+  readonly disabled: boolean
+  readonly onChange: (model: ScheduleModelSelection) => void
+  readonly t: PropsLocale<'schedule.manager'>['t']
+}): ReactNode {
+  const effectiveEffort = model.reasoningEffort ?? reasoning.defaultEffort
+  const label = effectiveEffort === undefined ? t('host.effortDefault')
+    : reasoning.efforts.find(level => level.id === effectiveEffort)?.name ?? effectiveEffort
+  return <RuleSelectRow label={t('host.effort')}
+    value={effectiveEffort === undefined ? MODEL_DEFAULT_EFFORT : `effort:${effectiveEffort}`}
+    current={label} disabled={disabled}
+    items={effortMenuItems(reasoning, model.reasoningEffort, t('host.effortDefault'))}
+    onChange={(id) => {
+      if (id === MODEL_DEFAULT_EFFORT) {
+        const { reasoningEffort: _stored, ...route } = model
+        onChange(route)
+        return
+      }
+      onChange({ ...model, reasoningEffort: id.slice('effort:'.length) })
+    }} />
 }
 
 /**
  * Render manual creation and inline edits with the existing task rule controls.
  * @param props.disabled - whether the fields reject input.
  * @param props.held - whether a disabled state keeps the enabled look because it lasts only one brief request.
+ * @param props.modelCatalog - shared Host model catalog the creation target selects a route from.
+ * @param props.onRetryModelCatalog - reread the model catalog after a failed read.
  */
-export function TaskEditorFields({ draft, onChange, projects, disabled, held, original, t }: {
+export function TaskEditorFields({ draft, onChange, projects, disabled, held, original, modelCatalog, onRetryModelCatalog, t }: {
   readonly draft: TaskEditorDraft
   readonly onChange: (draft: TaskEditorDraft) => void
   readonly projects: ProjectChoices
   readonly disabled: boolean
   readonly held: boolean
   readonly original?: ScheduleCatalogEntry | undefined
+  readonly modelCatalog: ModelCatalogSnapshot
+  readonly onRetryModelCatalog: () => Promise<void>
   readonly t: PropsLocale<'schedule.manager'>['t']
 }): ReactNode {
   const [dateOpen, setDateOpen] = useState(false)
@@ -162,6 +274,38 @@ export function TaskEditorFields({ draft, onChange, projects, disabled, held, or
     id: choice.value, label: <span className={css.workspaceMenuItem}><span>{choice.label}</span>
       <PathLabel path={choice.value} className={css.workspaceMenuPath} /></span>,
   }))
+  const routes = modelRoutes(modelCatalog.catalog)
+  const routeItems = routes.map((route) => {
+    const selection: ScheduleModelSelection = {
+      provider: route.provider.id,
+      model: route.model.id,
+      ...(route.model.reasoning?.defaultEffort === undefined ? {} : { reasoningEffort: route.model.reasoning.defaultEffort }),
+    }
+    return { id: modelRouteId(selection), selection }
+  })
+  const currentRoute = draft.model === null ? undefined : findModelRoute(routes, draft.model)
+  // A saved route the catalog omits stays selected and listed rather than resetting the form.
+  const savedModel = draft.model !== null && currentRoute === undefined ? draft.model : null
+  const modelItems = modelMenuItems(modelCatalog.catalog, savedModel,
+    { hostDefault: t('host.modelDefault'), saved: t('host.modelSaved') })
+  const loadingModels = modelCatalog.status === 'loading'
+  const modelDisabled = disabled || loadingModels || (modelCatalog.status === 'error' && modelCatalog.catalog === undefined)
+  const currentModelLabel = loadingModels ? t('host.modelsLoading')
+    : currentRoute?.model.name ?? (draft.model === null ? t('host.modelDefault') : draft.model.model)
+  // The model value leads with its provider; a catalog-omitted saved route keeps its stored id.
+  const currentModelProvider = draft.model === null || loadingModels ? undefined
+    : currentRoute?.provider.name ?? draft.model.provider
+  const reasoning = currentRoute?.model.reasoning
+  // The effort row needs the advertised levels of the selected model, so it waits for the catalog.
+  const effortRow: { readonly model: ScheduleModelSelection; readonly reasoning: ModelReasoning } | undefined =
+    draft.model !== null && reasoning !== undefined && reasoning.efforts.length > 0 && !loadingModels
+      ? { model: draft.model, reasoning } : undefined
+  const chooseModel = (id: string): void => {
+    const chosen = routeItems.find(item => item.id === id)
+    if (chosen !== undefined) change({ model: chosen.selection })
+    else if (id === HOST_DEFAULT_MODEL) change({ model: null })
+    // Any other id is the saved route the catalog omits, which is already selected.
+  }
   return <fieldset disabled={disabled} className={held ? `${css.taskEditor} ${css.editorHeld}` : css.taskEditor} onKeyDownCapture={(event) => {
     if (event.key !== 'Escape' || event.defaultPrevented || !dateOpen && !clockOpen) return
     event.preventDefault(); event.stopPropagation()
@@ -172,22 +316,35 @@ export function TaskEditorFields({ draft, onChange, projects, disabled, held, or
       onChange={(event) => { change({ title: event.target.value }) }} /></label>
     <label className={css.editorField}>{t('detail.instruction')}<textarea className={css.instruction} aria-required placeholder={t('detail.instructionPlaceholder')}
       value={draft.prompt} onChange={(event) => { change({ prompt: event.target.value }) }} /></label>
-    <div className={css.ruleRows}>
-      <RuleSelectRow label={t('host.target')} value={draft.target} current={targetLabel(draft.target)} disabled={disabled}
-        listClassName={css.targetMenu} items={[
-          ...(currentSessionId === '' ? [] : [{ id: 'session', label: targetLabel('session') }]),
-          ...(['new_once', 'new'] as const).map(value => ({
-            id: value, label: <span className={css.targetMenuItem}><span>{targetLabel(value)}</span>
-              <span className={css.targetMenuDescription}>{t(value === 'new_once' ? 'host.targetNewOnceHelp' : 'host.targetNewHelp')}</span></span>,
-          })),
-        ]}
-        onChange={(value) => { change({ target: value as TaskEditorDraft['target'],
-          sessionId: value === 'session' ? currentSessionId : draft.sessionId,
-          cwd: value === 'session' ? '' : draft.target === 'session' ? projects.defaultCwd : draft.cwd }) }} />
-      {draft.target !== 'session' && <RuleSelectRow label={t('host.project')} value={draft.cwd} disabled={disabled}
-        current={projects.items.find(choice => choice.value === draft.cwd)?.label ?? (draft.cwd || t('host.ungrouped'))}
-        listClassName={css.workspaceMenu} items={workspaceItems.length === 0 ? [{ id: '', label: t('host.ungrouped'), disabled: true }]
-          : workspaceItems} onChange={(cwd) => { change({ cwd }) }} />}
+    <div className={css.destinationGroup}>
+      <div className={css.ruleRows}>
+        <RuleSelectRow label={t('host.target')} value={draft.target} current={targetLabel(draft.target)} disabled={disabled}
+          listClassName={css.targetMenu} items={[
+            ...(currentSessionId === '' ? [] : [{ id: 'session', label: targetLabel('session') }]),
+            ...(['new_once', 'new'] as const).map(value => ({
+              id: value, label: <span className={css.targetMenuItem}><span>{targetLabel(value)}</span>
+                <span className={css.targetMenuDescription}>{t(value === 'new_once' ? 'host.targetNewOnceHelp' : 'host.targetNewHelp')}</span></span>,
+            })),
+          ]}
+          onChange={(value) => { change({ target: value as TaskEditorDraft['target'],
+            sessionId: value === 'session' ? currentSessionId : draft.sessionId,
+            cwd: value === 'session' ? '' : draft.target === 'session' ? projects.defaultCwd : draft.cwd }) }} />
+        {draft.target !== 'session' && <>
+          <RuleSelectRow label={t('host.project')} value={draft.cwd} disabled={disabled}
+            current={projects.items.find(choice => choice.value === draft.cwd)?.label ?? (draft.cwd || t('host.ungrouped'))}
+            listClassName={css.workspaceMenu} items={workspaceItems.length === 0 ? [{ id: '', label: t('host.ungrouped'), disabled: true }]
+              : workspaceItems} onChange={(cwd) => { change({ cwd }) }} />
+          <RuleSelectRow label={t('host.model')} value={draft.model === null ? HOST_DEFAULT_MODEL : modelRouteId(draft.model)}
+            current={currentModelLabel} currentLead={currentModelProvider} disabled={modelDisabled} items={modelItems}
+            listClassName={css.modelMenu} onChange={chooseModel} />
+          {effortRow !== undefined && <TaskEffortRow {...effortRow} disabled={disabled}
+            onChange={(model) => { change({ model }) }} t={t} />}
+        </>}
+      </div>
+      {draft.target !== 'session' && modelCatalog.status === 'error' && <div className={clsx(css.notice, css.modelNotice)}>
+        <p role="alert">{t('host.modelsError')}</p>
+        <Button size="sm" onClick={() => { void onRetryModelCatalog() }}>{t('list.retry')}</Button>
+      </div>}
     </div>
     <section className={css.editorField} aria-label={t('rule.title')}><h3>{t('rule.title')}</h3><div className={css.ruleRows}>
       <RuleSelectRow label={t('rule.repeat')} value={frequencyValue} disabled={disabled} items={frequencyItems}

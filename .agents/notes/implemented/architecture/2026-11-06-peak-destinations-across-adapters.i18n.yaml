@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-06-peak-destinations-across-adapters.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-06-peak-destinations-across-adapters.md
+/agent-note-peak-destinations-may-run-on-another-adapter-s-route:
+  en: e0fa4c781047de0b
+  zh: 6df93103c5075ed5
+/agent-note-peak-destinations-may-run-on-another-adapter-s-route/problem:
+  en: 0482055d7c6d5e71
+  zh: 682170b9f1d8a16b
+/agent-note-peak-destinations-may-run-on-another-adapter-s-route/decision:
+  en: 7c0ff1c104524912
+  zh: 106267aaa9c1a2d3
+/agent-note-peak-destinations-may-run-on-another-adapter-s-route/alternatives-considered:
+  en: 1dbf4c9e24554ad6
+  zh: b63ec71ef74e5026
+/agent-note-peak-destinations-may-run-on-another-adapter-s-route/consequences:
+  en: 71026569caf535fb
+  zh: 425425c28605dd6e

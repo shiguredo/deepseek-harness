@@ -22,15 +22,16 @@ import type { ScheduleCatalogEntry } from '@deepseek-ai/dsh-schedule/client'
 import type { CatalogSnapshot } from './catalog-source.ts'
 import { CatalogFeedback } from './CatalogFeedback.tsx'
 import { TaskDetail, useTaskDetail, type TaskDetailInjected } from './TaskDetail.tsx'
+import type { ModelCatalogInjected } from './model-catalog.ts'
 import type { TaskTabBindings } from './task-tab-bindings.ts'
 import type { TaskEditorStoreProps } from './editor-store.ts'
 import { useTaskTabTarget } from './task-tab-target.ts'
 import css from './TaskManagerPage.module.css'
 
-/** The Host task catalog the body, its chip, and the Tasks page all read. */
+/** The Host task and model catalogs the body, its chip, and the Tasks page all read. */
 export interface ScheduleTaskCatalogInjected {
-  /** Shared Host task catalog with its query and deletion state. */
-  readonly hooks: { readonly catalog: HostObservable<CatalogSnapshot<ScheduleCatalogEntry>> }
+  /** Shared Host task catalog with its query and deletion state, plus the shared model catalog. */
+  readonly hooks: { readonly catalog: HostObservable<CatalogSnapshot<ScheduleCatalogEntry>> } & ModelCatalogInjected['hooks']
 }
 
 /** The provider-owned recovery a restored tab page resolves its task through. */
@@ -66,7 +67,8 @@ export function ScheduleTaskTab(props: ScheduleTaskTabProps): ReactNode {
   const { tab } = useTabInfo()
   const { navigated, navigation, recovered, params } = useTaskTabTarget(sessionId, tab, taskBindings)
   const catalog = useCatalog(snapshot => snapshot)
-  const detail = useTaskDetail(props, catalog, params?.id)
+  const modelCatalog = props.useModelCatalog(snapshot => snapshot)
+  const detail = useTaskDetail(props, catalog, params?.id, modelCatalog)
   const { task, record: catalogRecord } = detail
   // A restored tab can appear with a task whose creation the last successful read
   // has not seen yet, so the retained records state that this tab's task is gone

@@ -50,7 +50,7 @@ Schedule owns task storage and delivery. Agent tools and the Web UI use the same
 
 ### Configuration and management API
 
-The service requires `agents`, `sessions`, `storageDomain`, and `sessionPersistence`. Embeddings activate existing Sessions through `schedule/resolve-agent`; the Web composition injects `sessionController` as the fallback and creation provider. New destinations require that creation provider. Delivery needs a backend that acknowledges `session/flush`; storage-domain owns backend routing.
+The service requires `agents`, `sessions`, `storageDomain`, and `sessionPersistence`. Embeddings activate existing Sessions through `schedule/resolve-agent`; the Web composition injects `sessionController` as the fallback and creation provider. New destinations require that creation provider. A creation model route also requires `llm`: a Host without it refuses the route with `model_unavailable` before saving. Delivery needs a backend that acknowledges `session/flush`; storage-domain owns backend routing.
 
 | Configuration | Default | Meaning |
 |---|---|---|
@@ -68,7 +68,7 @@ Create with `create({ title, prompt, timing, target? }, actorSessionId?, signal?
 
 RRULE timing uses `{ kind: "rrule", rrule: "DTSTART:…\nRRULE:…" }`. The model tools teach RRULE; the Web Custom editor also accepts five-field Cron with an explicit zone. Titles are required, trimmed, and at most 120 characters; prompts are non-empty.
 
-The `session` target reuses an existing, unarchived, non-delegated Session; unloaded targets are validated through the header-only `SessionPersistence.stat()` read without activation or history replay. The default `new_once` reserves one Session id, creates it on first delivery, and reuses it. The `new` target creates a fresh Session per delivery. Arming either creating target requires the Session creation provider. Optional `create` values select the directory and preset; omitted values use Host defaults. See [delivery targets](../../../docs/subsystems/schedule.md#delivery-targets) for creation, naming, reuse, and archive admission.
+The `session` target reuses an existing, unarchived, non-delegated Session; unloaded targets are validated through the header-only `SessionPersistence.stat()` read without activation or history replay. The default `new_once` reserves one Session id, creates it on first delivery, and reuses it. The `new` target creates a fresh Session per delivery. Arming either creating target requires the Session creation provider. Optional `create` values select the directory, preset, and model route; omitted values use Host defaults. A creation model route names a provider, model, and optional reasoning effort, and the Host validates it against the LLM registry before storing the task. Each Session a creation target creates records that route before the delivered instruction, so the run uses it instead of the Host default. See [delivery targets](../../../docs/subsystems/schedule.md#delivery-targets) for creation, naming, reuse, and archive admission.
 
 `edit({ id, action: "update", patch, expectedUpdatedAt? }, actorSessionId?, signal?)` changes `title`, `prompt`, `timing`, `target`, or `active`; `action: "delete"` removes the task. Revision mismatch returns `schedule_conflict`; `null` compares an absent stored revision. An equivalent edit preserves the committed occurrence and writes the current format. Pause keeps the task; resume computes its next future occurrence.
 
@@ -277,6 +277,7 @@ Notices append at the next step boundary and preserve the existing request prefi
 <a id="known-limitations-and-deferred-work"></a>
 
 - The Host must be running. Failed restore, creation, enqueue, or writes retain the task and warn; there is no retry loop. A later management change, wake, or restart can retry it.
+- A creation model route is validated when the task is accepted. If the provider, model, or reasoning effort later becomes unavailable, the run that needs it fails and the task stays stored.
 - Session flush and task acknowledgment are separate commits, so delivery is at least once. Graceful Agent disposal can discard queued input after a receipt was saved; receipts establish inbox persistence, not execution.
 - Deletion removes saved task history and stops future delivery, retaining Sessions and messages. Session-log reminders require explicit recreation; missing historical prompts and timestamps cannot be recovered.
 - Management is Host-wide, without task-level authorization. The model tool layer refuses delegated callers; Schedule refuses delegated Session targets. Reads and deletion remain available for unavailable targets.

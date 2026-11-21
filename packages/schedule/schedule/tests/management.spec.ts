@@ -326,6 +326,98 @@ it('rejects invalid rules, empty creation values, empty updates, and pagination 
   expect(await service.list({ limit: 500 })).toMatchObject({ shown: 1, limit: 500 })
 })
 
+it('rejects an empty creation model field before the task is stored', async () => {
+  const { service } = await setup()
+  for (const model of [
+    { provider: '', model: 'deepseek-pro' },
+    { provider: 'deepseek-official', model: '' },
+    { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: '' },
+  ]) {
+    await expect(service.remoteCreate({
+      title: 'Empty route', prompt: 'Empty route', timing: { kind: 'rrule', rrule: daily },
+      target: { kind: 'new', create: { model } },
+    })).rejects.toMatchObject({ code: 'schedule/input-invalid', details: { code: 'invalid_rule' } })
+  }
+  expect(await service.catalog()).toEqual([])
+})
+
+it('validates a creation model route against the LLM registry and stores it with the target', async () => {
+  const test = await setup()
+  const resolveCallConfig = vi.fn(async (config: unknown) => config)
+  test.ctx.provide('llm', { resolveCallConfig } as never)
+  const model = { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' }
+  const created = await test.service.remoteCreate({
+    title: 'Routed', prompt: 'Routed', timing: { kind: 'rrule', rrule: daily },
+    target: { kind: 'new', create: { model } },
+  })
+  expect(created.target).toEqual({ kind: 'new', create: { model } })
+  expect(resolveCallConfig).toHaveBeenCalledExactlyOnceWith({
+    provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high',
+  }, undefined)
+  expect(test.createSession).not.toHaveBeenCalled()
+})
+
+it('refuses a creation model route that this Host cannot resolve', async () => {
+  const test = await setup()
+  const request = {
+    title: 'Routed', prompt: 'Routed', timing: { kind: 'rrule', rrule: daily },
+    target: { kind: 'new_once', create: { model: { provider: 'deepseek-official', model: 'deepseek-pro' } } },
+  } as const
+  await expect(test.service.remoteCreate(request)).rejects.toMatchObject({
+    code: 'schedule/input-invalid', details: { code: 'model_unavailable' },
+    message: expect.stringContaining('cannot validate a model selection') as string,
+  })
+  test.ctx.provide('llm', { resolveCallConfig: async () => { throw new Error('unknown model "deepseek-pro"') } } as never)
+  await expect(test.service.remoteCreate(request)).rejects.toMatchObject({
+    code: 'schedule/input-invalid', details: { code: 'model_unavailable' },
+    message: expect.stringContaining('unknown model "deepseek-pro"') as string,
+  })
+  expect(await test.service.catalog()).toEqual([])
+  expect(test.createSession).not.toHaveBeenCalled()
+})
+
+it('reports a non-Error model rejection through its string form', async () => {
+  const test = await setup()
+  test.ctx.provide('llm', { resolveCallConfig: async () => { throw 'route retired' } } as never)
+  await expect(test.service.remoteCreate({
+    title: 'Routed', prompt: 'Routed', timing: { kind: 'rrule', rrule: daily },
+    target: { kind: 'new', create: { model: { provider: 'deepseek-official', model: 'deepseek-pro' } } },
+  })).rejects.toMatchObject({
+    code: 'schedule/input-invalid', details: { code: 'model_unavailable' },
+    message: expect.stringContaining('route retired') as string,
+  })
+  expect(await test.service.catalog()).toEqual([])
+})
+
+it('stops a creation model check when its signal aborts during the registry lookup', async () => {
+  const test = await setup()
+  const controller = new AbortController()
+  test.ctx.provide('llm', { resolveCallConfig: async () => {
+    controller.abort()
+    throw new Error('the Host stopped answering')
+  } } as never)
+  await expect(test.service.create({
+    title: 'Routed', prompt: 'Routed', timing: { kind: 'rrule', rrule: daily },
+    target: { kind: 'new', create: { model: { provider: 'deepseek-official', model: 'deepseek-pro' } } },
+  }, undefined, controller.signal)).rejects.toThrow('aborted')
+  expect(await test.service.catalog()).toEqual([])
+})
+
+it('validates a creation model route carried by a replacement target', async () => {
+  const test = await setup()
+  const created = await test.service.remoteCreate({ title: 'Plain', prompt: 'Plain', timing: { kind: 'rrule', rrule: daily }, target: { kind: 'new' } })
+  const resolveCallConfig = vi.fn(async (config: unknown) => config)
+  test.ctx.provide('llm', { resolveCallConfig } as never)
+  const model = { provider: 'deepseek-official', model: 'deepseek-flash', reasoningEffort: 'off' }
+  const edited = await test.service.remoteEdit({
+    id: created.id, action: 'update', patch: { target: { kind: 'new', create: { model } } },
+  })
+  expect(edited).toMatchObject({ target: { kind: 'new', create: { model } } })
+  expect(resolveCallConfig).toHaveBeenCalledExactlyOnceWith({
+    provider: 'deepseek-official', model: 'deepseek-flash', reasoningEffort: 'off',
+  }, undefined)
+})
+
 it('preserves an unexpected list failure across the Remote transport', async () => {
   const { service } = await setup()
   const failure = new Error('storage unavailable')

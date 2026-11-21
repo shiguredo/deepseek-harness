@@ -46,8 +46,7 @@ kind: "package-reference"
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|
-| `searchProvider` | （未设置） | 固定的搜索提供方 id；未设置时优先使用[请求的模型路由](#provider-selection)对应的可用 DeepSeek 提供方，否则仅在恰好一个可用时自动选择 |
-| `fetchProvider` | （未设置） | 固定的抓取提供方 id；未设置时仅在恰好一个可用时自动选择 |
+| `searchProvider` | （未设置） | 固定的搜索提供方 id；每次搜索都会读取，Web 搜索设置页可实时写入。未设置时优先使用[请求的模型路由](#provider-selection)对应的可用 DeepSeek 提供方，否则仅在恰好一个可用时自动选择 || `fetchProvider` | （未设置） | 固定的抓取提供方 id；未设置时仅在恰好一个可用时自动选择 |
 
 生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-web)是每个受支持字段及其 JSDoc 的穷尽式真源。
 

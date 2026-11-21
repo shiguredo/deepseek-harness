@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
+import type { ReasoningEffortId } from '@deepseek-ai/dsh-llm/types'
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
     'schedule': { kind: 'schedule' } & ContextFormed
@@ -23,7 +24,9 @@ import {
 import { formatScheduleLocalTime } from './domain.ts'
 import { appendDelivery } from './delivery-history.ts'
 import type { ScheduleTask } from './storage.ts'
-import type { DeliveryRetentionBounds, ScheduleDeliveryReceipt, ScheduleId, ScheduleSessionCreateSpec } from './types.ts'
+import type {
+  DeliveryRetentionBounds, ScheduleDeliveryReceipt, ScheduleId, ScheduleModelSelection, ScheduleSessionCreateSpec,
+} from './types.ts'
 
 /** Largest delay Node timers represent without clamping. */
 export const MAX_TIMER_DELAY_MS = 2_147_483_647
@@ -446,9 +449,23 @@ export class ScheduleRuntime {
       agent = await this.reservedAgent(sessionId)
     }
     agent ??= await this.createAgent(sessionId, target.create)
+    // A resolved reserved Session may already record the route; an equal selection appends nothing.
+    this.selectModel(agent, target.create.model)
     await this.joinWorkspace(sessionId, target.create.cwd)
     this.nameSession(agent, task)
     return { sessionId, agent }
+  }
+
+  /** Record the target's model route on the Session that receives the delivered instruction. */
+  private selectModel(agent: Agent, selection: ScheduleModelSelection | undefined): void {
+    if (selection === undefined) return
+    agent.model.select({
+      provider: selection.provider,
+      model: selection.model,
+      ...(selection.reasoningEffort === undefined
+        ? {}
+        : { reasoningEffort: brandString<ReasoningEffortId>(selection.reasoningEffort) }),
+    })
   }
 
   /** Resolve the live Agent of a reserved Session; `undefined` means that no Session has its id yet. */

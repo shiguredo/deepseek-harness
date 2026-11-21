@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-11-15-schedule-creation-model.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-15-schedule-creation-model.md
+/agent-note-schedule-creation-model-selection:
+  en: 728342baaae33de8
+  zh: 80c4800549572720
+/agent-note-schedule-creation-model-selection/problem:
+  en: 62384b25c6124542
+  zh: 154f496c8731b640
+/agent-note-schedule-creation-model-selection/decision:
+  en: 2f3dde9b2615e036
+  zh: 4e0080159e3d4695
+/agent-note-schedule-creation-model-selection/alternatives-considered:
+  en: 3bda1ac70f90c62f
+  zh: cfd5ceadeca88c1e
+/agent-note-schedule-creation-model-selection/consequences:
+  en: 498002743fda5756
+  zh: ae0d4a12d47b3aa7

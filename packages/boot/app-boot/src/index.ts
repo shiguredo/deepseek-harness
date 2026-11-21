@@ -18,7 +18,7 @@ import Loader, {
 } from '@deepseek-ai/cordis-plugin-loader'
 import Include, { applyEntryPatches, parseEntryYaml, stringifyEntryYaml, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import Group from '@deepseek-ai/cordis-plugin-group'
-import { dshHomePath, dshPath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import { dshHomePath, dshInstancePath, dshPath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { createLaunchEnvironmentSnapshot, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 export { readBundlePatches, readProfilePatches, resolveTelemetryPatch, type ProfileContext, type ProfilePnpmInvocation } from './profile-context.ts'
 export { sanitizeProfile } from './profile-sanitize.ts'
@@ -47,6 +47,8 @@ declare module '@deepseek-ai/cordis' {
     dshHomePath?: typeof dshHomePath
     /** Harness-home category path resolver available to Loader `!!js` config expressions. */
     dshPath?: typeof dshPath
+    /** Instance-namespaced path resolver available to Loader `!!js` config expressions. */
+    dshInstancePath?: typeof dshInstancePath
   }
 
   interface Events {
@@ -1290,6 +1292,7 @@ export async function boot(
     ctx.baseUrl = pathToFileURL(dirname(absoluteConfigPath)).href + '/'
     ctx.provide('dshHomePath', dshHomePath)
     ctx.provide('dshPath', dshPath)
+    ctx.provide('dshInstancePath', dshInstancePath)
     await ctx.plugin(Loader)
     await prepare?.(ctx)
     stage = 'plugin tree failed to load'

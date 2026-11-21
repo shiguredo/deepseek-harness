@@ -5,6 +5,7 @@ import z from '@deepseek-ai/schemastery'
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ReasoningEffortId } from '@deepseek-ai/dsh-llm/types'
 import { RemoteError, TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import type { Domain } from '@deepseek-ai/dsh-storage-domain'
 import { delegationDepthOf } from '@deepseek-ai/dsh-subagent'
@@ -22,8 +23,8 @@ import {
 import type {
   ScheduleId, ScheduleCatalogEntry, ScheduleCreateRequest, ScheduleDeleteInactiveResult, ScheduleDeliveryHistoryRequest,
   ScheduleDeliveryHistoryResult, ScheduleEditRequest, ScheduleEditResult, ScheduleListRequest,
-  ScheduleListResult, SchedulePatch, ScheduleRecord, ScheduleRunRequest, ScheduleRunResult, ScheduleSessionCreateSpec,
-  ScheduleTarget, ScheduleTargetRequest, ScheduleViewRequest, ScheduleViewResult,
+  ScheduleListResult, ScheduleModelSelection, SchedulePatch, ScheduleRecord, ScheduleRunRequest, ScheduleRunResult,
+  ScheduleSessionCreateSpec, ScheduleTarget, ScheduleTargetRequest, ScheduleViewRequest, ScheduleViewResult,
 } from './types.ts'
 export type * from './client.ts'
 export { scheduleDomain } from './storage.ts'
@@ -168,9 +169,19 @@ function createSpec(spec: ScheduleSessionCreateSpec | undefined): ScheduleSessio
   if (spec?.cwd === '' || spec?.agentPreset === '') {
     throw new ScheduleInputError('invalid_rule', 'target create cwd and agentPreset must be non-empty when present.')
   }
+  const model = spec?.model
+  if (model !== undefined && (model.provider === '' || model.model === '' || model.reasoningEffort === '')) {
+    throw new ScheduleInputError('invalid_rule',
+      'target create model provider, model, and reasoningEffort must be non-empty when present.')
+  }
   return {
     ...(spec?.cwd === undefined ? {} : { cwd: spec.cwd }),
     ...(spec?.agentPreset === undefined ? {} : { agentPreset: spec.agentPreset }),
+    ...(model === undefined ? {} : { model: {
+      provider: model.provider,
+      model: model.model,
+      ...(model.reasoningEffort === undefined ? {} : { reasoningEffort: model.reasoningEffort }),
+    } }),
   }
 }
 
@@ -631,12 +642,18 @@ export class ScheduleService extends TypertRemoteService {
         await this.validateTarget(target, signal)
         return target
       }
-      case 'new_once':
+      case 'new_once': {
         this.requireSessionCreation()
-        return { kind: 'new_once', sessionId: brandString<SessionId>(`session-${randomUUID()}`), create: createSpec(request.create) }
-      case 'new':
+        const create = createSpec(request.create)
+        await this.validateModel(create.model, signal)
+        return { kind: 'new_once', sessionId: brandString<SessionId>(`session-${randomUUID()}`), create }
+      }
+      case 'new': {
         this.requireSessionCreation()
-        return { kind: 'new', create: createSpec(request.create) }
+        const create = createSpec(request.create)
+        await this.validateModel(create.model, signal)
+        return { kind: 'new', create }
+      }
       /* v8 ignore next 4 -- the cases cover every target kind. */
       default: {
         const unreachable: never = request
@@ -677,6 +694,40 @@ export class ScheduleService extends TypertRemoteService {
   private requireSessionCreation(): void {
     if (this.ctx.get('sessionController') === undefined) {
       throw new ScheduleInputError('invalid_rule', 'This Host cannot create Sessions; choose an existing Session target.')
+    }
+  }
+
+  /**
+   * Check a creation model route against the Host LLM registry before the task is stored.
+   *
+   * The route is accepted only when an adapter can resolve the provider, model, and optional effort. Later provider
+   * or adapter changes are outside this task's control; a run that meets an unavailable route reports its own failure.
+   * @param selection - Exported creation model route, or no model selection.
+   * @param signal - Cancellation of the adapter capability lookup.
+   * @throws ScheduleInputError `model_unavailable` when the Host cannot resolve the route.
+   */
+  private async validateModel(selection: ScheduleModelSelection | undefined, signal?: AbortSignal): Promise<void> {
+    if (selection === undefined) return
+    const llm = this.ctx.get('llm')
+    if (llm === undefined) {
+      throw new ScheduleInputError('model_unavailable',
+        'This Host cannot validate a model selection; omit the target creation model.')
+    }
+    const route = `provider "${selection.provider}" model "${selection.model}"`
+      + (selection.reasoningEffort === undefined ? '' : ` with reasoning effort "${selection.reasoningEffort}"`)
+    try {
+      await llm.resolveCallConfig({
+        provider: selection.provider,
+        model: selection.model,
+        ...(selection.reasoningEffort === undefined
+          ? {}
+          : { reasoningEffort: brandString<ReasoningEffortId>(selection.reasoningEffort) }),
+      }, signal)
+    } catch (error: unknown) {
+      signal?.throwIfAborted()
+      throw new ScheduleInputError('model_unavailable',
+        `The Host cannot use ${route}: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error })
     }
   }
 

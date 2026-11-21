@@ -7,13 +7,13 @@ afterEach(() => {
 
 describe('session-log upload configuration', () => {
   it.each([
-    { lane: 'ordinary process', vitest: undefined, snapshot: undefined, enabled: true },
-    { lane: 'Vitest', vitest: 'true', snapshot: undefined, enabled: true },
-    { lane: 'snapshot process', vitest: undefined, snapshot: '1', enabled: true },
-    { lane: 'Vitest snapshot', vitest: 'true', snapshot: '1', enabled: true },
-    { lane: 'empty Vitest marker', vitest: '', snapshot: undefined, enabled: true },
-    { lane: 'empty snapshot marker', vitest: undefined, snapshot: '', enabled: true },
-  ])('defaults upload for $lane and honors explicit overrides', async ({ vitest, snapshot, enabled }) => {
+    { lane: 'ordinary process', vitest: undefined, snapshot: undefined, enabled: false },
+    { lane: 'Vitest', vitest: 'true', snapshot: undefined, enabled: false },
+    { lane: 'snapshot process', vitest: undefined, snapshot: '1', enabled: false },
+    { lane: 'Vitest snapshot', vitest: 'true', snapshot: '1', enabled: false },
+    { lane: 'empty Vitest marker', vitest: '', snapshot: undefined, enabled: false },
+    { lane: 'empty snapshot marker', vitest: undefined, snapshot: '', enabled: false },
+  ])('defaults upload off for $lane and honors explicit overrides', async ({ vitest, snapshot, enabled }) => {
     vi.stubEnv('VITEST', vitest)
     vi.stubEnv('DSH_SNAPSHOT', snapshot)
     try {

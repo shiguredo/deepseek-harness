@@ -1620,7 +1620,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 ### `schedule_create`
 
-创建定时任务。rrule 的每次触发都会将 prompt 作为用户的定时消息投递到目标会话。结果包含任务 id 和下一次触发时间：scheduledAt 为 UTC 时间，scheduledAtLocal 为 rrule 所在时区的时间。停机后只补发最近一次错过的触发。崩溃后可能重复投递。
+创建定时任务。rrule 的每次触发都会将 prompt 作为用户的定时消息投递到目标会话。provider、model 和 reasoning_effort 选择 new_once 或 new 目标所创建会话的模型。结果包含任务 id 和下一次触发时间：scheduledAt 为 UTC 时间，scheduledAtLocal 为 rrule 所在时区的时间。停机后只补发最近一次错过的触发。崩溃后可能重复投递。
 
 ```json
 {
@@ -1640,12 +1640,24 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
     },
     "target": {
       "type": "string",
-      "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+      "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
       "enum": [
         "this_session",
         "new_once",
         "new"
       ]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model id within that provider; requires provider."
+    },
+    "reasoning_effort": {
+      "type": "string",
+      "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
     }
   },
   "required": [
@@ -1661,7 +1673,7 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
 
 ### `schedule_edit`
 
-按 id 更新、暂停、恢复或删除一个定时任务。删除不会撤回已排队的消息。
+按 id 更新、暂停、恢复或删除一个定时任务。在不提供 target 的情况下提供 provider、model 和 reasoning_effort，会更改此任务所创建会话的模型。删除不会撤回已排队的消息。
 
 ```json
 {
@@ -1693,12 +1705,24 @@ create、edit、pause 和 resume 要求直接来自人类的根权限；complete
     },
     "target": {
       "type": "string",
-      "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+      "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
       "enum": [
         "this_session",
         "new_once",
         "new"
       ]
+    },
+    "provider": {
+      "type": "string",
+      "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model id within that provider; requires provider."
+    },
+    "reasoning_effort": {
+      "type": "string",
+      "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
     },
     "active": {
       "type": "boolean",

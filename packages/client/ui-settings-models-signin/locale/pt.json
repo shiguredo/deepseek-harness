@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Início de sessão de provedores em Modelos",
+    "description": "Adiciona a secção de conta de cada cartão de provedor em Modelos: lista os fluxos de autorização do Host, inicia um, mostra o passo do navegador e a colagem do URL quando o navegador está noutra máquina, e termina a sessão."
+  }
+}

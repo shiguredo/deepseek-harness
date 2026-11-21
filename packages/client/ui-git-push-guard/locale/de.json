@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git-Push-Schutz",
+    "description": "Fügt den Chip in der Eingabezeile hinzu, der den Push-Schutz einer Sitzung umschaltet, sowie eine Karte für integrierte Plugin-Einstellungen, die den Standard für neue Sitzungen festlegt; das Host-Paket fragt vor einem git push nach Bestätigung."
+  }
+}

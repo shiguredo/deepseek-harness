@@ -106,7 +106,7 @@ export interface DeepSeekSearchProviderOptions {
   apiKey?: string
   /** Credential reference named by missing-credential diagnostics. */
   apiKeyEnv?: CredentialRef
-  /** Endpoint base; `/messages` is appended. */
+  /** Endpoint base or the full `/messages` endpoint. */
   baseURL: string
   /** Anthropic-format model name. */
   model: string
@@ -233,7 +233,7 @@ export class DeepSeekSearchProvider implements WebSearchProvider {
     // settings write landing inside that await must not send the key resolved
     // from the old section to the endpoint named by the new one.
     const options = this.resolveOptions()
-    const endpoint = `${options.baseURL}/messages`
+    const endpoint = options.baseURL.endsWith('/messages') ? options.baseURL : `${options.baseURL}/messages`
     const auth = await this.authHeaders(options, endpoint, signal)
     throwIfSearchAborted(signal)
     const body: DeepSeekSearchLlmRequest['body'] = {

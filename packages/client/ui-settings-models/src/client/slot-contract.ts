@@ -31,6 +31,14 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * area renders nothing.
      */
     'settings.models.provider-card': { kind: 'keyed'; scope: 'root'; owner: ProviderCardExtrasOwnerProps }
+    /**
+     * One provider row's identity mark, dispatched inside the row's own name
+     * line with `entryKey = settingsNs`. A mark says what the row already is —
+     * an account sign-in supplies it, say — so it sits beside the name the way
+     * the page's own credential dot does, rather than in the card's editor area.
+     * Without a registrant the row shows no mark.
+     */
+    'settings.models.provider-mark': { kind: 'keyed'; scope: 'root'; owner: ProviderMarkOwnerProps }
     /** Optional account login choice before the credential editor. */
     'settings.models.sign-in': { kind: 'single'; scope: 'root'; owner: { complete: () => void; useApiKey: () => void } }
     /**
@@ -49,6 +57,19 @@ export interface ProviderCardExtrasOwnerProps {
   configured: boolean
   /** Whether the row's referenced api-key credential is confirmed configured (the page's credential join). */
   keyConfigured: boolean
+  /**
+   * Whether this occurrence sits in an open editor: a row whose edit card is
+   * showing, the first-run setup card, or the add-provider draft. A registrant
+   * that changes account state — signing in or out — must offer that only here,
+   * because a collapsed row is a summary rather than an editor.
+   */
+  editing: boolean
+}
+
+/** Owner share of one provider row's identity mark. */
+export interface ProviderMarkOwnerProps {
+  /** The row this mark annotates (route id, display name, settings address, live state). */
+  provider: ProviderDirectoryEntry
 }
 
 /** Owner share of the footer area (the section supplies nothing). */

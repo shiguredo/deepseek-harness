@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Recherche et récupération de pages web avec Ollama Cloud",
+    "description": "Décidez si ce déploiement recherche et récupère des pages web via Ollama Cloud, ainsi que le nombre de résultats de la recherche."
+  }
+}

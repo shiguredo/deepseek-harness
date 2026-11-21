@@ -9,6 +9,7 @@ import type { PaneId, SidebarRightTabActions, SidebarRightTabInfo } from '@deeps
 import type { ScheduleId, ScheduleCatalogEntry } from '@deepseek-ai/dsh-schedule/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { CatalogDeleteOutcome, CatalogSnapshot } from '../src/client/catalog-source.ts'
+import type { ModelCatalogSnapshot } from '../src/client/model-catalog.ts'
 import type { HostTaskActions } from '../src/client/TaskDetail.tsx'
 import { ScheduleTaskTab, type ScheduleTaskTabProps } from '../src/client/ScheduleTaskTab.tsx'
 import { ScheduleTaskTabTitle, type ScheduleTaskTabTitleProps } from '../src/client/ScheduleTaskTabTitle.tsx'
@@ -103,10 +104,12 @@ function mount(
     useStore: bindSnapshotSelector(editor), actions: editor.actions,
     sessionId: SESSION,
     useTabInfo: () => info,
+    useModelCatalog: <T,>(select: (value: ModelCatalogSnapshot) => T): T => select({ status: 'ready', catalog: undefined }),
     useSessions: <T,>(select: (value: SessionListState) => T): T => select(sessionState),
     useWorkspaces: <T,>(select: (value: WorkspaceSnapshot) => T): T => select(workspaces),
     onDelete: vi.fn(async () => 'deleted' as const),
     onRetry: vi.fn(async () => {}),
+    onRetryModelCatalog: vi.fn(async () => {}),
     hostActions: {
       edit: vi.fn<HostTaskActions['edit']>(async () => 'saved'),
       run: vi.fn<HostTaskActions['run']>(async () => 'queued'),

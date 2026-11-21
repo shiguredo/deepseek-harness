@@ -250,23 +250,29 @@ describe('historical tool availability on the wire', () => {
     })
   })
 
-  it('loads Codex tool additions through tool-search output', async () => {
+  it('sends Codex tool additions as additional_tools items', async () => {
     // Codex extracts an account id from the token before contacting the mock server.
     const payload = Buffer.from(JSON.stringify({ 'https://api.openai.com/auth': { chatgpt_account_id: 'fixture-account' } })).toString('base64url')
     const token = `e30.${payload}.fixture`
     const update = addition()
-    const { requests } = await send('openai-codex', 'gpt-5.5', {
+    const { requests } = await send('openai-codex', 'gpt-5.6-sol', {
       messages: [user('first'), update], tools: [baseline, added],
       toolHistory: { tools: [baseline], updates: [{ messageId: update.id, additions: [added] }] },
     }, token)
     expect(requests).toHaveLength(1)
+    // The baseline travels as its own `additional_tools` item, each addition
+    // beside the update that declared it, and the current tool set is not
+    // repeated as a top-level `tools` array.
+    expect(requests[0]).not.toHaveProperty('tools')
     expect(requests[0]).toMatchObject({
-      tools: [{ type: 'function', name: 'read' }],
       input: [
+        { type: 'additional_tools', role: 'developer', tools: [
+          { type: 'function', name: 'read', description: baseline.description, parameters: baseline.parameters },
+        ] },
         { role: 'user', content: [{ type: 'input_text', text: 'first' }] },
-        { type: 'tool_search_call', execution: 'client', arguments: { query: 'search', limit: 1 } },
-        { type: 'tool_search_output', execution: 'client', tools: [
-          { type: 'function', name: 'search', description: added.description, parameters: added.parameters, defer_loading: true },
+        { role: 'developer', content: expect.stringContaining('incremental tools update') as string },
+        { type: 'additional_tools', role: 'developer', tools: [
+          { type: 'function', name: 'search', description: added.description, parameters: added.parameters },
         ] },
         { role: 'developer', content: 'Instruction one.\nInstruction two.' },
       ],
@@ -301,9 +307,10 @@ describe('historical tool availability on the wire', () => {
     })
     expect(requests).toHaveLength(1)
     expect(requests[0]).toHaveProperty('tools', [expect.objectContaining({ name: 'search' })])
+    // The rebuild states the whole current tool set, so it carries no
+    // incremental-update instruction: nothing after it is an update.
     expect(requests[0]).toHaveProperty('input', [
       { role: 'user', content: [{ type: 'input_text', text: 'first' }] },
-      { role: 'developer', content: 'Instruction one.\nInstruction two.' },
     ])
     expect(JSON.stringify(requests[0])).not.toContain('tool_removal')
     expect(JSON.stringify(requests[0])).not.toContain('Read a file')

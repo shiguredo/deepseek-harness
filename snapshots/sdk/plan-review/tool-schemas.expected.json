@@ -446,7 +446,7 @@
     },
     {
       "name": "schedule_create",
-      "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
+      "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions that a new_once or new target creates. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -464,12 +464,24 @@
           },
           "target": {
             "type": "string",
-            "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+            "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
             "enum": [
               "this_session",
               "new_once",
               "new"
             ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model id within that provider; requires provider."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
           }
         },
         "required": [
@@ -482,7 +494,7 @@
     },
     {
       "name": "schedule_edit",
-      "description": "Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.",
+      "description": "Update, pause, resume, or delete one scheduled task by id. Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. Deleting does not retract queued messages.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -512,12 +524,24 @@
           },
           "target": {
             "type": "string",
-            "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+            "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
             "enum": [
               "this_session",
               "new_once",
               "new"
             ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model id within that provider; requires provider."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
           },
           "active": {
             "type": "boolean",
@@ -1366,7 +1390,7 @@
       },
       {
         "name": "schedule_create",
-        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
+        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions that a new_once or new target creates. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -1384,12 +1408,24 @@
             },
             "target": {
               "type": "string",
-              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             }
           },
           "required": [
@@ -1402,7 +1438,7 @@
       },
       {
         "name": "schedule_edit",
-        "description": "Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.",
+        "description": "Update, pause, resume, or delete one scheduled task by id. Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. Deleting does not retract queued messages.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -1432,12 +1468,24 @@
             },
             "target": {
               "type": "string",
-              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             },
             "active": {
               "type": "boolean",
@@ -2285,7 +2333,7 @@
       },
       {
         "name": "schedule_create",
-        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
+        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions that a new_once or new target creates. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -2303,12 +2351,24 @@
             },
             "target": {
               "type": "string",
-              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             }
           },
           "required": [
@@ -2321,7 +2381,7 @@
       },
       {
         "name": "schedule_edit",
-        "description": "Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.",
+        "description": "Update, pause, resume, or delete one scheduled task by id. Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. Deleting does not retract queued messages.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -2351,12 +2411,24 @@
             },
             "target": {
               "type": "string",
-              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             },
             "active": {
               "type": "boolean",
@@ -3204,7 +3276,7 @@
       },
       {
         "name": "schedule_create",
-        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
+        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions that a new_once or new target creates. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -3222,12 +3294,24 @@
             },
             "target": {
               "type": "string",
-              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             }
           },
           "required": [
@@ -3240,7 +3324,7 @@
       },
       {
         "name": "schedule_edit",
-        "description": "Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.",
+        "description": "Update, pause, resume, or delete one scheduled task by id. Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. Deleting does not retract queued messages.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -3270,12 +3354,24 @@
             },
             "target": {
               "type": "string",
-              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             },
             "active": {
               "type": "boolean",
@@ -4123,7 +4219,7 @@
       },
       {
         "name": "schedule_create",
-        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
+        "description": "Create a scheduled task. At each occurrence of rrule, prompt is delivered to the target session as a scheduled message from the user. Provider, model, and reasoning_effort select the model of the sessions that a new_once or new target creates. The result includes the task id and the next occurrence as scheduledAt in UTC and scheduledAtLocal in the zone of rrule. After downtime, only the latest missed occurrence is delivered. Delivery can repeat after a crash.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -4141,12 +4237,24 @@
             },
             "target": {
               "type": "string",
-              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
+              "description": "this_session delivers to this session; new_once delivers to the same new session every time, opened at the first delivery; new opens a different new session for every delivery. New sessions use this session's working directory and preset, and any model selected by provider, model, and reasoning_effort. With this_session or new_once, a delivery waits until the previous one finishes, and only the latest occurrence that passed meanwhile is delivered. Use this_session for reminders and for follow-ups to this conversation; use new_once or new for independent work, such as a recurring report, and whenever the user asks for a new conversation.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             }
           },
           "required": [
@@ -4159,7 +4267,7 @@
       },
       {
         "name": "schedule_edit",
-        "description": "Update, pause, resume, or delete one scheduled task by id. Deleting does not retract queued messages.",
+        "description": "Update, pause, resume, or delete one scheduled task by id. Supplying provider, model, and reasoning_effort without target changes the model of the sessions this task creates. Deleting does not retract queued messages.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -4189,12 +4297,24 @@
             },
             "target": {
               "type": "string",
-              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset. Choices are the same as schedule_create.",
+              "description": "Omit to retain the destination and its creation settings. Providing target replaces them; new_once reserves a different Session. New targets capture this Session's working directory and preset, and any model selected by provider, model, and reasoning_effort. Choices are the same as schedule_create.",
               "enum": [
                 "this_session",
                 "new_once",
                 "new"
               ]
+            },
+            "provider": {
+              "type": "string",
+              "description": "Provider id of the model used for each session that a new_once or new target creates; requires model. Omit both to use the default model. An existing session target keeps its own model."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id within that provider; requires provider."
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "description": "Reasoning effort id for the selected model; requires provider and model. Omit to use the model's default."
             },
             "active": {
               "type": "boolean",

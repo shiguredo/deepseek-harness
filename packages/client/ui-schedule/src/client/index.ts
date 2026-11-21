@@ -47,6 +47,7 @@ import { createCatalogSource, type CatalogDeleteOutcome } from './catalog-source
 import { createClearEnded } from './clear-ended.ts'
 import { createDeleteToastSource, ScheduleDeleteToast } from './DeleteToast.tsx'
 import { SCHEDULE_TASK_ID, SCHEDULE_TASK_KIND, scheduleTaskDefinition } from './definition.ts'
+import { createModelCatalogSource } from './model-catalog.ts'
 import { ScheduleCatalogAction } from './ScheduleCatalogAction.tsx'
 import { ScheduleTurnCard, type ScheduleTurnCardInjected } from './ScheduleTurnCard.tsx'
 import { scheduleTurnDefinition } from './schedule-turn.ts'
@@ -77,7 +78,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 /** Required services for catalogs, ambient Session marks, the right Sidebar, Remote queries, linked-Session navigation, and access. */
 export const inject = [
-  'slots', 'locale', 'remote', 'remote.schedule', 'conversation', 'uiConversation', 'uiWorkspace', 'sessions',
+  'slots', 'locale', 'remote', 'remote.schedule', 'remote.session', 'conversation', 'uiConversation', 'uiWorkspace', 'sessions',
   'workspaces', 'sidebarRightTabs', 'sidebarRight', 'remoteAccess',
 ]
 
@@ -89,10 +90,11 @@ async function settle<T>(call: () => Promise<RemoteResult<T>>): Promise<RemoteRe
   }
 }
 
-function inputCorrection(error: RemoteFailure): 'host.notFuture' | 'host.invalidRule' | undefined {
+function inputCorrection(error: RemoteFailure): 'host.notFuture' | 'host.invalidRule' | 'host.modelUnavailable' | undefined {
   if (error.code !== 'schedule/input-invalid') return undefined
   const { code } = error.details
   if (code === 'not_future') return 'host.notFuture'
+  if (code === 'model_unavailable') return 'host.modelUnavailable'
   return code === 'invalid_rule' || code === 'frequency_too_high' || code === 'invalid_time_zone' || code === 'time_out_of_range'
     ? 'host.invalidRule' : undefined
 }
@@ -167,10 +169,27 @@ export function apply(ctx: ClientContext): void {
       removeInactive: () => ctx.remote.schedule.deleteInactive(),
       refresh,
     })
+    // The model catalog is read once and shared by the Tasks page and the task
+    // tab: both render the same creation-target rows from one snapshot.
+    const models = createModelCatalogSource(() => ctx.remote.session.modelCatalog())
+    // A provider, model, settings, or credential change alters the routes those
+    // rows list; a connection reset replaces the whole Host generation.
+    ctx.effect(() => {
+      const offs = [
+        ctx.remote.$on('llm/adapters-updated', () => { models.refresh() }),
+        ctx.remote.$on('llm/models-updated', () => { models.refresh() }),
+        ctx.remote.$on('settings/document-updated', () => { models.refresh() }),
+        ctx.remote.$on('credentials/record-updated', () => { models.refresh() }),
+        ctx.remote.$on('credentials/reference-updated', () => { models.refresh() }),
+      ]
+      const offReset = ctx.on('connection/reset', () => { models.reset() })
+      return () => { for (const off of offs) off(); offReset() }
+    }, 'ui-schedule: model catalog invalidation')
     const detail: TaskDetailInjected & ScheduleTaskCatalogInjected = {
-      hooks: manager.hooks,
+      hooks: { catalog: manager.hooks.catalog, modelCatalog: models.hooks.modelCatalog },
       onDelete: reportedDelete(manager.onDelete),
       onRetry: manager.onRetry,
+      onRetryModelCatalog: models.onRetry,
       loadHistory: request => ctx.remote.schedule.history(request),
       onOpenSession: openSession,
       hostActions: {

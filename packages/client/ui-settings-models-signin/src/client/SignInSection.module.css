@@ -1,0 +1,222 @@
+/* One provider card's account section: status line, actions, and the running attempt panel. */
+
+.rowMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.rowMarkDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--dsw-alias-state-success-primary);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--dsw-alias-border-subtle);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.status {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.link {
+  font-size: 12px;
+  color: var(--dsw-alias-label-link);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .link:hover {
+    text-decoration: underline;
+  }
+}
+
+.confirmed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-interactive-bg-hover);
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.attempt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 0.5px solid var(--dsw-alias-border-subtle);
+  border-radius: var(--dsw-radius-sm);
+}
+
+.attemptStatus {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.attemptNotice,
+.attemptHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.attemptCode {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attemptPrompt {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.pasteField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pasteLabel {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.pasteInput {
+  padding: 6px 8px;
+  border: 0.5px solid var(--dsw-alias-border-subtle);
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-primary);
+  color: var(--dsw-alias-label-primary);
+  font-size: 12px;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-danger);
+}
+
+.planLimit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 0.5px solid var(--dsw-alias-border-subtle);
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-fill-subtle);
+  font-size: 12px;
+}
+
+.planLimitTitle {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.planLimitBody {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.planLimitAction {
+  font-weight: 600;
+  color: var(--dsw-alias-label-link);
+  text-decoration: none;
+}
+
+/* The model menu's cells sit at 34px with an 8px inset and the menu's own
+   hover fill; this one is a caption rather than a choice, so it keeps the inset
+   and the hover fill at a smaller size, on two lines. */
+.menuRow {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: auto;
+  min-width: 100%;
+  padding: 4px 8px;
+  border-radius: var(--dsw-radius-md);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-decoration: none;
+  outline: none;
+}
+
+.menuRow:focus-visible {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+@media (hover: hover) {
+  .menuRow:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}
+
+.menuRowLabel {
+  white-space: nowrap;
+}
+
+.menuRowAction {
+  color: var(--dsw-alias-label-link);
+}

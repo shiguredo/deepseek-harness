@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Models page provider sign-in",
+    "description": "Adds the account section of each provider card on the Models page: it lists the Host authorization flows, starts one, shows the browser step and the paste fallback for a browser on another machine, and signs out."
+  }
+}

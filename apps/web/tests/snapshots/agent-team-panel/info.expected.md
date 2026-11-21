@@ -1,6 +1,7 @@
 ## Root
 
 - menu "Model and reasoning effort":
+  - text: Provider DeepSeek
   - menuitem "Model DeepSeek-V4-Flash"
   - menuitem "Agent teamwork Off"
 

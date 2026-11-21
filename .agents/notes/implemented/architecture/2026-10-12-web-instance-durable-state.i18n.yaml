@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-12-web-instance-durable-state.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-12-web-instance-durable-state.md
+/agent-note-per-instance-durable-state-for-concurrent-web-servers:
+  en: a95a31d83382fb4c
+  zh: eb12f04485ae040e
+/agent-note-per-instance-durable-state-for-concurrent-web-servers/problem:
+  en: a22dc8c1fa162b2f
+  zh: da73fe68cbdba06b
+/agent-note-per-instance-durable-state-for-concurrent-web-servers/decision:
+  en: cad57f1df89dfe76
+  zh: e1211e139f25fd50
+/agent-note-per-instance-durable-state-for-concurrent-web-servers/alternatives-considered:
+  en: 42f5f530eb7fb1c2
+  zh: 57b2e49f096c2ca9
+/agent-note-per-instance-durable-state-for-concurrent-web-servers/consequences:
+  en: 26611756cf0ee15e
+  zh: 630d7f508b0e039c
+/agent-note-per-instance-durable-state-for-concurrent-web-servers/testing:
+  en: 9018b027a1c62bc0
+  zh: 67a868648fb9cc85

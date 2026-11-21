@@ -47,7 +47,10 @@ async function bench(mock = RemoteMock.create().load(remoteDefaultResponses), se
       ...services,
     },
     settings: mock.remote.settings,
-    session: { initializeDefaultModel: vi.fn(async () => ({ ok: true, value: undefined })) },
+    session: {
+      initializeDefaultModel: vi.fn(async () => ({ ok: true, value: undefined })),
+      modelCatalog: async () => ({ ok: true, value: { groups: [] } }),
+    },
   })
   await ctx.plugin({ inject: [...settingsInject], apply: settingsApply }).await()
   return { ctx, slots: ctx.get('slots') as SlotRegistry, locale, remote }

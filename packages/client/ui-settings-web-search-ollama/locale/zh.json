@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "使用 Ollama Cloud 的网页搜索与页面获取",
+    "description": "决定本部署是否通过 Ollama Cloud 进行网页搜索与页面获取，以及搜索使用的结果条数。"
+  }
+}

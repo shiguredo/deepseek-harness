@@ -24,14 +24,14 @@
   en: bf63fe71777703fe
   zh: 3935ef0931f9b50f
 /deepseek-ai-dsh-tool-schedule/use-this-package/the-four-tools:
-  en: 7b192d94290c0e38
-  zh: fdb6963131cb1cab
+  en: e78d03f7d0a7d855
+  zh: bc2ada3f3b42acbd
 /deepseek-ai-dsh-tool-schedule/use-this-package/minimal-configuration:
   en: 4da5d0e7bff6f5b3
   zh: 093699c732eacf72
 /deepseek-ai-dsh-tool-schedule/understand-the-implementation:
-  en: b3bbc30caad60d2a
-  zh: a0c2fa3e8e085759
+  en: 35b52bd67620915b
+  zh: b4bdeb2ad8a4858a
 /deepseek-ai-dsh-tool-schedule/understand-the-implementation/source-map:
   en: 9d899dc328be7e20
   zh: f0c353326e644395
@@ -60,8 +60,8 @@
   en: 3039bc5e7a796b21
   zh: 6b7a9eaf69c9ea53
 /deepseek-ai-dsh-tool-schedule/model-experience/tool-schemas/what-the-model-sees:
-  en: c78c5a1ae65173ea
-  zh: 04533f81725efa04
+  en: a6526552d626063e
+  zh: 8b5f92b13688c8b6
 /deepseek-ai-dsh-tool-schedule/model-experience/tool-schemas/token-effect:
   en: 70fb9094859d0804
   zh: 30726b045484713c
@@ -72,8 +72,8 @@
   en: c47b2272c94ac202
   zh: 6a5bcfde187b3007
 /deepseek-ai-dsh-tool-schedule/model-experience/task-results/what-the-model-sees:
-  en: 18459cc1f3009e83
-  zh: 00a9e870dae49f58
+  en: 969a6edd842d9a81
+  zh: cb1b1e9d46fa320d
 /deepseek-ai-dsh-tool-schedule/model-experience/task-results/token-effect:
   en: 681160f74fec9bec
   zh: c4cec94e94c56aa8
@@ -81,8 +81,8 @@
   en: 2fbf2175168e8244
   zh: 9c4c1964ae59e661
 /deepseek-ai-dsh-tool-schedule/known-limitations-and-deferred-work:
-  en: a160cb125b7c20a1
-  zh: 708113b410d87d46
+  en: 81d8a389ec0f7dd2
+  zh: e83110eedab87fb0
 /deepseek-ai-dsh-tool-schedule/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: b2ee0fbaa165910d

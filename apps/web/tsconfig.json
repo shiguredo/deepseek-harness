@@ -143,6 +143,7 @@
     "tests/desktop-channel.e2e.ts",
     "tests/developer-tools-settings.e2e.ts",
     "tests/models-settings.e2e.ts",
+    "tests/models-signin.e2e.ts",
     "tests/model-row-drop.e2e.ts",
     "tests/deepseek-messages-settings.e2e.ts",
     "tests/model-badge.e2e.ts",

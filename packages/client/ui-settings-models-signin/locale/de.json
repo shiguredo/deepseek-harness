@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Anbieter-Anmeldung auf der Modelle-Seite",
+    "description": "Fügt jeder Anbieterkarte auf der Modelle-Seite einen Kontobereich hinzu: listet die Autorisierungsabläufe des Hosts, startet einen, zeigt den Browserschritt und das Einfügen der URL bei einem Browser auf einem anderen Rechner und meldet ab."
+  }
+}
