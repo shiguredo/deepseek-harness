@@ -11,6 +11,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { ScheduleId, ScheduleCatalogEntry, ScheduleCreateRequest } from '@deepseek-ai/dsh-schedule/client'
 import type { TaskCreateOutcome } from './TaskDetail.tsx'
 import type { TaskEditorStoreProps } from './editor-store.ts'
+import type { ModelCatalogInjected } from './model-catalog.ts'
 import { taskNextRunAt, taskSessionId } from './task-record.ts'
 import { TextSearchIndex } from '@deepseek-ai/dsh-util-text-search'
 import type { CatalogSnapshot } from './catalog-source.ts'
@@ -25,8 +26,8 @@ import css from './TaskManagerPage.module.css'
 
 /** Injected catalog and task actions for the management page. */
 export interface TaskManagerInjected extends TaskDetailInjected {
-  /** Host task catalog with its query and deletion state. */
-  readonly hooks: { readonly catalog: HostObservable<CatalogSnapshot<ScheduleCatalogEntry>> }
+  /** Host task catalog with its query and deletion state, plus the shared model catalog. */
+  readonly hooks: { readonly catalog: HostObservable<CatalogSnapshot<ScheduleCatalogEntry>> } & ModelCatalogInjected['hooks']
   /**
    * Start a new Session, where a reminder is created by asking the model to
    * schedule it, using the existing new-conversation action.
@@ -66,10 +67,11 @@ type StatusFilter = 'all' | ScheduleCatalogEntry['status']
  * @returns the searchable task list beside the selected task's detail.
  */
 export function TaskManagerPage(props: TaskManagerPageProps) {
-  const { useCatalog, onNewTask, onUseRecommendation, onClearEnded, onRetry, onCreateTask, t } = props
+  const { useCatalog, useModelCatalog, onNewTask, onUseRecommendation, onClearEnded, onRetry, onCreateTask, t } = props
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
   const catalog = useCatalog(snapshot => snapshot)
+  const modelCatalog = useModelCatalog(snapshot => snapshot)
   const { records, status } = catalog
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
@@ -81,7 +83,7 @@ export function TaskManagerPage(props: TaskManagerPageProps) {
   // rather than a value sampled at mount: a catalog refresh can move the target
   // this text describes.
   const now = useRelativeClock()
-  const detail = useTaskDetail(props, catalog, selectedId ?? undefined)
+  const detail = useTaskDetail(props, catalog, selectedId ?? undefined, modelCatalog)
   const { record: catalogRecord, task: selected,
     props: { id: detailId, confirmId, onConfirm: setConfirmId, onTabChange: setTab } } = detail
   const rowRef = useRef<HTMLButtonElement | null>(null)

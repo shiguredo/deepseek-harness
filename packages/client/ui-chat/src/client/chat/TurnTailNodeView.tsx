@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ChatNodeViewProps, PerformanceUsageInjected, TurnTailOwnerProps } from '../contract/slots.ts'
+import { MessageClock } from './MessageClock.tsx'
 import { MessageIconActions } from './MessageIconActions.tsx'
 import { TurnUsagePanel } from './TurnUsagePanel.tsx'
 import { assistantText } from './turn-assistant.ts'
@@ -26,7 +27,7 @@ function lastContent(snapshot: ChatSnapshot, turn: number, skipWarning: boolean)
 
 /** Turn-local actions and feature tail over the Location index, independent of Assistant placement. */
 export const TurnTailNodeView = memo(function TurnTailNodeView({
-  node, openFile, forkAt, renderSlot, t, useAccess, useChat, usePerformanceUsage,
+  node, clockTimeZone, openFile, forkAt, renderSlot, t, useAccess, useChat, usePerformanceUsage,
 }: TurnTailNodeViewProps) {
   const detailed = usePerformanceUsage(mode => mode) === 'detailed'
   const forkAllowed = useAccess('session/fork')
@@ -61,10 +62,10 @@ export const TurnTailNodeView = memo(function TurnTailNodeView({
       data-actions-reveal={endsWithResponse ? 'always' : 'hover'}
     >
       {tail}
+      <MessageClock time={closing.time} zone={clockTimeZone} className={css.clock} t={t} />
       <MessageIconActions
         text={assistantText(closing.blocks)}
-        time={closing.time}
-        clock="end"
+        variant="assistant"
         // The branch action owns boundary resolution: it sends the real
         // turn/end seq it already has, and the Host cuts exactly there.
         onBranch={forkAllowed ? () => { forkAt(data.seq) } : undefined}

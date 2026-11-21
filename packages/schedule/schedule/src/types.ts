@@ -273,6 +273,12 @@ export interface FrequencyTooHighError {
   readonly message: string
 }
 
+/** Stable error returned when the Host cannot use a creation model selection. */
+export interface ModelUnavailableError {
+  readonly code: 'model_unavailable'
+  readonly message: string
+}
+
 /** Stable error returned when the target Session belongs to subagent routing, which never receives reminder delivery. */
 export interface SubagentSessionError {
   readonly code: 'subagent_session'
@@ -294,6 +300,7 @@ export type ScheduleToolError =
   | NotFutureError
   | TimeOutOfRangeError
   | FrequencyTooHighError
+  | ModelUnavailableError
   | SubagentSessionError
   | InternalScheduleError
 
@@ -341,12 +348,27 @@ export type ScheduleTiming =
   | { readonly kind: 'cron'; readonly cron: CronInput }
   | { readonly kind: 'rrule'; readonly rrule: string }
 
+/** Model route a target installs on each Session it creates. */
+export interface ScheduleModelSelection {
+  /** Registered provider route; validated against the Host LLM registry when the task is accepted. */
+  readonly provider: string
+  /** Provider-owned model id; validated against the Host LLM registry when the task is accepted. */
+  readonly model: string
+  /** Adapter-owned reasoning effort; omission follows the model's adapter default. */
+  readonly reasoningEffort?: string
+}
+
 /** Values used when a target creates a Session. */
 export interface ScheduleSessionCreateSpec {
   /** Project directory of the created Session, which joins the Workspace registered there; omission uses the Host project directory. */
   readonly cwd?: string
   /** Agent preset of the created Session; omission uses the default preset. */
   readonly agentPreset?: string
+  /**
+   * Model route of the created Session. The Host records it on each Session this target creates before the
+   * delivered instruction; omission follows the Host default model.
+   */
+  readonly model?: ScheduleModelSelection
 }
 
 /** Stored delivery destination; it is independent of the Session that manages the task. */

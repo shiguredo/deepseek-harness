@@ -216,6 +216,14 @@ Each switch belongs to the protocols that declare it, so a switch valid on one `
 
 Every switch, its accepted values, and the protocols that take it are listed under `PiAiCompatProfile` in the [generated `dsh-llm-pi-ai` configuration reference](../../config-catalog.md#deepseek-aidsh-llm-pi-ai) — which is derived from the source, so it cannot fall behind what the adapter accepts.
 
+### Peak-hour routing
+
+Some providers bill a model at a higher rate during published peak hours. Ollama Cloud charges twice its off-peak rate for `deepseek-v4.1-flash:1017` and `deepseek-v4-pro:0813` from 12:00 to 18:00 UTC on weekdays. For those models **Settings → Models** offers **Peak routing** under **Customized settings**: choose a destination provider and model, and requests use the destination during that window and the routed model the rest of the time.
+
+The window is the provider's price policy rather than a setting. It ships with the model's catalog entry, so the page states the hours instead of offering time fields, and a period written into `cordis.patch.yml` is ignored in favor of it. Weekends are off-peak all day in UTC, so the window never covers one.
+
+The destination comes from the installed catalog, so it authenticates with its own credential: a destination that is also a configured provider keeps that provider's credential, and one only the catalog describes resolves its own API key from the environment. Requests inside the window go to the destination with no fallback, so a missing destination credential fails those requests rather than reverting to the routed provider.
+
 ## Troubleshooting
 
 - **`MISSING_CREDENTIAL`** — Store the provider key through the Models page or supply the referenced environment variable.

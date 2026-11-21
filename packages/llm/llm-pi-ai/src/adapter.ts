@@ -46,7 +46,9 @@ import {
 import type {
   GenerateOptions,
   ImageAttachmentAccess,
+  LlmAlternateRoute,
   LlmModelInfo,
+  LlmModelRouting,
   LlmProviderInfo,
   LlmResolvedModelInfo,
   PreparedAdapterCall,
@@ -58,10 +60,17 @@ import type {
 import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
+import type { OAuthRefreshOutcome } from './auth.ts'
+import { catalogModels, catalogProvider } from './catalog.ts'
+import { catalogAlternateProfile } from './config.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { requestImageTarget, toPiContext } from './context.ts'
 import { resolveImageRequestBudget } from './image-policy.ts'
 import { conversationUpdates, createModels, getSupportedThinkingLevels } from './models.ts'
+import { selectPeakWindow } from './peak.ts'
+import { buildProvider } from './provider.ts'
 import { toStreamChunks } from './stream.ts'
 import { bindThinkingToPrefix } from './prefix-binding.ts'
 import type { PrefixDigests } from './prefix-binding.ts'
@@ -77,12 +86,49 @@ const ANTHROPIC_TOOL_UPDATE_PLACEHOLDER: ToolSchema = {
   parameters: { type: 'object', properties: {} },
 }
 
+/**
+ * Provider text for a stored sign-in the issuer revoked before the expiry
+ * pi-ai recorded. pi-ai refreshes only near that expiry, so such a request
+ * needs a forced exchange before it can succeed.
+ */
+const INVALIDATED_OAUTH_TOKEN = /invalidated oauth token/i
+
+/**
+ * Failure text for a rejected sign-in whose forced refresh also failed: the
+ * human has to authorize the route again, and no retry can help.
+ * @param provider - route whose stored sign-in was rejected.
+ * @returns the actionable message carried by the terminal failure.
+ */
+function signInAgainMessage(provider: string): string {
+  return `llm-pi-ai: the provider rejected the stored sign-in for route "${provider}" and it could not be refreshed;`
+    + ' sign in again from the Models page and retry'
+}
+
 /** One resolution's frozen view: the profiles and the collection built from them. */
 interface PiAiSnapshot {
   /** The resolved profiles this collection was built from, used as its identity. */
   profiles: ReadonlyMap<string, ResolvedPiAiProviderProfile>
-  /** Providers for exactly those profiles; never mutated once published. */
+  /** Providers for every configured profile, plus every catalog provider a peak window names. */
   models: Models
+  /** Execution profiles for peak candidates resolved from the installed catalog, by provider id. */
+  alternates: ReadonlyMap<string, ResolvedPiAiProviderProfile>
+}
+
+/** One request's effective route after peak substitution. */
+interface EffectiveRoute {
+  /** Provider id whose provider entry serves the request. */
+  provider: string
+  /** The model descriptor to dispatch. */
+  model: Model<Api>
+  /** The profile supplying stream knobs and the reasoning default. */
+  profile: ResolvedPiAiProviderProfile
+  /**
+   * Credential reference the request resolves: the window candidate's own when
+   * it names one, else the credential of the configured route that candidate
+   * names. Absent only when neither exists, which leaves pi-ai's
+   * provider-native ambient discovery in charge.
+   */
+  apiKeyEnv?: CredentialRef
 }
 
 /** Constructor options for {@link PiAiAdapter}: the two resolution hooks the plugin owns. */
@@ -98,7 +144,9 @@ export interface PiAiAdapterOptions {
    * credential at all, because a named reference that misses throws `LlmError`
    * `MISSING_CREDENTIAL` rather than falling back.
    */
-  resolveApiKey: (provider: string, profile: ResolvedPiAiProviderProfile) => Promise<string | undefined>
+  resolveApiKey: (provider: string, apiKeyEnv: CredentialRef | undefined) => Promise<string | undefined>
+  /** Clock the peak windows read; defaults to `Date.now`. */
+  now?: () => number
   /**
    * How every collection this adapter builds resolves auth the request-level
    * `apiKey` override does not cover. Required rather than optional: a
@@ -108,6 +156,14 @@ export interface PiAiAdapterOptions {
    * every request no matter how often the human signed in.
    */
   auth: PiAiAuthInjection
+  /**
+   * Exchange the refresh token of a sign-in the provider rejected, so the
+   * adapter can retry the request on the fresh grant. Called at most once per
+   * stream, only when the route resolved no `apiKeyEnv` credential.
+   * @param provider - route the call named.
+   * @returns whether a fresh grant is stored, the exchange failed, or this route has no OAuth sign-in.
+   */
+  refreshOAuth?: (provider: string) => Promise<OAuthRefreshOutcome>
   /**
    * Synchronously prepare this call's headers before SDK dispatch. The input
    * contains a fresh copy of profile headers; attribution is enforced afterward.
@@ -136,6 +192,28 @@ export interface PiAiAdapterOptions {
    * conversation report them again.
    */
   onThinkingOmitted?: (detail: { provider: string; model: string; count: number }) => void
+}
+
+/** The routing declaration one profile's peak windows expose to selectors. */
+function routingOf(profile: ResolvedPiAiProviderProfile, model: string): LlmModelRouting | undefined {
+  const windows = profile.peak.get(model)
+  if (windows === undefined) return undefined
+  return {
+    windows: windows.map((window) => {
+      // Configuration refused an empty window, and the first candidate serves
+      // every request; that is the provider a selector names for the window.
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- validation guarantees a first candidate
+      const { provider, model: alternate } = window.providers[0]!
+      return {
+        from: window.from,
+        to: window.to,
+        provider,
+        ...alternate === undefined || alternate.length === 0 ? {} : { model: alternate },
+        ...window.timeZone === undefined ? {} : { timeZone: window.timeZone },
+        ...window.days === undefined || window.days.length === 0 ? {} : { days: window.days },
+      }
+    }),
+  }
 }
 
 /** The two auth injectables a pi-ai collection is built with. */
@@ -307,8 +385,37 @@ export class PiAiAdapter extends LlmAdapter {
     for (const profile of profiles.values()) {
       if (profile.piProvider !== undefined) models.setProvider(profile.piProvider)
     }
-    this.snapshot = { profiles, models }
+    const alternates = new Map<string, ResolvedPiAiProviderProfile>()
+    for (const profile of profiles.values()) {
+      for (const windows of profile.peak.values()) {
+        for (const window of windows) {
+          for (const candidate of window.providers) {
+            // Only a destination the installed catalog describes executes
+            // inside this adapter. Any other one is a route the deployment
+            // registered, and the LLM service dispatches it there; building a
+            // catalog provider for it would claim a route this adapter cannot
+            // describe.
+            if (catalogProvider(candidate.provider) === undefined) continue
+            if (profiles.has(candidate.provider) || alternates.has(candidate.provider)) continue
+            const built = buildProvider({
+              provider: candidate.provider,
+              displayName: candidate.provider,
+              models: [...catalogModels(candidate.provider).values()],
+              namesCredential: candidate.apiKeyEnv !== undefined,
+            })
+            models.setProvider(built)
+            alternates.set(candidate.provider, catalogAlternateProfile(candidate.provider, built))
+          }
+        }
+      }
+    }
+    this.snapshot = { profiles, models, alternates }
     return this.snapshot
+  }
+
+  /** The clock the peak windows read. */
+  private now(): number {
+    return this.config.now?.() ?? Date.now()
   }
 
   /** The profile for one route within one snapshot, or the not-owned failure. */
@@ -333,6 +440,58 @@ export class PiAiAdapter extends LlmAdapter {
     return resolved
   }
 
+  /**
+   * The route one request actually uses: the configured route, or the first
+   * candidate of the first peak window containing `now` that serves the model.
+   * A destination this adapter cannot describe runs on a route the deployment
+   * registered, which `alternateRoute()` hands to the LLM service before this
+   * snapshot is chosen; a direct adapter caller keeps the requested route
+   * rather than dispatch a provider this snapshot never built.
+   * @param snapshot - the frozen resolution.
+   * @param provider - the configured route the request named.
+   * @param model - the model id.
+   * @param now - epoch milliseconds of the request.
+   * @returns the provider, model descriptor, profile, and credential reference to execute.
+   */
+  private routeFor(snapshot: PiAiSnapshot, provider: string, model: string, now: number): EffectiveRoute {
+    const primary = this.profileOf(snapshot, provider)
+    const windows = primary.peak.get(model)
+    const window = windows === undefined ? undefined : selectPeakWindow(windows, now)
+    const candidate = window?.providers[0]
+    if (candidate !== undefined && catalogProvider(candidate.provider) !== undefined) {
+      // A candidate may name another model of its provider; omission keeps the
+      // routed model's own id.
+      const served = candidate.model === undefined || candidate.model.length === 0 ? model : candidate.model
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- validation and registration guarantee both
+      const descriptor = snapshot.models.getModel(candidate.provider, served)!
+      const configured = snapshot.profiles.get(candidate.provider)
+      const profile = configured
+        // oxlint-disable-next-line typescript/no-non-null-assertion -- an unconfigured candidate has a synthetic profile
+        ?? snapshot.alternates.get(candidate.provider)!
+      // The window switches the endpoint, not how the route it names
+      // authenticates: that route's own reference applies unless the window
+      // names one, which is what keeps a candidate that is a configured route
+      // usable without repeating its credential in every window. An
+      // installed-catalog alternate has no route profile, so omission there
+      // keeps pi-ai's provider-native ambient discovery.
+      const apiKeyEnv = candidate.apiKeyEnv === undefined
+        ? configured?.apiKeyEnv
+        : credentialRef(candidate.apiKeyEnv)
+      return {
+        provider: candidate.provider,
+        model: descriptor,
+        profile,
+        ...apiKeyEnv === undefined ? {} : { apiKeyEnv },
+      }
+    }
+    return {
+      provider,
+      model: this.modelOf(snapshot, provider, model),
+      profile: primary,
+      ...primary.apiKeyEnv === undefined ? {} : { apiKeyEnv: primary.apiKeyEnv },
+    }
+  }
+
   override providerInfo(provider: string): LlmProviderInfo {
     // The configured name, not the route key: `displayName` exists so a
     // deployment can label a route, and a label only the configuration surface
@@ -348,18 +507,22 @@ export class PiAiAdapter extends LlmAdapter {
     return Promise.resolve().then(async () => {
       const snapshot = this.current()
       const profile = this.profileOf(snapshot, provider)
-      try { await this.config.resolveApiKey(provider, profile) }
+      try { await this.config.resolveApiKey(provider, profile.apiKeyEnv) }
       catch (error) {
         // A route whose named key does not resolve cannot serve a request, so it offers no models until the key is stored.
         if (error instanceof LlmError && error.code === 'MISSING_CREDENTIAL') return []
         throw error
       }
-      return snapshot.models.getModels(provider).map(model => ({
-        provider,
-        id: model.id,
-        name: model.name,
-        inputModalities: [...model.input],
-      }))
+      return snapshot.models.getModels(provider).map((model) => {
+        const routing = routingOf(profile, model.id)
+        return {
+          provider,
+          id: model.id,
+          name: model.name,
+          inputModalities: [...model.input],
+          ...routing === undefined ? {} : { routing },
+        }
+      })
     })
   }
 
@@ -374,40 +537,97 @@ export class PiAiAdapter extends LlmAdapter {
     })
   }
 
-  private modelInfo(snapshot: PiAiSnapshot, provider: string, model: string): LlmResolvedModelInfo {
-    const profile = this.profileOf(snapshot, provider)
-    const resolvedModel = this.modelOf(snapshot, provider, model)
-    const defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning)
-    // Only a cap the deployment configured is a request default; the
-    // catalog's `maxTokens` sizes the model and stops there.
-    const configuredMaxTokens = profile.configuredMaxTokens.get(model)
+  /**
+   * Describe one execution route. The reported provider is always the route the
+   * request named, so the session log keeps its stable identity; capacities and
+   * reasoning levels come from the descriptor actually dispatched.
+   */
+  private describe(
+    provider: string,
+    model: string,
+    descriptor: Model<Api>,
+    profile: ResolvedPiAiProviderProfile,
+    configuredMaxTokens: number | undefined,
+    routing: LlmModelRouting | undefined,
+  ): LlmResolvedModelInfo {
+    const defaultLevel = describableReasoningLevel(descriptor, profile.reasoning)
     return {
       provider,
       id: model,
-      name: resolvedModel.name,
-      inputModalities: [...resolvedModel.input],
-      context: { contextWindow: resolvedModel.contextWindow },
+      name: descriptor.name,
+      inputModalities: [...descriptor.input],
+      ...routing === undefined ? {} : { routing },
+      context: { contextWindow: descriptor.contextWindow },
       ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
-      ...reasoningInfo(resolvedModel, defaultLevel),
-      ...conversationUpdates(resolvedModel),
+      ...reasoningInfo(descriptor, defaultLevel),
+      ...conversationUpdates(descriptor),
+    }
+  }
+
+  private modelInfo(snapshot: PiAiSnapshot, provider: string, model: string): LlmResolvedModelInfo {
+    const profile = this.profileOf(snapshot, provider)
+    // Only a cap the deployment configured is a request default; the
+    // catalog's `maxTokens` sizes the model and stops there.
+    return this.describe(
+      provider,
+      model,
+      this.modelOf(snapshot, provider, model),
+      profile,
+      profile.configuredMaxTokens.get(model),
+      routingOf(profile, model),
+    )
+  }
+
+  /**
+   * The route a peak window sends one request to when this adapter cannot
+   * execute the destination itself. A destination the installed catalog
+   * describes stays local: the snapshot materializes it without a configured
+   * route. Any other destination is a route the deployment registered, which
+   * the LLM service executes while this route keeps the call's identity.
+   * @param provider - provider route the caller named.
+   * @param model - exact model id the caller named.
+   * @returns the registered route to execute, or `undefined` to execute locally.
+   */
+  override alternateRoute(provider: string, model: string): LlmAlternateRoute | undefined {
+    const windows = this.current().profiles.get(provider)?.peak.get(model)
+    if (windows === undefined) return undefined
+    const window = selectPeakWindow(windows, this.now())
+    if (window === undefined) return undefined
+    // oxlint-disable-next-line typescript/no-non-null-assertion -- validation refuses an empty window
+    const candidate = window.providers[0]!
+    if (catalogProvider(candidate.provider) !== undefined) return undefined
+    return {
+      provider: candidate.provider,
+      model: candidate.model === undefined || candidate.model.length === 0 ? model : candidate.model,
     }
   }
 
   override prepareCall(provider: string, model: string, _signal?: AbortSignal): Promise<PreparedAdapterCall> {
     const snapshot = this.current()
+    const effective = this.routeFor(snapshot, provider, model, this.now())
+    const primary = this.profileOf(snapshot, provider)
     return Promise.resolve({
-      model: this.modelInfo(snapshot, provider, model),
-      stream: options => this.streamWithSnapshot(options, snapshot),
+      model: this.describe(
+        provider,
+        model,
+        effective.model,
+        effective.profile,
+        primary.configuredMaxTokens.get(model),
+        routingOf(primary, model),
+      ),
+      stream: options => this.streamWithSnapshot(options, snapshot, effective),
     })
   }
 
   stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    return this.streamWithSnapshot(options, this.current())
+    const snapshot = this.current()
+    return this.streamWithSnapshot(options, snapshot, this.routeFor(snapshot, options.provider, options.model, this.now()))
   }
 
   private async * streamWithSnapshot(
     options: GenerateOptions,
     snapshot: PiAiSnapshot,
+    effective: EffectiveRoute,
   ): AsyncIterable<StreamChunk> {
     if (options.stop !== undefined) {
       throw new LlmError('llm-pi-ai does not support GenerateOptions.stop', 'UNSUPPORTED_OPTION')
@@ -417,8 +637,8 @@ export class PiAiAdapter extends LlmAdapter {
     // snapshot, and the credential freezes with them. A configuration change
     // mid-request builds a separate snapshot, so this request finishes under
     // the one it started with and the next call picks up the new one.
-    const profile = this.profileOf(snapshot, options.provider)
-    const model = this.modelOf(snapshot, options.provider, options.model)
+    const profile = effective.profile
+    const model = effective.model
     const updates = conversationUpdates(model)
     // pi-ai collapses Anthropic tool updates without an initially active declaration.
     const tools = options.tools ?? []
@@ -433,7 +653,7 @@ export class PiAiAdapter extends LlmAdapter {
       model,
       options.reasoningEffort ?? profile.reasoning,
     )
-    const apiKey = await this.config.resolveApiKey(options.provider, profile)
+    const apiKey = await this.config.resolveApiKey(effective.provider, effective.apiKeyEnv)
 
     const consumer = new AbortController()
     const upstream = options.signal === undefined
@@ -470,32 +690,81 @@ export class PiAiAdapter extends LlmAdapter {
       const { context, digest } = bindThinkingToPrefix(converted, model.api, prefixDigests, manualThinking, (count) => {
         this.config.onThinkingOmitted?.({ provider: options.provider, model: options.model, count })
       })
-      const events = snapshot.models.streamSimple(model, context, {
+      const streamOptions: SimpleStreamOptions = {
         ...profileOptions(profile, reasoning, apiKey),
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
         ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
         ...options.sessionId === undefined ? {} : { sessionId: String(options.sessionId) },
         signal: watchdog.signal,
         headers: requestHeaders(profile.headers, options, model.baseUrl, this.config.prepareHeaders),
-      })
-      const iterator = toStreamChunks(events, model.contextWindow, options.signal, model.id, digest)[Symbol.asyncIterator]()
-      let exhausted = false
-      try {
-        while (true) {
-          const result = await watchdog.next(iterator)
-          if (result.done) {
-            exhausted = true
-            return
+      }
+      // Chunks before the first content stay buffered so a sign-in the provider
+      // rejected can be exchanged and the request retried without replaying
+      // output the caller already saw.
+      let buffered: StreamChunk[] = []
+      let streaming = false
+      let retried = false
+      for (;;) {
+        const events = snapshot.models.streamSimple(model, context, streamOptions)
+        const iterator = toStreamChunks(events, model.contextWindow, options.signal, model.id, digest)[Symbol.asyncIterator]()
+        let exhausted = false
+        let retry = false
+        try {
+          while (true) {
+            const result = await watchdog.next(iterator)
+            if (result.done) {
+              exhausted = true
+              return
+            }
+            const chunk = result.value
+            if (streaming) {
+              yield chunk
+              continue
+            }
+            if (chunk.type === 'finish') {
+              let final: StreamChunk = chunk
+              const failure = chunk.reason.kind === 'error' ? chunk.reason.failure : undefined
+              if (!retried && failure !== undefined && effective.apiKeyEnv === undefined
+                && INVALIDATED_OAUTH_TOKEN.test(failure.message)) {
+                retried = true
+                const outcome: OAuthRefreshOutcome = this.config.refreshOAuth === undefined
+                  ? 'unsupported'
+                  : await this.config.refreshOAuth(effective.provider)
+                if (outcome === 'refreshed') {
+                  buffered = []
+                  retry = true
+                  break
+                }
+                if (outcome === 'failed') {
+                  final = {
+                    type: 'finish',
+                    reason: {
+                      kind: 'error',
+                      failure: { ...failure, code: 'PI_AI_ERROR', message: signInAgainMessage(effective.provider) },
+                    },
+                  }
+                }
+              }
+              for (const held of buffered) yield held
+              buffered = []
+              yield final
+              continue
+            }
+            buffered.push(chunk)
+            if (chunk.type !== 'usage') {
+              streaming = true
+              for (const held of buffered) yield held
+              buffered = []
+            }
           }
-          yield result.value
-        }
-      } finally {
-        if (!exhausted) {
-          consumer.abort('pi-ai stream consumer stopped')
-          // A demand the deadline abandoned can stay pending forever, and this
-          // generator queues its return behind it; the abort above owns SDK termination.
-          /* v8 ignore next -- the detached drain only rejects while unwinding an abandoned stream. */
-          void iterator.return(undefined).catch(() => {})
+        } finally {
+          if (!exhausted && !retry) {
+            consumer.abort('pi-ai stream consumer stopped')
+            // A demand the deadline abandoned can stay pending forever, and this
+            // generator queues its return behind it; the abort above owns SDK termination.
+            /* v8 ignore next -- the detached drain only rejects while unwinding an abandoned stream. */
+            void iterator.return(undefined).catch(() => {})
+          }
         }
       }
     } catch (error: unknown) {

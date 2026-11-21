@@ -7,7 +7,7 @@
     - tab "Chat" [selected]
     - tab "Trajectory"
   - button "More conversation views"
-- text: Use the web_fetch tool exactly once to fetch http://public.test:43117/menu.html, then reply with exactly DONE. Do not describe the content. 7/26 {{clock}}
+- text: Use the web_fetch tool exactly once to fetch http://public.test:43117/menu.html, then reply with exactly DONE. Do not describe the content. {{clock}}
 - button "Copy"
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
@@ -20,14 +20,15 @@
 - button "Inspect"
 - button "Think The user asked me to fetch the URL, then reply with exactly \"DONE\". I've fetched it. Now I just reply with \"DONE\"."
 - paragraph: DONE
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: 7/26 {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Push guard ON" [pressed]
 - button "Select model"
 - button "Send message" [disabled]
 - button "1 turns 2 steps · {{throughput}} tok/s": 1 turns 2 steps{{throughput}} tok/s

@@ -29,7 +29,7 @@ import type { LlmNativeAuth, SettingsNamespaceView } from '@deepseek-ai/dsh-api-
 // Type-only: pulls this package's SlotMap merge (the two Models child slots).
 import type {} from './slot-contract.ts'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
-import { deriveKeyRef, protocolChoices, providerUsable, reasoningLevelChoices } from './store.ts'
+import { deriveKeyRef, protocolChoices, providerUsable, reasoningLevelChoices, routingProviderOptions } from './store.ts'
 import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import type { ModelsOperations } from './operations.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
@@ -60,7 +60,7 @@ export interface ModelsSectionInjected {
 type AddMode = 'catalog' | 'custom'
 
 /** The child slots this section declares and dispatches (see ./slot-contract.ts). */
-type ModelsChildSlots = 'settings.models.provider-card' | 'settings.models.footer'
+type ModelsChildSlots = 'settings.models.provider-card' | 'settings.models.provider-mark' | 'settings.models.footer'
 
 /** The child-slot dispatch function the renderer binds for the section. */
 type ModelsRenderSlot = PropsRenderSlots<ModelsChildSlots>['renderSlot']
@@ -115,7 +115,7 @@ interface CatalogDraft {
 /** Values that vary around the shared provider-editor rendering. */
 interface ProviderEditorRenderProps extends Pick<
   ProviderEditorProps,
-  'namespace' | 'schema' | 'operations' | 't' | 'readOnly' | 'onClose'
+  'namespace' | 'schema' | 'operations' | 't' | 'readOnly' | 'onClose' | 'routingProviders'
 > {
   target: EditorTarget
   row: ProviderRow
@@ -249,6 +249,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   const snapshot = injected.useSnapshot(value => value)
   const state = { ...snapshot, rows: snapshot.rows.map(row => row.entry.provider === 'deepseek-account'
     ? { ...row, entry: { ...row.entry, displayName: t('deepSeekAccount') } } : row) }
+  // A destination must be a provider this deployment configured and one whose
+  // catalog serves the exact model; the row filters the second condition when
+  // it renders, since only it knows which model it edits.
+  const routingProviders = routingProviderOptions(state.rows, state.catalogGroups)
   /** A new or failed surface waits for a current snapshot; background refreshes preserve its drafts. */
   const [hasReadySnapshot, setHasReadySnapshot] = useState(state.status === 'ready')
   if (state.status === 'ready' && !hasReadySnapshot) setHasReadySnapshot(true)
@@ -447,11 +451,12 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   operations,
                   t,
                   readOnly: !state.writable,
+                  routingProviders,
                   onClose: (changed) => { closeSetup(changed, target) },
                 })}
                 {renderSlot(
                   'settings.models.provider-card',
-                  { provider: row.entry, configured: row.configured, keyConfigured: keyConfiguredOf(row) },
+                  { provider: row.entry, configured: row.configured, keyConfigured: keyConfiguredOf(row), editing: true },
                   { entryKey: row.entry.settingsNs },
                 )}
               </li>
@@ -473,6 +478,13 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   {row.entry.declared === true
                     ? <span className={styles['rowTag']}>{t('customTag')}</span>
                     : null}
+                  {/* The row's own marks sit where the credential dot does: on
+                      the name line, before the page's api-key answer. */}
+                  {renderSlot(
+                    'settings.models.provider-mark',
+                    { provider: row.entry },
+                    { entryKey: row.entry.settingsNs },
+                  )}
                   {/* The store keeps the account row only while the account lists models. */}
                   {row.entry.provider === 'deepseek-account'
                     ? (
@@ -548,7 +560,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
               {error}
               {renderSlot(
                 'settings.models.provider-card',
-                { provider: row.entry, configured: row.configured, keyConfigured: keyConfiguredOf(row) },
+                { provider: row.entry, configured: row.configured, keyConfigured: keyConfiguredOf(row), editing: open },
                 { entryKey: row.entry.settingsNs },
               )}
               {open
@@ -560,6 +572,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   operations,
                   t,
                   readOnly: !state.writable,
+                  routingProviders,
                   onClose: (changed) => { closeEditor(changed, target) },
                 })
                 : null}
@@ -659,7 +672,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       ? null
                       : renderSlot(
                         'settings.models.provider-card',
-                        { provider: addRow.entry, configured: addRow.configured, keyConfigured: keyConfiguredOf(addRow) },
+                        { provider: addRow.entry, configured: addRow.configured, keyConfigured: keyConfiguredOf(addRow), editing: true },
                         { entryKey: addRow.entry.settingsNs },
                       )}
                   </div>

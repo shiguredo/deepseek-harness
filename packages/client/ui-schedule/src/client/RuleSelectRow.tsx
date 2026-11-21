@@ -11,11 +11,15 @@ import { zoneChoices, zoneName } from './schedule-format.ts'
 import { loadRecentTimeZones, rememberTimeZone } from './recent-time-zones.ts'
 import css from './TaskManagerPage.module.css'
 
-/** A labelled menu row using the current task detail's trigger, portal, and keyboard behavior. */
-export function RuleSelectRow({ label, value, current, items, disabled, onChange, onDismiss, header, listClassName }: {
+/**
+ * A labelled menu row using the current task detail's trigger, portal, and keyboard behavior.
+ * `currentLead` renders a caption-toned prefix before the value; a long value truncates the prefix first.
+ */
+export function RuleSelectRow({ label, value, current, currentLead, items, disabled, onChange, onDismiss, header, listClassName }: {
   readonly label: string
   readonly value: string
   readonly current: string
+  readonly currentLead?: string | undefined
   readonly items: readonly TaskMenuEntry[]
   readonly disabled: boolean
   readonly onChange: (value: string) => void
@@ -31,7 +35,9 @@ export function RuleSelectRow({ label, value, current, items, disabled, onChange
     anchor={<button type="button" className={css.ruleValue} disabled={disabled}
       aria-haspopup="menu" aria-expanded={open && !disabled} onClick={() => { if (open) close(); else setOpen(true) }}>
       <span className={css.ruleLabel}>{label}</span>{' '}
-      <span className={clsx(css.ruleValueFace, css.ruleControl)}><span className={css.ruleCurrent}>{current}</span>
+      <span className={clsx(css.ruleValueFace, css.ruleControl)}>
+        {currentLead !== undefined && <span className={css.ruleCurrentLead}>{`${currentLead} · `}</span>}
+        <span className={css.ruleCurrent}>{current}</span>
         <IconChevronDownOutlineRegular /></span>
     </button>} />
 }

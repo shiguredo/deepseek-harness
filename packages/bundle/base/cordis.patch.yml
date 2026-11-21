@@ -138,6 +138,13 @@
     # document.
     - id: llm-pi-ai
       name: '@deepseek-ai/dsh-llm-pi-ai'
+      config:
+        # Shiguredo fork: offer pi-ai's Sign in with ChatGPT, which names this
+        # installation to OpenAI through $DSH_HOME/agent-host-id. OpenAI
+        # documents that sign-in for its own clients rather than as a partner
+        # API, so a deployment that does not want it restates the value as
+        # false in a later patch layer.
+        chatGptSignIn: true
 
     - id: session-persistence-jsonl
       name: '@deepseek-ai/dsh-session-persistence-jsonl'
@@ -505,6 +512,9 @@
       name: '@deepseek-ai/dsh-web-search-deepseek'
       config:
         apiKeyEnv: DEEPSEEK_API_KEY
+
+    - id: web-ollama-api
+      name: '@deepseek-ai/dsh-web-ollama-api'
 
     - id: web-deepseek-api
       name: '@deepseek-ai/dsh-web-deepseek-api'

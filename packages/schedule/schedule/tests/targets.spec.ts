@@ -4,7 +4,7 @@
  * of each Session that a delivery creates.
  */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Agent, ModelSelection } from '@deepseek-ai/dsh-agent'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { createUserMessage, type MessageId, type UserMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionId } from '@deepseek-ai/dsh-session'
@@ -102,6 +102,19 @@ function keepCreatedSessionsBusy(test: Awaited<ReturnType<typeof setup>>): void 
     Object.assign(agent, { status: 'running', inbox: { ...agent.inbox, nextTurn }, whenIdle: () => new Promise<void>(() => {}) })
     return created
   })
+}
+
+/**
+ * Agent model face that records each recorded selection beside the delivery order.
+ * @param order - Boundary log shared with the delivery spy.
+ * @param selections - Selections the runtime recorded, in call order.
+ * @returns A model face that records a selection without resolving it.
+ */
+function recordingModel(order: string[], selections: ModelSelection[]): Agent['model'] {
+  return {
+    current: () => undefined,
+    select: (selection) => { order.push('model'); selections.push({ ...selection }) },
+  }
 }
 
 it('delivers to a designated Session and retains an ended receipt', async () => {
@@ -442,6 +455,42 @@ it('reuses a pending per-run identity and forwards both optional creation fields
   expect(test.createSession).toHaveBeenCalledExactlyOnceWith({ sessionId: reserved, cwd: '/work', agentPreset: 'minimal' })
   expect(test.commit).toHaveBeenCalledOnce()
   expect(tasks[0]?.lastDelivery?.targetSessionId).toBe(reserved)
+})
+
+it('records the creation model route on a Session it creates before the instruction arrives', async () => {
+  const tasks = [task({ kind: 'new', create: { model: { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' } } })]
+  const test = await setup(tasks)
+  const order: string[] = []
+  const selections: ModelSelection[] = []
+  const create = test.createSession.getMockImplementation()!
+  test.createSession.mockImplementation(async (request) => {
+    const created = await create(request)
+    const agent = test.agents.get(created.sessionId)!
+    Object.assign(agent, { model: recordingModel(order, selections) })
+    agent.followup.mockImplementation(() => { order.push('followup') })
+    return created
+  })
+  test.runtime.requestDrive()
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(selections).toEqual([{ provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' }])
+  expect(order).toEqual(['model', 'followup'])
+})
+
+it('records the creation model route on a reserved Session before its first delivery', async () => {
+  const reserved = brandString<SessionId>('pending-route')
+  const tasks = [task({ kind: 'new_once', sessionId: reserved, create: { model: { provider: 'deepseek-official', model: 'deepseek-flash' } } })]
+  const test = await setup(tasks)
+  const selections: ModelSelection[] = []
+  const create = test.createSession.getMockImplementation()!
+  test.createSession.mockImplementation(async (request) => {
+    const created = await create(request)
+    Object.assign(test.agents.get(created.sessionId)!, { model: recordingModel([], selections) })
+    return created
+  })
+  test.runtime.requestDrive()
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(selections).toEqual([{ provider: 'deepseek-official', model: 'deepseek-flash' }])
+  expect(tasks[0]).toMatchObject({ status: 'ended', target: { kind: 'session', sessionId: reserved } })
 })
 
 it('reuses a pending new-Session identity for a later manual retry', async () => {

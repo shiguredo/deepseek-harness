@@ -46,6 +46,10 @@ export const remoteDefaultResponses: RemoteTable = {
     'account/getNotifications': ok(null),
     'account/getNotificationContent': ok(null),
     'account/reportNotificationEvent': ok(true),
+    // ui-git-branch composer chip for the first Session whose input bar mounts; fixture directories are not checkouts.
+    'workspaceGit/status': ok({ kind: 'none' }),
+    // ui-settings-models-signin lists the provider flows its Models-page section offers; the fixture composition registers none.
+    'modelSignIn/list': ok([]),
   },
   // Stream endpoints the roster opens later than boot; declared so a spec that forgets the script gets a stream miss.
   streams: [

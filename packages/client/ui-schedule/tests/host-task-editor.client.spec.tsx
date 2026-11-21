@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { allowAllAccess, bindSnapshotSelector, contextMenuHook, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type { ScheduleId, ScheduleCatalogEntry, ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
+import type { ModelCatalog } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceId, WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client'
@@ -15,7 +16,8 @@ import type { CatalogSnapshot } from '../src/client/catalog-source.ts'
 import { rruleFromDraft, timingFromRecord } from '../src/client/editor-timing.ts'
 import { createAtScheduleRecord, createDailyScheduleRecord, createRRuleScheduleRecord, createWeeklyScheduleRecord } from '../../../schedule/schedule/src/domain.ts'
 import type { ScheduleId as createScheduleId } from '../../../schedule/schedule/src/types.ts'
-import { draftTarget, reapplyTaskDraft, taskDraft, taskDraftIssue, taskDraftPatch } from '../src/client/TaskEditorFields.tsx'
+import { draftTarget, newTaskDraft, reapplyTaskDraft, taskDraft, taskDraftIssue, taskDraftPatch } from '../src/client/TaskEditorFields.tsx'
+import type { ModelCatalogSnapshot } from '../src/client/model-catalog.ts'
 import { formatAvailableAt, formatScheduleFrequency, orderScheduleRecords, zoneLabel, zoneName } from '../src/client/schedule-format.ts'
 import { en, zh, ja, es, fr, de, ru, pt } from '../src/client/task-manager-locales.ts'
 import { pinSystemZone } from './zone-fixture.ts'
@@ -47,6 +49,24 @@ const registered: WorkspaceSnapshot = {
   ...workspaces, items: [workspace('/work/docs', 'docs'), workspace('/work/default-workspace', 'default-workspace')],
 }
 
+/** Host model catalog the creation target rows read: an ordinary model and a reasoning model. */
+const modelCatalog: ModelCatalog = {
+  default: { provider: 'deepseek', model: 'deepseek-chat' },
+  routableProviders: ['deepseek', 'openrouter'],
+  groups: [
+    { id: 'deepseek', name: 'DeepSeek', models: [
+      { id: 'deepseek-chat', name: 'DeepSeek Chat' },
+      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner',
+        reasoning: { efforts: [{ id: 'low', name: 'Low' }, { id: 'high', name: 'High' }], defaultEffort: 'low' } },
+      { id: 'deepseek-reasoner-auto', name: 'DeepSeek Reasoner Auto',
+        reasoning: { efforts: [{ id: 'low', name: 'Low' }, { id: 'high', name: 'High' }] } },
+      { id: 'deepseek-v4', name: 'DeepSeek V4', reasoning: { efforts: [] } },
+    ] },
+    { id: 'openrouter', name: 'OpenRouter', models: [{ id: 'deepseek-chat', name: 'DeepSeek Chat (OpenRouter)' }] },
+  ],
+  failures: [],
+}
+
 const t = makeTranslate(en)
 function hostActions(overrides: Partial<HostTaskActions> = {}): HostTaskActions {
   return {
@@ -67,9 +87,11 @@ function mount(rows: readonly ScheduleCatalogEntry[] = [task], overrides: Partia
     useSessionStatus: select => select(new Map()), useSessionRetainInfo: () => undefined,
     useResource: () => { throw new Error('Task editor loads no document resources') },
     useContextMenu: contextMenuHook(),
+    useModelCatalog: <T,>(select: (value: ModelCatalogSnapshot) => T): T => select({ status: 'ready', catalog: modelCatalog }),
     onNewTask: vi.fn(), onUseRecommendation: vi.fn(), onClearEnded: vi.fn(async () => {}),
     onCreateTask: vi.fn<TaskManagerPageProps['onCreateTask']>(async () => ({ created: task })),
     onDelete: vi.fn<TaskManagerPageProps['onDelete']>(async () => 'deleted'), onRetry: vi.fn(async () => {}), onOpenSession: vi.fn(),
+    onRetryModelCatalog: vi.fn(async () => {}),
     hostActions: hostActions(),
     loadHistory: vi.fn<TaskManagerPageProps['loadHistory']>(async ({ id }) => ({ ok: true, value: { id, records: [], earlierRecordsUnavailable: false,
       earlierRecordsPruned: false, retention: { days: 30, records: 200 } } })),
@@ -112,6 +134,35 @@ function openZones(detail: HTMLElement): HTMLElement {
 }
 function searchZones(query: string): void {
   fireEvent.change(screen.getByRole('searchbox', { name: en['timing.zoneSearch'] }), { target: { value: query } })
+}
+/** The creation model row of an open detail. */
+function modelRow(detail: HTMLElement): HTMLElement {
+  return within(detail).getByRole('button', { name: new RegExp('^' + en['host.model'] + ' ') })
+}
+/** The reasoning effort row of an open detail, absent while the selected model advertises none. */
+function effortRow(detail: HTMLElement): HTMLElement | null {
+  return within(detail).queryByRole('button', { name: new RegExp('^' + en['host.effort'] + ' ') })
+}
+/** Open the creation model menu of an open detail. */
+function openModelMenu(detail: HTMLElement): HTMLElement {
+  fireEvent.click(modelRow(detail))
+  return screen.getByRole('menu')
+}
+/** Mount the manager over a model catalog snapshot the case can advance. */
+function mountWithModelCatalog(initial: ModelCatalogSnapshot, rows: readonly ScheduleCatalogEntry[] = [task]) {
+  let current = initial
+  const onRetryModelCatalog = vi.fn(async () => {})
+  const h = mount(rows, {
+    useModelCatalog: <T,>(select: (value: ModelCatalogSnapshot) => T): T => select(current),
+    onRetryModelCatalog,
+  })
+  return {
+    ...h, onRetryModelCatalog,
+    show(next: ModelCatalogSnapshot): void {
+      current = next
+      h.view.rerender(<TaskManagerPage {...h.props} />)
+    },
+  }
 }
 
 beforeEach(() => {
@@ -1003,6 +1054,183 @@ describe('Host task editor on the existing manager', () => {
     await act(async () => { pending.resolve({ created: task }); await pending.promise })
     expect(screen.queryByRole('dialog', { name: en['host.manualCreate'] })).toBeNull()
     expect(within(screen.getByRole('complementary')).getByRole('heading', { name: task.title })).toBeDefined()
+  })
+})
+
+describe('creation model and reasoning rows', () => {
+  it('offers the creation model only for a destination that creates a conversation', () => {
+    mount([{ ...task, target: { kind: 'session', sessionId: targetSession } }])
+    const detail = openEdit()
+    expect(within(detail).queryByRole('button', { name: new RegExp('^' + en['host.model'] + ' ') })).toBeNull()
+    fireEvent.click(within(detail).getByRole('button', { name: new RegExp('^' + en['host.target'] + ' ') }))
+    fireEvent.click(screen.getByRole('menuitem', { name: new RegExp('^' + en['host.targetNewOnce']) }))
+    expect(modelRow(detail).textContent).toContain(en['host.modelDefault'])
+  })
+
+  it('leads every model row with its provider, then saves the chosen route', async () => {
+    const h = mount()
+    const detail = openEdit()
+    expect(modelRow(detail).textContent).toContain(en['host.modelDefault'])
+    const menu = openModelMenu(detail)
+    expect(within(menu).getAllByRole('menuitem').map(item => item.textContent)).toEqual([
+      en['host.modelDefault'], 'DeepSeek · DeepSeek Chat', 'DeepSeek · DeepSeek Reasoner',
+      'DeepSeek · DeepSeek Reasoner Auto', 'DeepSeek · DeepSeek V4', 'OpenRouter · DeepSeek Chat (OpenRouter)',
+    ])
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'OpenRouter · DeepSeek Chat (OpenRouter)' }))
+    // The value leads with the provider so the selected model names its route.
+    expect(modelRow(detail).textContent).toContain('OpenRouter · DeepSeek Chat (OpenRouter)')
+    await save(detail)
+    expect(h.props.hostActions.edit).toHaveBeenCalledExactlyOnceWith({
+      id: task.id, action: 'update', expectedUpdatedAt: task.updatedAt,
+      patch: { target: { kind: 'new_once', create: { model: { provider: 'openrouter', model: 'deepseek-chat' } } } },
+    })
+  })
+
+  it('shows the effort row for a reasoning model and seeds its default level', async () => {
+    const h = mount()
+    const detail = openEdit()
+    expect(effortRow(detail)).toBeNull()
+    fireEvent.click(within(openModelMenu(detail)).getByRole('menuitem', { name: 'DeepSeek · DeepSeek Reasoner' }))
+    expect(effortRow(detail)?.textContent).toContain('Low')
+    fireEvent.click(effortRow(detail)!)
+    const menu = screen.getByRole('menu')
+    expect(within(menu).getAllByRole('menuitem').map(item => item.textContent)).toEqual(['Low', 'High'])
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'High' }))
+    expect(effortRow(detail)?.textContent).toContain('High')
+    await save(detail)
+    expect(h.props.hostActions.edit).toHaveBeenCalledExactlyOnceWith({
+      id: task.id, action: 'update', expectedUpdatedAt: task.updatedAt,
+      patch: { target: { kind: 'new_once', create: {
+        model: { provider: 'deepseek', model: 'deepseek-reasoner', reasoningEffort: 'high' },
+      } } },
+    })
+  })
+
+  it('keeps the effort unspecified when the model advertises no default', async () => {
+    const h = mount()
+    const detail = openEdit()
+    fireEvent.click(within(openModelMenu(detail)).getByRole('menuitem', { name: 'DeepSeek · DeepSeek Reasoner Auto' }))
+    expect(effortRow(detail)?.textContent).toContain(en['host.effortDefault'])
+    fireEvent.click(effortRow(detail)!)
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map(item => item.textContent))
+      .toEqual([en['host.effortDefault'], 'Low', 'High'])
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: 'High' }))
+    expect(effortRow(detail)?.textContent).toContain('High')
+    // The unspecified level removes the effort again instead of writing the model default.
+    fireEvent.click(effortRow(detail)!)
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: en['host.effortDefault'] }))
+    expect(effortRow(detail)?.textContent).toContain(en['host.effortDefault'])
+    await save(detail)
+    expect(h.props.hostActions.edit).toHaveBeenCalledExactlyOnceWith({
+      id: task.id, action: 'update', expectedUpdatedAt: task.updatedAt,
+      patch: { target: { kind: 'new_once', create: { model: { provider: 'deepseek', model: 'deepseek-reasoner-auto' } } } },
+    })
+  })
+
+  it('hides the effort row for a model that advertises no levels', async () => {
+    const h = mount()
+    const detail = openEdit()
+    fireEvent.click(within(openModelMenu(detail)).getByRole('menuitem', { name: 'DeepSeek · DeepSeek V4' }))
+    expect(effortRow(detail)).toBeNull()
+    await save(detail)
+    expect(h.props.hostActions.edit).toHaveBeenCalledExactlyOnceWith({
+      id: task.id, action: 'update', expectedUpdatedAt: task.updatedAt,
+      patch: { target: { kind: 'new_once', create: { model: { provider: 'deepseek', model: 'deepseek-v4' } } } },
+    })
+  })
+
+  it('keeps a saved route the current catalog omits, and removes the override on the Host default', async () => {
+    const retired: ScheduleCatalogEntry = { ...task, target: { kind: 'new_once', sessionId: targetSession,
+      create: { model: { provider: 'retired', model: 'legacy-model' } } } }
+    const h = mount([retired])
+    const detail = openEdit()
+    // A route the catalog omits keeps its stored provider id before the model id.
+    expect(modelRow(detail).textContent).toContain('retired · legacy-model')
+    const menu = openModelMenu(detail)
+    expect(within(menu).getByText(en['host.modelSaved'])).toBeDefined()
+    // Choosing the saved route keeps it and is not itself a change.
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'retired · legacy-model' }))
+    expect(modelRow(detail).textContent).toContain('retired · legacy-model')
+    expect(within(detail).getByRole('button', { name: en['rule.save'] }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(within(openModelMenu(detail)).getByRole('menuitem', { name: en['host.modelDefault'] }))
+    expect(modelRow(detail).textContent).toContain(en['host.modelDefault'])
+    await save(detail)
+    expect(h.props.hostActions.edit).toHaveBeenCalledExactlyOnceWith({
+      id: retired.id, action: 'update', expectedUpdatedAt: retired.updatedAt,
+      patch: { target: { kind: 'new_once', create: {} } },
+    })
+  })
+
+  it('shows a saved effort the catalog omits beside the advertised levels', async () => {
+    const stored: ScheduleCatalogEntry = { ...task, target: { kind: 'new_once', sessionId: targetSession,
+      create: { model: { provider: 'deepseek', model: 'deepseek-reasoner', reasoningEffort: 'ultra' } } } }
+    mount([stored])
+    const detail = openEdit()
+    expect(effortRow(detail)?.textContent).toContain('ultra')
+    fireEvent.click(effortRow(detail)!)
+    expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map(item => item.textContent))
+      .toEqual(['ultra', 'Low', 'High'])
+  })
+
+  it('shows the catalog load in the model row until the read settles', () => {
+    const stored: ScheduleCatalogEntry = { ...task, target: { kind: 'new_once', sessionId: targetSession,
+      create: { model: { provider: 'deepseek', model: 'deepseek-reasoner' } } } }
+    const h = mountWithModelCatalog({ status: 'loading', catalog: modelCatalog }, [stored])
+    const detail = openEdit()
+    const row = modelRow(detail)
+    expect(row.textContent).toContain(en['host.modelsLoading'])
+    expect(row.hasAttribute('disabled')).toBe(true)
+    expect(effortRow(detail)).toBeNull()
+    h.show({ status: 'ready', catalog: modelCatalog })
+    expect(modelRow(detail).textContent).toContain('DeepSeek Reasoner')
+    expect(modelRow(detail).hasAttribute('disabled')).toBe(false)
+    expect(effortRow(detail)?.textContent).toContain('Low')
+  })
+
+  it('reports a failed catalog read beside the rows and retries it', () => {
+    const h = mountWithModelCatalog({ status: 'error', catalog: undefined })
+    const detail = openEdit()
+    expect(within(detail).getByRole('alert').textContent).toBe(en['host.modelsError'])
+    expect(modelRow(detail).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(within(detail).getByRole('button', { name: en['list.retry'] }))
+    expect(h.onRetryModelCatalog).toHaveBeenCalledOnce()
+    // A catalog from an earlier read keeps the row usable while the notice states the failure.
+    h.show({ status: 'error', catalog: modelCatalog })
+    expect(within(detail).getByRole('alert').textContent).toBe(en['host.modelsError'])
+    expect(modelRow(detail).hasAttribute('disabled')).toBe(false)
+  })
+
+  it('states the host model refusal on the form', async () => {
+    const h = mount([task], {
+      hostActions: hostActions({ edit: vi.fn<HostTaskActions['edit']>(async () => ({ failed: 'host.modelUnavailable' })) }),
+    })
+    const detail = openEdit()
+    fireEvent.click(within(openModelMenu(detail)).getByRole('menuitem', { name: 'DeepSeek · DeepSeek Chat' }))
+    await save(detail)
+    expect(within(detail).getByRole('alert').textContent).toBe(en['host.modelUnavailable'])
+    expect(h.props.hostActions.edit).toHaveBeenCalledOnce()
+  })
+
+  it('seeds, writes, reapplies, and clears the creation model with the destination', () => {
+    const stored: ScheduleCatalogEntry = { ...task, target: { kind: 'new_once', sessionId: targetSession,
+      create: { model: { provider: 'deepseek', model: 'deepseek-reasoner', reasoningEffort: 'high' } } } }
+    const draft = taskDraft(stored)
+    expect(draft.model).toEqual({ provider: 'deepseek', model: 'deepseek-reasoner', reasoningEffort: 'high' })
+    expect(taskDraftPatch(draft, stored)).toEqual({})
+    expect(draftTarget(draft, stored)).toEqual({ kind: 'new_once',
+      create: { model: { provider: 'deepseek', model: 'deepseek-reasoner', reasoningEffort: 'high' } } })
+    // Choosing the Host default removes the stored override instead of writing it as an explicit route.
+    expect(taskDraftPatch({ ...draft, model: null }, stored)).toEqual({ target: { kind: 'new_once', create: {} } })
+    const local = { ...draft, model: { provider: 'openrouter', model: 'deepseek-chat' } }
+    const changes = taskDraftPatch(local, stored)
+    expect(changes).toEqual({ target: { kind: 'new_once',
+      create: { model: { provider: 'openrouter', model: 'deepseek-chat' } } } })
+    const latest: ScheduleCatalogEntry = { ...stored, updatedAt: '2099-01-01T00:00:00.000Z',
+      target: { kind: 'new_once', sessionId: targetSession, create: { model: { provider: 'retired', model: 'newer' } } } }
+    expect(reapplyTaskDraft(local, latest, changes).model).toEqual({ provider: 'openrouter', model: 'deepseek-chat' })
+    expect(reapplyTaskDraft(draft, latest, { title: 'Renamed' }).model).toEqual({ provider: 'retired', model: 'newer' })
+    expect(newTaskDraft().model).toBeNull()
+    expect(taskDraft({ ...task, target: { kind: 'session', sessionId: targetSession } }).model).toBeNull()
   })
 })
 

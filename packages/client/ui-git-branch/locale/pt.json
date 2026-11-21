@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Interface do selo de branch",
+    "description": "Mostra a branch em checkout na linha de estatísticas do compositor e no cabeçalho do cartão de perguntas."
+  }
+}

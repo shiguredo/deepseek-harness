@@ -99,11 +99,13 @@ async function harness(baseURL: string, overrides: Record<string, unknown> = {})
 function adapterOf(
   providers: Record<string, LlmPiAi.PiAiProviderProfile>,
   apiKey: string | undefined = 'test-key',
+  refreshOAuth?: (provider: string) => Promise<'refreshed' | 'failed' | 'unsupported'>,
 ): PiAiAdapter {
   return new PiAiAdapter({
     profiles: () => resolveProfiles(providers),
     resolveApiKey: () => Promise.resolve(apiKey),
     auth: memoryAuth(),
+    ...refreshOAuth === undefined ? {} : { refreshOAuth },
   })
 }
 
@@ -498,6 +500,143 @@ describe('PiAiAdapter provider routing', () => {
     expect(result.finish).toEqual({ kind: 'error', failure: { message: `500 ${body}`, code: 'SERVER' } })
   })
 
+  describe('rejected OAuth sign-in', () => {
+    const invalidated = JSON.stringify({
+      error: { message: 'Encountered invalidated oauth token for user, failing request' },
+    })
+
+    /** A keyless route that authenticates with a request header rather than `apiKeyEnv`. */
+    const keylessGateway = (url: string) => ({
+      gateway: {
+        api: 'openai-completions',
+        baseURL: url,
+        headers: { authorization: 'Bearer fixture' },
+        models: [{ id: 'gateway-model' }],
+      },
+    })
+
+    /** Mount one direct adapter over its mock endpoint. */
+    const mounting = async (
+      url: string,
+      refresh?: (provider: string) => Promise<'refreshed' | 'failed' | 'unsupported'>,
+    ): Promise<Context> => {
+      const ctx = new Context()
+      await ctx.plugin(LlmRuntime)
+      ctx.llm.registerAdapter(['gateway'], adapterOf(keylessGateway(url), undefined, refresh))
+      return ctx
+    }
+
+    it('exchanges a rejected sign-in and retries once on the fresh grant', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }, { events: textEvents }])
+      const refresh = vi.fn(() => Promise.resolve('refreshed' as const))
+      const ctx = await mounting(server.url, refresh)
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.message.content).toEqual([{ type: 'text', text: 'hello' }])
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(refresh).toHaveBeenCalledWith('gateway')
+      expect(server.requests).toHaveLength(2)
+    })
+
+    it('asks for a new sign-in when the exchange fails', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }])
+      const refresh = vi.fn(() => Promise.resolve('failed' as const))
+      const ctx = await mounting(server.url, refresh)
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish).toMatchObject({
+        kind: 'error',
+        failure: { code: 'PI_AI_ERROR', message: expect.stringContaining('sign in again') as string },
+      })
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(server.requests).toHaveLength(1)
+    })
+
+    it('keeps the provider failure when the route has no sign-in to exchange', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }])
+      const refresh = vi.fn(() => Promise.resolve('unsupported' as const))
+      const ctx = await mounting(server.url, refresh)
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish).toMatchObject({
+        kind: 'error',
+        failure: { code: 'AUTH', message: expect.stringContaining('invalidated oauth token') as string },
+      })
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(server.requests).toHaveLength(1)
+    })
+
+    it('does not exchange a sign-in twice when the retry is rejected again', async () => {
+      const server = await mockServer([
+        { status: 401, body: invalidated },
+        { status: 401, body: invalidated },
+      ])
+      const refresh = vi.fn(() => Promise.resolve('refreshed' as const))
+      const ctx = await mounting(server.url, refresh)
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish.kind).toBe('error')
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(server.requests).toHaveLength(2)
+    })
+
+    it('leaves the provider failure alone without an exchange hook', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }])
+      const ctx = await mounting(server.url)
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish).toMatchObject({ kind: 'error', failure: { code: 'AUTH' } })
+      expect(server.requests).toHaveLength(1)
+    })
+
+    it('runs the plugin exchange hook for a route with no OAuth method', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }])
+      const ctx = new Context()
+      await ctx.plugin(LlmRuntime)
+      await ctx.plugin(LlmPiAi, {
+        providers: {
+          gateway: {
+            api: 'openai-completions',
+            baseURL: server.url,
+            headers: { authorization: 'Bearer fixture' },
+            models: [{ id: 'gateway-model' }],
+          },
+        },
+      })
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish).toMatchObject({ kind: 'error', failure: { code: 'AUTH' } })
+      expect(server.requests).toHaveLength(1)
+    })
+
+    it('does not exchange a route that resolves an API key reference', async () => {
+      const server = await mockServer([{ status: 401, body: invalidated }])
+      const refresh = vi.fn(() => Promise.resolve('refreshed' as const))
+      const ctx = new Context()
+      await ctx.plugin(LlmRuntime)
+      ctx.llm.registerAdapter(['gateway'], adapterOf({
+        gateway: {
+          apiKeyEnv: 'PI_TEST_KEY',
+          api: 'openai-completions',
+          baseURL: server.url,
+          models: [{ id: 'gateway-model' }],
+        },
+      }, 'test-key', refresh))
+
+      const result = await assemble(ctx, { provider: 'gateway', model: 'gateway-model', messages: [] })
+
+      expect(result.finish).toMatchObject({ kind: 'error', failure: { code: 'AUTH' } })
+      expect(refresh).not.toHaveBeenCalled()
+      expect(server.requests).toHaveLength(1)
+    })
+  })
+
   it('uses the resolved catalog context window for usage-based overflow detection', async () => {
     const model = getBuiltinModels('deepseek').find(candidate => candidate.id === 'deepseek-flash')
     if (model === undefined) throw new Error('deepseek-flash missing from pi-ai test catalog')
@@ -810,7 +949,7 @@ describe('provider profile lifecycle', () => {
             // which is what an unrecognized private URL resolves to. Most
             // OpenAI-compatible gateways reject that role.
             { id: 'acme-think', reasoningEfforts: { off: null, high: 'high' }, compat: { supportsDeveloperRole: false } },
-            { id: 'acme-guess', reasoningEfforts: { off: null, high: 'high' } },
+            { id: 'acme-declared', reasoningEfforts: { off: null, high: 'high' }, compat: { supportsDeveloperRole: true } },
           ],
         },
       },
@@ -827,10 +966,11 @@ describe('provider profile lifecycle', () => {
       return request.messages.map(message => message.role)
     }
 
+    // The switch decides the role: the same route, same endpoint, and same
+    // reasoning declaration reach it as `system` or `developer` only because
+    // a model says which this gateway accepts.
     expect(await roles('acme-think')).toEqual(['system'])
-    // The switch is the only thing that changes it: the same route, same
-    // endpoint, same reasoning declaration still gets pi-ai's guess.
-    expect(await roles('acme-guess')).toEqual(['developer'])
+    expect(await roles('acme-declared')).toEqual(['developer'])
   })
 
   it('sends a declared off value as the effort parameter instead of omitting it', async () => {

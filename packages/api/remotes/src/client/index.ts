@@ -20,6 +20,7 @@ import mcpManagerRemote from '@deepseek-ai/dsh-mcp-manager/remote'
 import toolResultsRemote from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 import pluginRegistryProbeRemote from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
 import connectorAccountsRemote from '@deepseek-ai/dsh-client-ui-connector-account/remote'
+import modelSignInRemote from '@deepseek-ai/dsh-client-ui-settings-models-signin/remote'
 import pluginMarketRemote from '@deepseek-ai/dsh-plugin-market/remote'
 import actionCardsRemote from '@deepseek-ai/dsh-action-cards/remote'
 import pluginRecommendationsRemote from '@deepseek-ai/dsh-plugin-recommendations/remote'
@@ -37,6 +38,7 @@ import jobRemote from '@deepseek-ai/dsh-api-job-controller/remote'
 import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
 import terminalRemote from '@deepseek-ai/dsh-api-terminal-controller/remote'
 import workspaceFilesRemote from '@deepseek-ai/dsh-api-workspace-files/remote'
+import workspaceGitRemote from '@deepseek-ai/dsh-api-workspace-git/remote'
 import webRemote from '@deepseek-ai/dsh-web/remote'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 
@@ -54,6 +56,7 @@ export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-mcp-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-connector-account/remote'
+export type {} from '@deepseek-ai/dsh-client-ui-settings-models-signin/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-trajectory/remote'
 export type {} from '@deepseek-ai/dsh-plugin-market/remote'
 export type {} from '@deepseek-ai/dsh-action-cards/remote'
@@ -91,6 +94,8 @@ export type {} from '@deepseek-ai/dsh-api-workspace-files/remote'
 export type * from '@deepseek-ai/dsh-api-workspace-files/types'
 export type {} from '@deepseek-ai/dsh-api-terminal-controller/remote'
 export type * from '@deepseek-ai/dsh-api-terminal-controller/types'
+export type {} from '@deepseek-ai/dsh-api-workspace-git/remote'
+export type * from '@deepseek-ai/dsh-api-workspace-git/types'
 // The forwarded-event allowlist's selection seat: without it in the consumer's
 // compilation face `TypertRemoteEvent` is `never` and every `$on` call fails.
 export type { ApiRemoteForwardedEvent } from '../types.ts'
@@ -208,13 +213,13 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
       productAnalyticsRemote, agentPresetsRemote, commandsRemote, agentTeamsRemote, settingsControllerRemote, accountRemote,
       goalsRemote, llmRemote, dynamicRemote, scheduleRemote,
       pluginInventoryRemote, pluginManagerRemote, mcpManagerRemote, pluginMarketRemote, pluginRegistryProbeRemote,
-      connectorAccountsRemote,
+      connectorAccountsRemote, modelSignInRemote,
       toolResultsRemote,
       messageFeedbackRemote, sessionFeedbackRemote,
       fileUploadsRemote, sessionReferencesRemote,
       permissionPresetsRemote, subagentsRemote, sessionRemote, sessionStatusRemote, jobRemote,
       workspaceRemote, workspaceFilesRemote, terminalRemote,
-      officeKitRemote, userQuestionsRemote, webRemote, actionCardsRemote, pluginRecommendationsRemote,
+      officeKitRemote, userQuestionsRemote, workspaceGitRemote, webRemote, actionCardsRemote, pluginRecommendationsRemote,
     ]) {
       disposers.push(await ctx.remote.$mount(contribution))
     }

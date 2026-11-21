@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-24-git-commit-guard.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-24-git-commit-guard.md
+/agent-note-git-commit-guard-as-a-built-in-plugin:
+  en: 90f03a7ae5e50930
+  zh: 235012819ddd7817
+/agent-note-git-commit-guard-as-a-built-in-plugin/problem:
+  en: 461c45064ea1de56
+  zh: 548f27dc02feb1ec
+/agent-note-git-commit-guard-as-a-built-in-plugin/decision:
+  en: e2698662d5f9c2e6
+  zh: ae605b0665d53d31
+/agent-note-git-commit-guard-as-a-built-in-plugin/alternatives-considered:
+  en: fe5ccef192900d6b
+  zh: 5351066de63a6c4c
+/agent-note-git-commit-guard-as-a-built-in-plugin/consequences:
+  en: e3e9c4e652a3fe1e
+  zh: 4017fd31a30b33fe
+/agent-note-git-commit-guard-as-a-built-in-plugin/testing:
+  en: 29fa51ef5f8e4873
+  zh: 1eeac7342e57489a

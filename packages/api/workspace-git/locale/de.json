@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git-Dienst des Arbeitsbereichs",
+    "description": "Liest Branch, Worktree-Verzeichnis und ursprüngliches GitHub-Repository des Checkouts, in dem der Arbeitsbereich der Sitzung liegt."
+  }
+}

@@ -14,5 +14,8 @@
     - listitem:
       - checkbox "MiniMax-M3" [checked]
       - text: MiniMax-M3
+    - listitem:
+      - checkbox "MiniMax-M3.1-Flash" [checked]
+      - text: MiniMax-M3.1-Flash
   - button "取消"
   - button "更新列表"

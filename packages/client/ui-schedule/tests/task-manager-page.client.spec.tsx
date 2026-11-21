@@ -17,6 +17,7 @@ import { createEditorStore } from '../src/client/editor-store.ts'
 import { TaskManagerIcon } from '../src/client/TaskManagerIcon.tsx'
 import type { HostTaskActions } from '../src/client/TaskDetail.tsx'
 import { createCatalogSource, type CatalogDeleteOutcome, type CatalogSnapshot } from '../src/client/catalog-source.ts'
+import type { ModelCatalogSnapshot } from '../src/client/model-catalog.ts'
 import {
   formatScheduleAbsolute, formatScheduleFrequency, formatScheduleNextRun, formatScheduleRelative, zoneLabel,
 } from '../src/client/schedule-format.ts'
@@ -167,12 +168,14 @@ function mount(
     useSessionStatus: select => select(new Map()),
     useSessionRetainInfo: () => undefined,
     useResource: () => { throw new Error('The task manager does not load document resources') },
+    useModelCatalog: <T,>(select: (value: ModelCatalogSnapshot) => T): T => select({ status: 'ready', catalog: undefined }),
     ...allowAllAccess,
     useContextMenu: contextMenuHook(),
     onDelete: vi.fn<TaskManagerPageProps['onDelete']>(async () => 'deleted'),
     onRetry: vi.fn(async () => {}),
     onNewTask: vi.fn(),
     onUseRecommendation: vi.fn(),
+    onRetryModelCatalog: vi.fn(async () => {}),
     onClearEnded: vi.fn(async () => {}),
     onCreateTask: vi.fn<TaskManagerPageProps['onCreateTask']>(async () => ({ created: at })),
     onOpenSession: vi.fn(),

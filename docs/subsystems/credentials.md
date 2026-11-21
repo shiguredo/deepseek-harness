@@ -256,6 +256,64 @@ Host service backing the generated `ctx.remote.credentials` namespace. It carrie
 
 Source: [`packages/api/settings-controller/src/credentials.ts`](../../packages/api/settings-controller/src/credentials.ts)
 
+<a id="ctxmodelsignin--modelsignin"></a>
+
+### `ctx.modelSignIn` — `ModelSignIn`
+
+Host owner of the Models page's provider sign-in Remote.
+
+One attempt per provider is enough for one surface: the authorization seam already refuses a second attempt for the same credential record, so a second browser tab hears that refusal instead of racing this one.
+
+```ts cordis-catalog
+/**
+ * List every provider sign-in this composition offers.
+ * @returns one entry per registered flow, with its methods and whether a credential is stored.
+ */
+@Remote async list(): Promise<SignInFlowView[]>
+
+/**
+ * Start one attempt and return its first view.
+ * @param key - credential record the flow writes, as `<scope>/<id>`.
+ * @param method - one method id the flow declared.
+ * @returns the attempt's view; poll {@link poll} for later phases.
+ * @throws when the key is malformed, no flow claims it, or one is already running.
+ */
+@Remote begin(key: string, method: string): SignInAttemptView
+
+/**
+ * Read one attempt's current view.
+ * @param id - attempt identity returned by {@link begin}.
+ * @returns the view, or undefined once this Host forgot the attempt.
+ */
+@Remote poll(id: string): SignInAttemptView | undefined
+
+/**
+ * Answer the question the attempt is waiting on.
+ * @param id - attempt identity.
+ * @param promptId - the question's id, so a superseded question cannot be answered.
+ * @param value - what the human typed or chose.
+ * @returns the attempt's view after the answer is delivered.
+ * @throws when the attempt is unknown or the question is no longer pending.
+ */
+@Remote answer(id: string, promptId: number, value: string): SignInAttemptView
+
+/**
+ * Withdraw one attempt.
+ * @param id - attempt identity.
+ * @returns the attempt's view, already marked cancelled.
+ */
+@Remote cancel(id: string): SignInAttemptView
+
+/**
+ * Forget one provider's stored credential record.
+ * @param key - credential record the flow writes, as `<scope>/<id>`.
+ * @throws when an attempt for that record is running.
+ */
+@Remote async signOut(key: string): Promise<void>
+```
+
+Source: [`packages/client/ui-settings-models-signin/src/index.ts`](../../packages/client/ui-settings-models-signin/src/index.ts)
+
 <a id="authorization-events"></a>
 
 ### `authorization/*` events

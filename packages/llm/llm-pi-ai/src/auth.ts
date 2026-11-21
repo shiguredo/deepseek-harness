@@ -11,7 +11,7 @@
 import { homedir } from 'node:os'
 import { access } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
-import type { AuthContext, Credential, CredentialInfo, CredentialStore } from '@earendil-works/pi-ai'
+import type { AuthContext, Credential, CredentialInfo, CredentialStore, OAuthAuth } from '@earendil-works/pi-ai'
 import type { Context } from '@deepseek-ai/cordis'
 import {
   credentialKey, credentialKeyId, credentialKeyScope, credentialRef, isCredentialKeySegment, isCredentialRefName,
@@ -182,6 +182,53 @@ export function credentialStoreFrom(ctx: Context): CredentialStore {
       if (!isCredentialKeySegment(providerId)) return
       await writableStore(ctx).deleteRecord(recordKeyFor(providerId))
     },
+  }
+}
+
+/** How a forced refresh of a rejected OAuth sign-in ended. */
+export type OAuthRefreshOutcome =
+  /** A fresh access token is stored and the request may be retried. */
+  | 'refreshed'
+  /** The issuer refused the exchange or could not be reached; signing in again is required. */
+  | 'failed'
+  /** This route has no stored OAuth sign-in to refresh. */
+  | 'unsupported'
+
+/** Bound on one forced exchange; a rotated refresh token must still be persisted. */
+const OAUTH_REFRESH_TIMEOUT_MS = 15_000
+
+/**
+ * Exchange the refresh token of a sign-in the provider just rejected.
+ *
+ * pi-ai refreshes only when the recorded expiry is near, so an access token
+ * the issuer invalidates early leaves every request failing until the human
+ * signs in again. This runs the exchange inside the store's `modify()` so
+ * concurrent requests cannot rotate the same refresh token twice, and keeps a
+ * credential another caller already replaced.
+ * @param store - the credential store the adapter reads and writes.
+ * @param providerId - route whose stored sign-in the provider rejected.
+ * @param oauth - the provider's OAuth method, when it offers one.
+ * @returns whether a fresh grant is stored, the exchange failed, or this route has no sign-in.
+ */
+export async function refreshRejectedOAuth(
+  store: CredentialStore,
+  providerId: string,
+  oauth: OAuthAuth | undefined,
+): Promise<OAuthRefreshOutcome> {
+  if (oauth === undefined) return 'unsupported'
+  const rejected = await store.read(providerId)
+  if (rejected?.type !== 'oauth') return 'unsupported'
+  try {
+    const stored = await store.modify(providerId, async (current) => {
+      // A grant another request already replaced is the one to keep.
+      if (current?.type !== 'oauth' || current.access !== rejected.access) return undefined
+      return await oauth.refresh(current, AbortSignal.timeout(OAUTH_REFRESH_TIMEOUT_MS))
+    })
+    return stored?.type === 'oauth' && stored.access !== rejected.access ? 'refreshed' : 'failed'
+  } catch {
+    // A refused exchange (invalid_grant) or an unreachable issuer leaves the
+    // rejected grant in place, and the caller reports that signing in is required.
+    return 'failed'
   }
 }
 

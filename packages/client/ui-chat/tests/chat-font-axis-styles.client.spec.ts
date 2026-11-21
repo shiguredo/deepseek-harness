@@ -46,19 +46,25 @@ describe('chat flow font-size axis', () => {
     }
   })
 
-  it('the message clock and action glyphs scale with the text they serve', () => {
+  it('the message clock keeps its caption size and the action glyphs scale with the text they serve', () => {
+    // The clock is a fixed caption line, like the session row's project line:
+    // it stays 11px however far the content font-size preference moves the
+    // message. The icons still follow the axis of the text they sit beside.
+    expect(declarationsFrom(read('MessageClock.module.css'), '.clock')).toEqual(expect.arrayContaining([
+      'font-size: 11px',
+      'line-height: 16px',
+      'color: var(--dsw-alias-label-tertiary)',
+      'white-space: nowrap',
+    ]))
     const actions = read('MessageIconActions.module.css')
-    // The user clock reads the secondary tier. The assistant tail is one
-    // further pixel down, matching its usage trigger and supporting metadata.
-    expect(declarationsFrom(actions, '.timeStart')).toEqual(expect.arrayContaining([
-      'font-size: var(--dsh-content-font-size-secondary, 13px)',
-    ]))
-    expect(declarationsFrom(actions, '.timeEnd')).toEqual(expect.arrayContaining([
-      'font-size: calc(var(--dsh-content-font-size-secondary, 13px) - 1px)',
-    ]))
     expect(declarationsFrom(actions, '.action svg')).toEqual(expect.arrayContaining([
       'width: calc(15px + var(--dsh-content-font-delta, 0px))',
       'height: calc(15px + var(--dsh-content-font-delta, 0px))',
+    ]))
+    // The assistant completion row gives its glyphs two extra pixels.
+    expect(declarationsFrom(actions, ".actions[data-variant='assistant'] .action svg")).toEqual(expect.arrayContaining([
+      'width: calc(17px + var(--dsh-content-font-delta, 0px))',
+      'height: calc(17px + var(--dsh-content-font-delta, 0px))',
     ]))
   })
 

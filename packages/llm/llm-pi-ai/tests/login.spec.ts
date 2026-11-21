@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,9 +7,11 @@ import AuthorizationService from '@deepseek-ai/dsh-authorization'
 import type { AuthorizationInteraction, AuthorizationNotice, AuthorizationPrompt } from '@deepseek-ai/dsh-authorization'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import type { CredentialKey } from '@deepseek-ai/dsh-credentials'
-import type { AuthEvent, AuthInteraction, AuthPrompt, AuthType, Credential } from '@earendil-works/pi-ai'
+import type { AuthEvent, AuthInteraction, AuthPrompt, AuthType, Credential, LoginOptions } from '@earendil-works/pi-ai'
 
-const login = vi.hoisted(() => vi.fn())
+const login = vi.hoisted(() => vi.fn<
+  (providerId: string, type: AuthType, interaction: AuthInteraction, options?: LoginOptions) => Promise<Credential>
+>())
 
 // The whole of what this module does with pi-ai is run one provider's login
 // against a collection built with the harness store, so the collection is the
@@ -27,13 +29,13 @@ const CODEX = recordKeyFor('openai-codex')
 const dirs: string[] = []
 
 /** A context with the record store, the seam, and every pi-ai login flow. */
-async function harness(): Promise<Context> {
+async function harness(options: { chatGptSignIn?: boolean } = {}): Promise<Context> {
   const dir = await mkdtemp(join(tmpdir(), 'dsh-pi-login-'))
   dirs.push(dir)
   const ctx = new Context()
   await ctx.plugin(LocalCredentialProvider, { path: join(dir, '.credentials.yaml'), watch: false })
   await ctx.plugin(AuthorizationService)
-  registerPiAiFlows(ctx, { credentials: credentialStoreFrom(ctx), authContext: authContextFrom(ctx) })
+  registerPiAiFlows(ctx, { credentials: credentialStoreFrom(ctx), authContext: authContextFrom(ctx) }, options)
   return ctx
 }
 
@@ -76,6 +78,11 @@ async function attempt(
   return ui
 }
 
+/** The app-identifying options the last login call carried, if its flow needed any. */
+function lastLoginOptions(): LoginOptions | undefined {
+  return login.mock.calls.at(-1)?.[3]
+}
+
 afterEach(async () => {
   login.mockReset()
   await Promise.all(dirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
@@ -97,11 +104,66 @@ describe('pi-ai login flows', () => {
     // through its own prompt rather than leaving it to the settings form.
     expect(offered.find(entry => entry.key === recordKeyFor('deepseek'))?.methods.map(one => one.id))
       .toEqual(['api-key'])
-    // pi-ai ships Sign in with ChatGPT for `openai`, which needs an
-    // installation ID the harness does not supply; only the key login is offered.
+    // pi-ai ships Sign in with ChatGPT for `openai`, an app-identifying flow a
+    // deployment opts into; unopted, only the key login is offered.
     expect(catalogProvider('openai')?.auth.oauth?.loginLabel).toBe('Sign in with ChatGPT')
     expect(offered.find(entry => entry.key === recordKeyFor('openai'))?.methods.map(one => one.id))
       .toEqual(['api-key'])
+  })
+
+  it('offers the opt-in ChatGPT sign-in only to a deployment that asks for it', async () => {
+    const ctx = await harness({ chatGptSignIn: true })
+    const offered = ctx.authorization.list()
+
+    const methods = offered.find(entry => entry.key === recordKeyFor('openai'))?.methods
+    expect(methods?.map(one => one.id)).toEqual(['oauth', 'api-key'])
+    // OpenAI's own wording for starting the ChatGPT plan sign-in.
+    expect(methods?.[0]?.label).toBe('Continue with ChatGPT')
+    // The opt-in touches no other provider's flow, and that flow's name counts
+    // every plan OpenAI admits rather than the two pi-ai was written against.
+    expect(offered.find(entry => entry.key === CODEX)?.methods.map(one => one.id))
+      .toEqual(['oauth'])
+    expect(offered.find(entry => entry.key === CODEX)?.methods[0]?.label).toBe('OpenAI (ChatGPT plan)')
+  })
+
+  it('answers the Codex login-method question with the browser step', async () => {
+    const ctx = await harness()
+
+    // The flow offers a headless device-code grant beside the browser one; this
+    // surface completes through the browser or its redirect URL, so the question
+    // is answered rather than put to a human who has no way to use a code here.
+    const ui = await attempt(ctx, interaction => interaction.prompt({
+      type: 'select',
+      message: 'Select OpenAI Codex login method:',
+      options: [
+        { id: 'browser', label: 'Browser login (default)' },
+        { id: 'device_code', label: 'Device code login (headless)' },
+      ],
+    }).then((answer) => {
+      expect(answer).toBe('browser')
+    }))
+
+    expect(ui.prompts).toEqual([])
+  })
+
+  it('names this installation to the ChatGPT sign-in with one stable id', async () => {
+    const home = await mkdtemp(join(tmpdir(), 'dsh-pi-home-'))
+    dirs.push(home)
+    vi.stubEnv('DSH_HOME', home)
+    try {
+      const ctx = await harness({ chatGptSignIn: true })
+      await attempt(ctx, () => Promise.resolve(), { key: recordKeyFor('openai'), method: 'oauth' })
+      const first = lastLoginOptions()
+      expect(first?.getDeviceId?.()).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+      expect(first?.agentName).toBe('deepseek-harness')
+      expect(await readFile(join(home, 'agent-host-id'), 'utf8')).toBe(`${first?.getDeviceId?.()}\n`)
+
+      // A second sign-in presents the same installation instead of minting one.
+      await attempt(ctx, () => Promise.resolve(), { key: recordKeyFor('openai'), method: 'oauth' })
+      expect(lastLoginOptions()?.getDeviceId?.()).toBe(first?.getDeviceId?.())
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('runs the pi-ai auth type the chosen method names', async () => {

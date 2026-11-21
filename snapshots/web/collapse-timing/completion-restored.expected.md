@@ -3,8 +3,8 @@
 - status: Completed
 - button "Completed in {{duration}}"
 - paragraph: DONE
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}

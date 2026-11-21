@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-settings-models-signin/README.md
+/:
+  en: a5032853faf75b73
+  zh: 6838e48ed4665e49
+/deepseek-ai-dsh-client-ui-settings-models-signin:
+  en: 89f8677f5b56f988
+  zh: 4da69d71205f2d12
+/deepseek-ai-dsh-client-ui-settings-models-signin/summary:
+  en: f24853900cbc8cd3
+  zh: 42cd8b7aaf9305c5
+/deepseek-ai-dsh-client-ui-settings-models-signin/table-of-contents:
+  en: a08abbb0f74275e6
+  zh: 59e8cba79faa3ad4
+/deepseek-ai-dsh-client-ui-settings-models-signin/use-this-package:
+  en: 401aba64d11c1297
+  zh: 60d12361f2099c00
+/deepseek-ai-dsh-client-ui-settings-models-signin/what-to-expect:
+  en: 110b07536be4f445
+  zh: 08b41f2a6d1c2283
+/deepseek-ai-dsh-client-ui-settings-models-signin/understand-the-implementation:
+  en: 679529a2f9c56bd1
+  zh: 96c7d76d1784bdb3
+/deepseek-ai-dsh-client-ui-settings-models-signin/further-exploration:
+  en: 2c7f7577da1e97d8
+  zh: 39173acf5f43596a
+/deepseek-ai-dsh-client-ui-settings-models-signin/model-experience:
+  en: da4c95138946ecaa
+  zh: 490a2f22625ff329
+/deepseek-ai-dsh-client-ui-settings-models-signin/model-experience/kv-cache-effect:
+  en: 920bfb7147d15898
+  zh: a2b4e1ef01de4273
+/deepseek-ai-dsh-client-ui-settings-models-signin/known-limitations-and-deferred-work:
+  en: eea7e4437467f579
+  zh: 7fdb9f1e3b4e1a80
+/deepseek-ai-dsh-client-ui-settings-models-signin/known-limitations-and-deferred-work/dev-note:
+  en: b6fa732fc64a539b
+  zh: d4e6b1ede26f288d

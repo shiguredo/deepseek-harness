@@ -185,6 +185,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Shares profile package operations with the CLI and reports persisted and running state to Web and agent callers.',
   },
   {
+    key: 'modelSignIn',
+    pkg: 'client-ui-settings-models-signin',
+    title: 'Provider sign-in on the Models page',
+    mode: 'service',
+    note: 'Carries one authorization attempt across the wire for the Models page — the flow list, its notices, the pending question, and the paste step a browser on another machine needs — while the authorization seam keeps ownership of the flow and the credential record.',
+  },
+  {
     key: 'connectorAccounts',
     pkg: 'client-ui-connector-account',
     title: 'Connector accounts on the Plugins page',
@@ -459,6 +466,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Session interactive terminal Remote controller',
     mode: 'core',
     note: 'Owns user terminal processes, default shell resolution and bounded screen recovery through the subprocess provider and typed Remote transport.',
+  },
+  {
+    key: 'workspaceGit',
+    pkg: 'api-workspace-git',
+    title: 'Host workspace git Remote service',
+    mode: 'core',
+    note: 'Answers which checkout the Session workspace directory lives in — branch or detached commit, worktree directory name, and the origin GitHub repository — through uncached git reads that treat an unavailable fact as an answer.',
   },
   {
     key: 'workspaceController',

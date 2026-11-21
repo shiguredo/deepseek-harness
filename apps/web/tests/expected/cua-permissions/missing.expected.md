@@ -8,7 +8,7 @@
   - group "PTC execution mode":
     - strong: PTC execution mode
     - paragraph: Keep variables and application objects across PTC tool calls. Switching restarts the PTC runtime. Other modes always keep their computer use state separately.
-    - button "Use persistent mode"
+    - button "Persistent mode enabled" [disabled]
   - group "Accessibility":
     - strong: Accessibility
     - paragraph: In System Settings, allow DSH Computer Use.app to read interface controls, click, and type.

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Inicio de sesión de proveedores en Modelos",
+    "description": "Añade la sección de cuenta de cada tarjeta de proveedor en Modelos: lista los flujos de autorización del Host, inicia uno, muestra el paso del navegador y la opción de pegar la URL cuando el navegador está en otra máquina, y cierra la sesión."
+  }
+}

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-16-web-flat-session-workspace-label.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-16-web-flat-session-workspace-label.md
+/agent-note-web-flat-session-row-workspace-label:
+  en: bc74947ff8522bc6
+  zh: 62fe9b27baf22dde
+/agent-note-web-flat-session-row-workspace-label/problem:
+  en: 4724d90e60ca16e7
+  zh: 17a24c7510df530c
+/agent-note-web-flat-session-row-workspace-label/decision:
+  en: 586ca423926f3657
+  zh: f244ac7d85e5b709
+/agent-note-web-flat-session-row-workspace-label/testing:
+  en: 1ab1389f70132555
+  zh: 7cef4df613fcf8de
+/agent-note-web-flat-session-row-workspace-label/alternatives-considered:
+  en: 6414aad23fce06af
+  zh: ad95a6dcc23add86
+/agent-note-web-flat-session-row-workspace-label/consequences:
+  en: 5e58014bf65b1136
+  zh: 62b46c6e4d2f1865

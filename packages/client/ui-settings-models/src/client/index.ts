@@ -148,6 +148,7 @@ export function apply(ctx: ClientContext, config: SyncedConfig<ModelsConfig>): v
     inject: injected,
     children: {
       'settings.models.provider-card': { kind: 'keyed', scope: 'root' },
+      'settings.models.provider-mark': { kind: 'keyed', scope: 'root' },
       'settings.models.footer': { kind: 'list', scope: 'root' },
     },
   }, ModelsSection))

@@ -94,7 +94,7 @@ async function selectModel(page: Page, name: string): Promise<void> {
   await trigger.click()
   await page.getByRole('menuitem', { name: /^Model/ }).click()
   await page.getByRole('menuitemradio', { name, exact: true }).click()
-  await expect.poll(() => trigger.getAttribute('title')).toMatch(new RegExp(`^${name}(?: ·|$)`))
+  await expect.poll(() => trigger.getAttribute('title')).toMatch(new RegExp(`(?:^| · )${name}(?: ·|$)`))
 }
 
 /** A compact decision must remain stable across observer deliveries and paints. */
@@ -119,7 +119,11 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
     // script to consume (no model call happens — the /plan command never
     // steers a message), so the model trigger renders its real long label,
     // which is what made the reported overlap measurable.
-    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, replayProvidersOnly: true })
+    scaffold = await launchWebScaffold({
+      replayFixture: FIXTURE,
+      replayProvidersOnly: true,
+      extraOverlayPath: fileURLToPath(new URL('./no-push-guard-chip.overlay.yml', import.meta.url)),
+    })
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser, VIEWPORT.height)

@@ -39,14 +39,15 @@
 - button "Tool call cua · sendKeyEvent"
 - button "Context injection cua-held-inputs CUA inputs remain held"
 - paragraph: "The retained application and window report Count: 2. The counter persisted across calls, and the program exposes only tools.cua. The screenshot was attached after the first call."
+- text: {{clock}}
 - button "Copy"
 - button "Good response"
 - button "Bad response"
 - button "Branch into a new conversation"
-- text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash-Vision-Exp, reasoning effort high": DeepSeek-V4-Flash-Vision-Exp high
+- button "Push guard ON" [pressed]
+- button "Select model, current DeepSeek · DeepSeek-V4-Flash-Vision-Exp, reasoning effort high": DeepSeek · DeepSeek-V4-Flash-Vision-Exp high
 - button "Send message" [disabled]
 - button "1 turns 3 steps"

@@ -1,0 +1,6 @@
+# This fork adds a push-guard chip to the composer control row. The composer
+# geometry suites below assert the row a plan chip and the model trigger share,
+# including the width at which the model label collapses, so they boot without
+# that extra control; the chip keeps its own coverage in the snapshot lanes.
+- id: ui-git-push-guard
+  disabled: true

@@ -2730,6 +2730,51 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'modelSignIn',
+    summary: 'Host owner of the Models page\'s provider sign-in Remote.',
+    description: 'Host owner of the Models page\'s provider sign-in Remote.\n\nOne attempt per provider is enough for one surface: the authorization seam already refuses a second attempt for the same credential record, so a second browser tab hears that refusal instead of racing this one.',
+    methods: [
+      {
+        signature: '@Remote async list(): Promise<SignInFlowView[]>',
+        description: 'List every provider sign-in this composition offers.',
+        parameters: [],
+        returns: 'one entry per registered flow, with its methods and whether a credential is stored.',
+      },
+      {
+        signature: '@Remote begin(key: string, method: string): SignInAttemptView',
+        description: 'Start one attempt and return its first view.',
+        parameters: [{ name: 'key', description: 'credential record the flow writes, as `<scope>/<id>`.' }, { name: 'method', description: 'one method id the flow declared.' }],
+        returns: 'the attempt\'s view; poll {@link poll} for later phases.',
+        throws: ['when the key is malformed, no flow claims it, or one is already running.'],
+      },
+      {
+        signature: '@Remote poll(id: string): SignInAttemptView | undefined',
+        description: 'Read one attempt\'s current view.',
+        parameters: [{ name: 'id', description: 'attempt identity returned by {@link begin}.' }],
+        returns: 'the view, or undefined once this Host forgot the attempt.',
+      },
+      {
+        signature: '@Remote answer(id: string, promptId: number, value: string): SignInAttemptView',
+        description: 'Answer the question the attempt is waiting on.',
+        parameters: [{ name: 'id', description: 'attempt identity.' }, { name: 'promptId', description: 'the question\'s id, so a superseded question cannot be answered.' }, { name: 'value', description: 'what the human typed or chose.' }],
+        returns: 'the attempt\'s view after the answer is delivered.',
+        throws: ['when the attempt is unknown or the question is no longer pending.'],
+      },
+      {
+        signature: '@Remote cancel(id: string): SignInAttemptView',
+        description: 'Withdraw one attempt.',
+        parameters: [{ name: 'id', description: 'attempt identity.' }],
+        returns: 'the attempt\'s view, already marked cancelled.',
+      },
+      {
+        signature: '@Remote async signOut(key: string): Promise<void>',
+        description: 'Forget one provider\'s stored credential record.',
+        parameters: [{ name: 'key', description: 'credential record the flow writes, as `<scope>/<id>`.' }],
+        throws: ['when an attempt for that record is running.'],
+      },
+    ],
+  },
+  {
     key: 'officeKit',
     summary: 'A provider lifetime owns all converters, queued calls, and temporary files.',
     description: 'A provider lifetime owns all converters, queued calls, and temporary files.',
@@ -5405,6 +5450,19 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'workspaceFileScope', description: 'header-derived workspace root for the Session identity on the wire.' }, { name: 'path', description: 'target path; the Host determines its type and confines directories to the workspace.' }, { name: 'signal', description: 'generation cancellation.' }],
         returns: '`ready` once the target watch is active, then current metadata for queued and live invalidations.',
         throws: ['RemoteError when watching is unavailable or a directory is outside the workspace.'],
+      },
+    ],
+  },
+  {
+    key: 'workspaceGit',
+    summary: 'Host reader of the checkout one Session workspace lives in.',
+    description: 'Host reader of the checkout one Session workspace lives in.',
+    methods: [
+      {
+        signature: '@Remote async status(workspaceGitScope: WorkspaceGitScope, signal: AbortSignal): Promise<WorkspaceGitStatus>',
+        description: 'Read the checkout one Session workspace lives in.',
+        parameters: [{ name: 'workspaceGitScope', description: 'resolved working directory for the Session identity on the wire.' }, { name: 'signal', description: 'caller cancellation.' }],
+        returns: 'the checked-out branch or detached short commit id, together with the checkout root path and, when the workspace is a linked worktree, its directory name, plus the GitHub repository the checkout carries, or `none` outside a repository.',
       },
     ],
   },
@@ -8308,7 +8366,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmAdapter',
-    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
+    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget;\n    alternateRoute(_provider: string, _model: string): LlmAlternateRoute | undefined;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
+  },
+  {
+    name: 'LlmAlternateRoute',
+    declaration: 'export interface LlmAlternateRoute {\n    readonly provider: string;\n    readonly model: string;\n}',
   },
   {
     name: 'LlmAttemptId',
@@ -8364,11 +8426,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmModelInfo',
-    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    badge?: LlmModelBadge;\n}',
+    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    routing?: LlmModelRouting;\n    badge?: LlmModelBadge;\n}',
   },
   {
     name: 'LlmModelReasoningInfo',
     declaration: 'export interface LlmModelReasoningInfo {\n    efforts: readonly LlmReasoningEffortInfo[];\n    defaultEffort?: ReasoningEffortId;\n}',
+  },
+  {
+    name: 'LlmModelRouting',
+    declaration: 'export interface LlmModelRouting {\n    windows: readonly LlmRoutingWindow[];\n}',
   },
   {
     name: 'LlmNativeAuth',
@@ -8393,6 +8459,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LlmResolvedModelInfo',
     declaration: 'export interface LlmResolvedModelInfo extends LlmModelInfo {\n    context?: LlmModelContext;\n    defaultMaxTokens?: number;\n    reasoning?: LlmModelReasoningInfo;\n    systemPromptUpdate?: SystemPromptUpdate;\n    toolUpdate?: ToolUpdate;\n}',
+  },
+  {
+    name: 'LlmRoutingWindow',
+    declaration: 'export interface LlmRoutingWindow {\n    from: string;\n    to: string;\n    timeZone?: string;\n    days?: readonly string[];\n    provider: string;\n    model?: string;\n}',
   },
   {
     name: 'LlmRuntime',
@@ -8740,7 +8810,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelCatalogModel',
-    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly badge?: LlmModelBadge;\n}',
+    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly routing?: LlmModelRouting;\n    readonly badge?: LlmModelBadge;\n}',
   },
   {
     name: 'ModelMessageSource',
@@ -9695,6 +9765,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ScheduleListResult {\n    readonly items: ScheduleCatalogEntry[];\n    readonly shown: number;\n    readonly total: number;\n    readonly limit: number;\n    readonly offset: number;\n}',
   },
   {
+    name: 'ScheduleModelSelection',
+    declaration: 'export interface ScheduleModelSelection {\n    readonly provider: string;\n    readonly model: string;\n    readonly reasoningEffort?: string;\n}',
+  },
+  {
     name: 'ScheduleNotFoundResult',
     declaration: 'export interface ScheduleNotFoundResult {\n    readonly id: ScheduleId;\n    readonly code: \'schedule_not_found\';\n}',
   },
@@ -9716,7 +9790,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ScheduleSessionCreateSpec',
-    declaration: 'export interface ScheduleSessionCreateSpec {\n    readonly cwd?: string;\n    readonly agentPreset?: string;\n}',
+    declaration: 'export interface ScheduleSessionCreateSpec {\n    readonly cwd?: string;\n    readonly agentPreset?: string;\n    readonly model?: ScheduleModelSelection;\n}',
   },
   {
     name: 'ScheduleTarget',
@@ -10567,12 +10641,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SignInAttemptId = Branded<\'SignInAttemptId\'>;',
   },
   {
-    name: 'SignInAttemptView',
-    declaration: 'export interface SignInAttemptView {\n    readonly id: SignInAttemptId;\n    readonly phase: \'initializing\' | \'waiting-browser\' | \'exchanging\' | \'committing\' | \'succeeded\' | \'cancelled\' | \'expired\' | \'failed\';\n    readonly authorizeUrl?: string;\n    readonly expiresAt?: number;\n    readonly errorCode?: SignInErrorCode;\n}',
+    name: 'SignInFlowView',
+    declaration: 'export interface SignInFlowView {\n    readonly key: string;\n    readonly provider: string;\n    readonly label: string;\n    readonly methods: readonly SignInMethodView[];\n    readonly signedIn: boolean;\n    readonly credential: \'none\' | \'api-key\' | \'grant\';\n}',
   },
   {
-    name: 'SignInErrorCode',
-    declaration: 'export type SignInErrorCode = \'no-response\' | \'network\' | \'protocol\' | \'expired\' | \'storage\';',
+    name: 'SignInMethodView',
+    declaration: 'export interface SignInMethodView {\n    readonly id: string;\n    readonly label: string;\n}',
   },
   {
     name: 'SkillCandidate',
@@ -11917,6 +11991,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceFollowIncrement',
     declaration: 'export type WorkspaceFollowIncrement = {\n    readonly type: \'replace\';\n    readonly value: WorkspaceBaseline;\n} | {\n    readonly type: \'upsert\';\n    readonly workspace: WorkspaceView;\n} | {\n    readonly type: \'remove\';\n    readonly workspaceId: WorkspaceId;\n} | {\n    readonly type: \'order\';\n    readonly workspaceIds: readonly WorkspaceId[];\n} | {\n    readonly type: \'archived\';\n    readonly archivedSessionIds: readonly SessionId[];\n} | {\n    readonly type: \'pinned\';\n    readonly pinnedSessionIds: readonly SessionId[];\n};',
+  },
+  {
+    name: 'WorkspaceGitScope',
+    declaration: 'export interface WorkspaceGitScope {\n    readonly sessionId: SessionId;\n    readonly workspaceRoot: string;\n}',
+  },
+  {
+    name: 'WorkspaceGitStatus',
+    declaration: 'export type WorkspaceGitStatus = (WorkspaceGitRepository & {\n    readonly kind: \'branch\';\n    readonly name: string;\n}) | (WorkspaceGitRepository & {\n    readonly kind: \'detached\';\n    readonly head: string;\n}) | {\n    readonly kind: \'none\';\n};',
   },
   {
     name: 'WorkspaceInsertBeforeRequest',

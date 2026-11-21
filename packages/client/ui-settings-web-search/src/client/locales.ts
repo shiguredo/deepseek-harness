@@ -5,7 +5,7 @@ import type { SettingsFormLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 /** Locale keys the page renders. */
 export type WebSearchSettingsLocaleKey =
   | 'title' | 'description' | 'searchSection' | 'fetchSection'
-  | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerAuto' | 'searchAutoHint'
+  | 'providerDeepSeek' | 'providerLocal' | 'providerDeepSeekFetch' | 'providerMissing' | 'providerMissingHint' | 'providerAuto' | 'searchAutoHint'
   | 'providerLegacy' | 'legacyKeyHint' | 'maxUses' | 'maxUsesHint' | 'invalidMaxUses'
   | 'providersFailed' | 'retry'
   | 'pluginProviderHint' | 'searchGuide' | 'searchGuideUrl'
@@ -32,6 +32,7 @@ export const en: Record<WebSearchSettingsLocaleKey, string> = {
   providerLocal: 'Direct fetch',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (not loaded)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automatic',
   searchAutoHint: "Follows the conversation's model: DeepSeek models use DeepSeek server-side search, which has no per-search charge; other models use DeepSeek Search API.",
   providersFailed: "Couldn't load the provider list, so this menu may be incomplete.",
@@ -80,6 +81,7 @@ export const zh: Record<WebSearchSettingsLocaleKey, string> = {
   providerLocal: '本机直接获取',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id}（未加载）',
+  providerMissingHint: '本部署选择的提供方没有已加载的插件注册。请选择其他提供方，或启用提供它的插件；修改插件组合或启动环境后，重启 dsh 服务器才会生效。',
   providerAuto: '自动选择',
   searchAutoHint: '跟随当前会话的模型：DeepSeek 模型使用 DeepSeek 服务端搜索，搜索不按次收费；其他模型使用 DeepSeek Search API。',
   providersFailed: '无法读取提供方列表，此菜单可能不完整',
@@ -137,6 +139,7 @@ export const ja = {
   'providerLocal': '直接取得',
   'providerDeepSeekFetch': 'DeepSeek Fetch API',
   'providerMissing': '{id}（未読み込み）',
+  providerMissingHint: 'このデプロイが選択しているプロバイダーは、読み込まれているどのプラグインにも登録されていません。別のプロバイダーを選ぶか、提供するプラグインを有効にしてください。プラグイン構成や起動環境の変更は、dsh サーバーの再起動後に反映されます。',
   'providerAuto': '自動',
   'searchAutoHint': '会話のモデルに従います。DeepSeek モデルでは検索ごとの料金がかからない DeepSeek サーバー側検索を、他のモデルでは DeepSeek Search API を使います。',
   'providersFailed': 'プロバイダー一覧を読み込めなかったため、このメニューは不完全な可能性があります。',
@@ -185,6 +188,7 @@ export const es = {
   providerLocal: 'Obtención directa',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (no cargado)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automático',
   searchAutoHint: 'Sigue el modelo de la conversación: los modelos de DeepSeek usan la búsqueda en servidor de DeepSeek, sin cargo por búsqueda; los demás modelos usan DeepSeek Search API.',
   providersFailed: 'No se pudo cargar la lista de proveedores, por lo que este menú puede estar incompleto.',
@@ -233,6 +237,7 @@ export const fr = {
   providerLocal: 'Récupération directe',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (non chargé)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automatique',
   searchAutoHint: 'Suit le modèle de la conversation : les modèles DeepSeek utilisent la recherche côté serveur DeepSeek, sans frais par recherche ; les autres modèles utilisent DeepSeek Search API.',
   providersFailed: 'Impossible de charger la liste des fournisseurs ; ce menu peut être incomplet.',
@@ -281,6 +286,7 @@ export const de = {
   providerLocal: 'Direkter Abruf',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (nicht geladen)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automatisch',
   searchAutoHint: 'Folgt dem Modell der Unterhaltung: DeepSeek-Modelle verwenden die DeepSeek-Serversuche ohne Kosten pro Suche; andere Modelle verwenden DeepSeek Search API.',
   providersFailed: 'Die Anbieterliste konnte nicht geladen werden, daher ist dieses Menü möglicherweise unvollständig.',
@@ -329,6 +335,7 @@ export const ru = {
   providerLocal: 'Прямая загрузка',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (не загружен)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Автоматически',
   searchAutoHint: 'Следует модели разговора: модели DeepSeek используют серверный поиск DeepSeek без платы за каждый поиск; остальные модели используют DeepSeek Search API.',
   providersFailed: 'Не удалось загрузить список поставщиков, поэтому это меню может быть неполным.',
@@ -377,6 +384,7 @@ export const pt = {
   providerLocal: 'Obtenção direta',
   providerDeepSeekFetch: 'DeepSeek Fetch API',
   providerMissing: '{id} (não carregado)',
+  providerMissingHint: 'The provider this deployment selects is not registered by any loaded plugin. Choose another provider, or enable the plugin that provides it; a change to the plugin composition or the launching environment takes effect after the dsh server restarts.',
   providerAuto: 'Automático',
   searchAutoHint: 'Segue o modelo da conversa: os modelos da DeepSeek usam a pesquisa no servidor da DeepSeek, sem cobrança por pesquisa; os outros modelos usam DeepSeek Search API.',
   providersFailed: 'Não foi possível carregar a lista de provedores, por isso este menu pode estar incompleto.',

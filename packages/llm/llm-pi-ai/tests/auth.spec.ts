@@ -6,7 +6,8 @@ import { Context } from '@deepseek-ai/cordis'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import { credentialKey, credentialRef } from '@deepseek-ai/dsh-credentials'
 import { createLaunchEnvironmentSnapshot, DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
-import { authContextFrom, credentialStoreFrom, recordKeyFor } from '../src/auth.ts'
+import type { CredentialStore, OAuthAuth, OAuthCredential } from '@earendil-works/pi-ai'
+import { authContextFrom, credentialStoreFrom, recordKeyFor, refreshRejectedOAuth } from '../src/auth.ts'
 
 const home = vi.hoisted(() => ({ unavailable: false }))
 
@@ -256,5 +257,106 @@ describe('pi-ai ambient auth context', () => {
     home.unavailable = true
 
     await expect(context.fileExists(join(dir, 'creds'))).resolves.toBe(true)
+  })
+})
+
+/** An OAuth method whose exchange the test controls. */
+function oauthWithRefresh(
+  refresh: (credential: OAuthCredential) => Promise<OAuthCredential>,
+): OAuthAuth {
+  return {
+    name: 'fixture',
+    login: () => Promise.reject(new Error('not used')),
+    refresh: credential => refresh(credential),
+    toAuth: () => Promise.resolve({ apiKey: 'access' }),
+  }
+}
+
+/** Store one OAuth grant under the Codex record. */
+async function storeGrant(store: CredentialStore, access: string): Promise<void> {
+  await store.modify('openai-codex', () => Promise.resolve({
+    type: 'oauth', access, refresh: `rt-${access}`, expires: 1,
+  }))
+}
+
+describe('forced refresh of a rejected OAuth sign-in', () => {
+  it('does nothing for a provider without an OAuth method', async () => {
+    const store = credentialStoreFrom(await stored())
+    await storeGrant(store, 'old')
+
+    await expect(refreshRejectedOAuth(store, 'openai-codex', undefined)).resolves.toBe('unsupported')
+    await expect(store.read('openai-codex')).resolves.toMatchObject({ access: 'old' })
+  })
+
+  it('does nothing when the route holds no stored grant', async () => {
+    const store = credentialStoreFrom(await stored())
+
+    await expect(refreshRejectedOAuth(store, 'openai-codex', oauthWithRefresh(credential => Promise.resolve(credential))))
+      .resolves.toBe('unsupported')
+  })
+
+  it('stores the exchanged grant and reports the route refreshed', async () => {
+    const store = credentialStoreFrom(await stored())
+    await storeGrant(store, 'old')
+    const oauth = oauthWithRefresh(credential => Promise.resolve({ ...credential, access: 'new', expires: 2 }))
+
+    await expect(refreshRejectedOAuth(store, 'openai-codex', oauth)).resolves.toBe('refreshed')
+    await expect(store.read('openai-codex')).resolves.toMatchObject({ type: 'oauth', access: 'new', expires: 2 })
+  })
+
+  it('keeps a grant another request already replaced', async () => {
+    const base = credentialStoreFrom(await stored())
+    await storeGrant(base, 'old')
+    const refresh = vi.fn((credential: OAuthCredential) => Promise.resolve(credential))
+    const racing: CredentialStore = {
+      read: (providerId, options) => base.read(providerId, options),
+      list: options => base.list(options),
+      modify: async (providerId, mutate, options) => {
+        // A concurrent request wins the exchange before this one takes the lock.
+        await base.modify(providerId, () => Promise.resolve({
+          type: 'oauth', access: 'other', refresh: 'rt-other', expires: 3,
+        }))
+        return base.modify(providerId, mutate, options)
+      },
+      delete: (providerId, options) => base.delete(providerId, options),
+    }
+
+    await expect(refreshRejectedOAuth(racing, 'openai-codex', oauthWithRefresh(refresh)))
+      .resolves.toBe('refreshed')
+    expect(refresh).not.toHaveBeenCalled()
+    await expect(base.read('openai-codex')).resolves.toMatchObject({ access: 'other' })
+  })
+
+  it('reports failure and keeps the rejected grant when the exchange throws', async () => {
+    const store = credentialStoreFrom(await stored())
+    await storeGrant(store, 'old')
+    const oauth = oauthWithRefresh(() => Promise.reject(new Error('invalid_grant')))
+
+    await expect(refreshRejectedOAuth(store, 'openai-codex', oauth)).resolves.toBe('failed')
+    await expect(store.read('openai-codex')).resolves.toMatchObject({ access: 'old' })
+  })
+
+  it('reports failure when the exchange returns the rejected access', async () => {
+    const store = credentialStoreFrom(await stored())
+    await storeGrant(store, 'old')
+
+    await expect(refreshRejectedOAuth(store, 'openai-codex', oauthWithRefresh(credential => Promise.resolve(credential))))
+      .resolves.toBe('failed')
+  })
+
+  it('reports failure when the store writes nothing', async () => {
+    const grant: OAuthCredential = { type: 'oauth', access: 'old', refresh: 'rt', expires: 1 }
+    const store: CredentialStore = {
+      read: () => Promise.resolve(grant),
+      list: () => Promise.resolve([]),
+      modify: () => Promise.resolve(undefined),
+      delete: () => Promise.resolve(),
+    }
+
+    await expect(refreshRejectedOAuth(
+      store,
+      'openai-codex',
+      oauthWithRefresh(credential => Promise.resolve({ ...credential, access: 'new' })),
+    )).resolves.toBe('failed')
   })
 })

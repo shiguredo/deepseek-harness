@@ -134,6 +134,14 @@
 .workspaceMenuItem { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .workspaceMenuItem > span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .workspaceMenuPath { line-height: 18px; }
+/* Model rows need the same width as the other wide rows. */
+.modelMenu { width: 320px; max-width: calc(100vw - 48px); }
+/* Provider name leading one menu row in caption tone; the model name keeps the
+   row's primary tone, and the row's own label carries the ellipsis. */
+.modelMenuProvider { color: var(--dsw-alias-label-caption); }
+/* Destination rows and the model catalog's retry notice form one group; the
+   editor's 20px grid step separates it from the rule section. */
+.destinationGroup { display: grid; gap: 8px; min-width: 0; }
 .taskEditor { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 20px; }
 .editorField { display: grid; gap: 8px; font-size: 14px; min-width: 0; }
 .editorField > h3 { margin: 0; font: inherit; }
@@ -444,6 +452,12 @@
 
 .conflictNotice > button {
   margin-left: auto;
+}
+
+/* The model catalog's retry notice sits inside the destination group, whose grid
+   already spaces it from the rows card. */
+.modelNotice {
+  margin: 0;
 }
 
 /* The centered state every panel without content shares: empty, deleted,
@@ -932,6 +946,17 @@
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Provider name leading a value in caption tone, as the composer's model
+   trigger shows it. It absorbs the row's deficit before the model name. */
+.ruleCurrentLead {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-caption);
 }
 
 .zoneSearch {

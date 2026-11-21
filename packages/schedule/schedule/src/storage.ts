@@ -44,9 +44,17 @@ const deliveryHistorySchema = z.object({
   message: 'Delivery history message identities must be unique within a task',
 })
 
+/** Exact model route of a Session a target creates. */
+const createModelSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  reasoningEffort: z.string().min(1).exactOptional(),
+}).strict()
+
 const createSpecSchema = z.object({
   cwd: z.string().min(1).exactOptional(),
   agentPreset: z.string().min(1).exactOptional(),
+  model: createModelSchema.exactOptional(),
 }).strict()
 
 const targetSchema = z.discriminatedUnion('kind', [

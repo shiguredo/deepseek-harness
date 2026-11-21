@@ -41,6 +41,7 @@
       - option "moonshotai"
       - option "moonshotai-cn"
       - option "nvidia"
+      - option "ollama-cloud"
       - option "openai"
       - option "openai-codex" [selected]
       - option "opencode"
@@ -49,6 +50,7 @@
       - option "qwen-token-plan"
       - option "qwen-token-plan-cn"
       - option "qwen-token-plan-individual"
+      - option "qwen-token-plan-individual-cn"
       - option "radius"
       - option "together"
       - option "vercel-ai-gateway"
@@ -62,3 +64,10 @@
     - group: 自定义设置
     - button "取消"
     - button "保存"
+    - text: 提供方账号 未登录。
+    - paragraph: 在浏览器中继续。若浏览器在另一台机器上，请把它最后显示的 URL 粘贴到面板的输入框中。
+    - button "OpenAI (ChatGPT plan)"
+    - paragraph:
+      - text: 计划用量适用于 ChatGPT Go、Plus、Pro 与 Business 订阅者，其中 Business 受工作区自身控制设置的约束。使用遵循 OpenAI 的「使用 ChatGPT 登录」条款及该计划自身的额度。
+      - link "查看条款":
+        - /url: https://openai.com/zh-Hans/policies/sign-in-with-chatgpt-terms/

@@ -42,7 +42,24 @@ const INTERNAL_ERROR = { code: 'internal_error', message: 'The schedule operatio
 const TWO_LINES = { code: 'invalid_rule', message: 'rrule must contain one DTSTART line followed by one RRULE line.' }
 const DELETE_ONLY = { code: 'invalid_selector', message: 'delete accepts only id, action, and expectedUpdatedAt.' }
 const UPDATE_FIELD = {
-  code: 'invalid_selector', message: 'update requires at least one of title, prompt, rrule, target, or active.',
+  code: 'invalid_selector',
+  message: 'update requires at least one of title, prompt, rrule, target, active, provider, model, or reasoning_effort.',
+}
+const MODEL = { provider: 'deepseek-official', model: 'deepseek-pro' }
+const INCOMPLETE_ROUTE = {
+  code: 'invalid_selector',
+  message: 'provider and model must be supplied together; reasoning_effort also requires both.',
+}
+const EMPTY_ROUTE = {
+  code: 'invalid_selector', message: 'provider, model, and reasoning_effort must be non-empty when present.',
+}
+const EXISTING_SESSION_MODEL = {
+  code: 'invalid_selector',
+  message: 'this_session delivers to an existing session, which keeps its own model; provider, model, and reasoning_effort apply only to new_once and new targets.',
+}
+const STORED_SESSION_MODEL = {
+  code: 'invalid_selector',
+  message: 'This task delivers to an existing session, which keeps its own model; supply target new_once or new with provider and model to select a model.',
 }
 
 const tests: Awaited<ReturnType<typeof harness>>[] = []
@@ -124,6 +141,13 @@ async function createOther(test: Setup) {
     title: 'Other session', prompt: 'Check from elsewhere', timing: { kind: 'rrule', rrule: 'DTSTART:20260916T003000Z\nRRULE:FREQ=DAILY' },
     target: { kind: 'session', sessionId: brandString<SessionId>('other-session') },
   }, brandString<SessionId>('other-session')))
+}
+
+/** Provide the Host LLM registry that accepts every creation model route. */
+function acceptModels(test: Setup) {
+  const resolveCallConfig = vi.fn(async (config: unknown) => config)
+  test.ctx.provide('llm', { resolveCallConfig } as never)
+  return resolveCallConfig
 }
 
 describe('Schedule model tools', () => {
@@ -275,7 +299,8 @@ describe('Schedule model tools', () => {
           enum: ['this_session', 'new_once', 'new'],
           description: expect.stringContaining(
             'new_once delivers to the same new session every time, opened at the first delivery; new opens a different '
-            + 'new session for every delivery. New sessions use this session\'s working directory and preset.',
+            + 'new session for every delivery. New sessions use this session\'s working directory and preset, '
+            + 'and any model selected by provider, model, and reasoning_effort.',
           ) as string,
         },
       },
@@ -362,12 +387,171 @@ describe('Schedule model tools', () => {
     expect(test.createSession).not.toHaveBeenCalled()
   })
 
+  it.each(['new_once', 'new'] as const)('replaces only the model of a %s task and keeps its creation values', async (kind) => {
+    const test = await setupWithPreset()
+    acceptModels(test)
+    const task = await createTask(test, { target: kind, ...MODEL })
+    const editor = agentFor(test.ctx, 'editor', { cwd: '/other' })
+    await mountToolSchedule(test.ctx, editor)
+    test.composedPreset.mockClear()
+    const edited = await execute(test, 'schedule_edit', {
+      id: task.id, action: 'update', provider: 'deepseek-official', model: 'deepseek-flash', reasoning_effort: 'off',
+    }, editor)
+    expect(edited.isError).toBe(false)
+    expect(edited.value).toMatchObject({
+      target: {
+        kind,
+        create: {
+          cwd: '/work', agentPreset: 'research',
+          model: { provider: 'deepseek-official', model: 'deepseek-flash', reasoningEffort: 'off' },
+        },
+      },
+    })
+    expect(test.composedPreset).not.toHaveBeenCalled()
+    expect(await stored(test, task.id)).toEqual(edited.value)
+  })
+
+  it('replaces a target with the editing Session context and the selected model', async () => {
+    const test = await setupWithPreset()
+    acceptModels(test)
+    const task = await createTask(test, { target: 'new' })
+    const editor = agentFor(test.ctx, 'editor', { cwd: '/other' })
+    await mountToolSchedule(test.ctx, editor)
+    test.composedPreset.mockReturnValue('editor-preset')
+    const replaced = await execute(test, 'schedule_edit', { id: task.id, action: 'update', target: 'new_once', ...MODEL }, editor)
+    expect(replaced.isError).toBe(false)
+    expect(replaced.value).toMatchObject({
+      target: { kind: 'new_once', create: { cwd: '/other', agentPreset: 'editor-preset', model: MODEL } },
+    })
+  })
+
+  it('drops the stored model when an update replaces the target without a model', async () => {
+    const test = await setup()
+    acceptModels(test)
+    const task = await createTask(test, { target: 'new', ...MODEL })
+    const replaced = await call(test, 'schedule_edit', { id: task.id, action: 'update', target: 'new' })
+    expect(replaced).toMatchObject({ target: { kind: 'new', create: {} } })
+    expect(replaced).not.toHaveProperty('target.create.model')
+  })
+
+  it('refuses a model selection for a task that delivers to an existing session', async () => {
+    const test = await setup()
+    const task = await createTask(test)
+    expect(await call(test, 'schedule_edit', { id: task.id, action: 'update', ...MODEL })).toEqual(STORED_SESSION_MODEL)
+    expect(await stored(test, task.id)).toEqual(task)
+    expect(await call(test, 'schedule_edit', { id: task.id, action: 'update', target: 'this_session', ...MODEL }))
+      .toEqual(EXISTING_SESSION_MODEL)
+    expect(await stored(test, task.id)).toEqual(task)
+  })
+
+  it('reports a missing task for an update that changes only the model', async () => {
+    const test = await setup()
+    expect(await call(test, 'schedule_edit', { id: 'missing', action: 'update', ...MODEL }))
+      .toEqual({ id: 'missing', code: 'schedule_not_found' })
+  })
+
+  it('reports a creation model route that the Host cannot validate and stores nothing', async () => {
+    const test = await setup()
+    expect(await call(test, 'schedule_create', { ...TASK, target: 'new', ...MODEL })).toEqual({
+      code: 'model_unavailable',
+      message: expect.stringContaining('cannot validate a model selection') as string,
+    })
+    expect((await test.service.list({})).total).toBe(0)
+  })
+
+  it('reports a creation model route that the Host cannot resolve and stores nothing', async () => {
+    const test = await setup()
+    test.ctx.provide('llm', { resolveCallConfig: async () => { throw new Error('unknown model "deepseek-pro"') } } as never)
+    expect(await call(test, 'schedule_create', { ...TASK, target: 'new', ...MODEL })).toEqual({
+      code: 'model_unavailable',
+      message: expect.stringContaining('unknown model "deepseek-pro"') as string,
+    })
+    expect((await test.service.list({})).total).toBe(0)
+  })
+
+  it('reports an unavailable replacement model route and keeps the task', async () => {
+    const test = await setup()
+    const resolveCallConfig = acceptModels(test)
+    const task = await createTask(test, { target: 'new', ...MODEL })
+    resolveCallConfig.mockRejectedValueOnce(new Error('route retired'))
+    expect(await call(test, 'schedule_edit', {
+      id: task.id, action: 'update', provider: 'deepseek-official', model: 'deepseek-flash',
+    })).toEqual({
+      code: 'model_unavailable',
+      message: expect.stringContaining('route retired') as string,
+    })
+    expect(await stored(test, task.id)).toEqual(task)
+  })
+
   it('targets a new Session per delivery for new, omitting creation values the caller lacks', async () => {
     const test = await setupWithPreset()
     const task = await createTask(test, { target: 'new' })
     expect(task.target).toEqual({ kind: 'new', create: { cwd: '/work', agentPreset: 'research' } })
     const bare = await createTask(await setup(), { target: 'new' })
     expect(bare.target).toEqual({ kind: 'new', create: {} })
+  })
+
+  it('adds a selected model route to a creating target and validates it once', async () => {
+    const test = await setupWithPreset()
+    const resolveCallConfig = acceptModels(test)
+    const routed = await createTask(test, { target: 'new', ...MODEL, reasoning_effort: 'high' })
+    expect(routed.target).toEqual({
+      kind: 'new',
+      create: {
+        cwd: '/work', agentPreset: 'research',
+        model: { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' },
+      },
+    })
+    expect(resolveCallConfig).toHaveBeenCalledOnce()
+    expect(resolveCallConfig.mock.calls[0]?.[0]).toEqual({
+      provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high',
+    })
+    const reserved = await createTask(test, { target: 'new_once', ...MODEL })
+    expect(reserved.target).toMatchObject({
+      kind: 'new_once',
+      create: { cwd: '/work', agentPreset: 'research', model: MODEL },
+    })
+    expect(resolveCallConfig).toHaveBeenCalledTimes(2)
+  })
+
+  it('echoes the selected model through create, view, and list results', async () => {
+    const test = await setup()
+    acceptModels(test)
+    const model = { provider: 'deepseek-official', model: 'deepseek-pro', reasoningEffort: 'high' }
+    const created = await call(test, 'schedule_create', { ...TASK, target: 'new', ...MODEL, reasoning_effort: 'high' })
+    expect(created).toMatchObject({ target: { kind: 'new', create: { model } } })
+    const { id } = created as { id: string }
+    expect(await call(test, 'schedule_view', { id })).toMatchObject({ target: { kind: 'new', create: { model } } })
+    expect(await call(test, 'schedule_list', {})).toMatchObject({ items: [{ target: { kind: 'new', create: { model } } }] })
+  })
+
+  it('refuses a model route on this_session without reaching the service', async () => {
+    const test = await setup()
+    const create = vi.spyOn(test.service, 'create')
+    expect(await call(test, 'schedule_create', { ...TASK, target: 'this_session', ...MODEL })).toEqual(EXISTING_SESSION_MODEL)
+    expect(create).not.toHaveBeenCalled()
+    expect((await test.service.list({})).total).toBe(0)
+  })
+
+  it.each([
+    { input: 'provider only', args: { provider: 'deepseek-official' } },
+    { input: 'model only', args: { model: 'deepseek-pro' } },
+    { input: 'reasoning effort only', args: { reasoning_effort: 'high' } },
+    { input: 'an effort beside provider', args: { provider: 'deepseek-official', reasoning_effort: 'high' } },
+  ])('refuses $input without storing a task', async ({ args }) => {
+    const test = await setup()
+    expect(await call(test, 'schedule_create', { ...TASK, target: 'new', ...args })).toEqual(INCOMPLETE_ROUTE)
+    expect((await test.service.list({})).total).toBe(0)
+  })
+
+  it.each([
+    { provider: '', model: 'deepseek-pro' },
+    { provider: 'deepseek-official', model: '' },
+    { provider: 'deepseek-official', model: 'deepseek-pro', reasoning_effort: '' },
+  ])('refuses the empty model route value %j without storing a task', async (model) => {
+    const test = await setup()
+    expect(await call(test, 'schedule_create', { ...TASK, target: 'new', ...model })).toEqual(EMPTY_ROUTE)
+    expect((await test.service.list({})).total).toBe(0)
   })
 
   it.each([

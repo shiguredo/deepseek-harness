@@ -81,7 +81,7 @@ RRULE 接受有界的 RFC 5545 子集，以共享的 [`rrule.ts` 解析器](../.
 | `new_once` | 首次投递前预留 Session id，需要时创建该 Session，然后保存为 `session` 并复用。重试和重启保留该预留标识。 |
 | `new` | 每次投递创建 Session。创建前持久化 `pendingDelivery.targetSessionId`，使失败尝试重用同一 Session。 |
 
-创建时省略目标则默认 `new_once`。新增或替换 `new`、`new_once` 目标需要嵌入环境提供 Session 创建能力。SDK 组合缺少该能力时，在保存前以 `invalid_rule` 拒绝这些请求；已有 `session` 目标仍可使用。创建值 `cwd` 和 `agentPreset` 可省略，使用 Host 默认值。创建的 Session 会加入其目录已注册的 Workspace（如有），且尚无标题时使用任务标题；`new` 另加该规则时区中的创建分钟。加入或重命名失败会记录日志，但不阻断投递。
+创建时省略目标则默认 `new_once`。新增或替换 `new`、`new_once` 目标需要嵌入环境提供 Session 创建能力。SDK 组合缺少该能力时，在保存前以 `invalid_rule` 拒绝这些请求；已有 `session` 目标仍可使用。创建值 `cwd`、`agentPreset` 和 `model` 可省略，使用 Host 默认值。`model` 由 provider、provider 所有的 model id 和可选的 adapter 所有 reasoning effort 组成；Host 在接受任务时通过 LLM 注册表校验该路由，无法解析时以 `model_unavailable` 拒绝。新建目标创建的每个 Session 都会在投递的指令之前记录该路由，因此运行使用它而不是 Host 默认模型；已有 `session` 目标保留自己的模型选择。创建的 Session 会加入其目录已注册的 Workspace（如有），且尚无标题时使用任务标题；`new` 另加该规则时区中的创建分钟。加入或重命名失败会记录日志，但不阻断投递。
 
 <a id="task-management"></a>
 ## 任务管理

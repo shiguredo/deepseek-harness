@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Branch-Chip-Oberfläche",
+    "description": "Zeigt den ausgecheckten Branch in der Statistikzeile des Composers und im Kopf der Fragenkarte."
+  }
+}

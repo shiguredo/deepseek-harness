@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.3/git-push-guard/guide.md
+/:
+  en: b8ea5b7feaf27a43
+  zh: fdd36add7c2e12f2
+/the-built-in-commit-guard-becomes-the-git-push-guard:
+  en: 13bcb326e8abcee6
+  zh: 33eaab8b91737b8c
+/the-built-in-commit-guard-becomes-the-git-push-guard/change:
+  en: dec62a0dd1e04a0a
+  zh: 718da0a3c3c6f1d8
+/the-built-in-commit-guard-becomes-the-git-push-guard/migration:
+  en: 0e94c736f632d601
+  zh: 0f01831194df88cb

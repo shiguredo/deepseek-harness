@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`@deepseek-ai/dsh-llm-pi-ai` 通过一份配置把模型请求路由到多个 pi-ai 提供方、OpenAI 兼容网关或自托管服务器。已安装的 pi-ai 提供方会提供端点、协议和模型目录默认值；自定义路由可以直接声明这些值，无需修改代码。profile 与凭据按请求解析，因此设置变更会在下一个请求生效，无需重启。受支持的提供方可以使用已存储的 OAuth 或交互式密钥登录，并通过跨进程锁刷新凭据。本包可以在没有路由时启动，并在用户设置添加路由后将其激活。
+`@deepseek-ai/dsh-llm-pi-ai` 通过一份配置把模型请求路由到多个 pi-ai 提供方、OpenAI 兼容网关或自托管服务器。已安装的 pi-ai 提供方会提供端点、协议和模型目录默认值；本构建还内置了 pi-ai 未随附的路由（Ollama Cloud）；自定义路由自行声明这些值。profile、凭据以及按模型配置的 peak 目的地都按请求解析，因此设置变更会在下一个请求生效，无需重启。受支持的提供方可以使用已存储的 OAuth 或交互式密钥登录，并通过跨进程锁刷新凭据。本包可以在没有路由时启动，并在用户设置添加路由后将其激活。
 
 ## 目录
 
@@ -32,6 +32,12 @@ kind: "package-reference"
 ### 何时选择
 
 当同一组合服务多个提供方、某条路由需要 pi-ai 目录默认值并修正少数字段、或必须通过自有端点与协议到达手工声明网关时，选择本适配器。当部署不需要其他提供方时，选择 `dsh-llm-deepseek` 直连 DeepSeek 路由。两个适配器可以同时挂载，因为它们的路由名不冲突；注册其他适配器已拥有的路由会导致插件加载失败。
+
+### 本构建内置的路由
+
+pi-ai 的已安装目录是它所随附的每个提供方的权威答案，被它命名的路由都使用该答案。pi-ai 从未听说过的提供方则一无所获，因此本构建内置了 **Ollama Cloud**（`ollama-cloud`）：仅声明凭据的 profile 即会解析出 `https://ollama.com/v1`、OpenAI Responses 协议，以及该服务的模型及其真实的上下文窗口、输出上限、输入模态与推理等级。该路由键属于该云服务；本地 Ollama 服务器仍作为手工声明路由，使用部署赋予它的任意 id。该内置路由无需任何配置，且没有任何一处是硬编码到 profile 上的：声明 `baseURL`、`api`、`models` 或 `modelOverrides` 仍按字段覆盖，因此把该路由指向代理或修正某个容量与目录路由的行为完全一致。内置目录未命名的模型会像任何手工声明条目一样，依据路由的 `defaultContextWindow` 与 `defaultMaxTokens` 解析。profile 未指定名称时，选择器显示内置的产品名。
+
+内置路由的推理等级来自内置数据而非配置。无论请求什么都会继续思考的模型不会提供 `off` 等级，因此选择器不会呈现提供方会忽略的设置。每个等级都带有自己的线上拼写，而 `off` 会作为抑制思考的参数值发送，而不是省略该字段。
 
 ### 配置提供方路由
 
@@ -106,9 +112,52 @@ pi 不暴露单独的软字节目标，共享编码器的 `imageTargetBytes` 等
 
 pi-ai 提供登录的提供方可以通过 harness 授权 seam 登录：流程提供 OAuth 或交互式密钥提示（密钥键入 pi-ai 自己的登录提示，而非设置表单），得到的凭据存储在 harness 凭据存储的 `llm-pi-ai/<provider id>` 记录中。存储的登录在其路由的 `apiKeyEnv` 覆盖之下完成认证，并在存储的跨进程锁下自行刷新；退出登录即删除存储记录。落在记录文法之外——小写连字符标识符——的手工声明路由键无法登录，因为对它的记录写入会以 `LlmError('UNSTORABLE_PROVIDER_ID')` 拒绝；这类路由改用 `apiKeyEnv` 或提供方 ambient 设置认证。
 
+存储的登录会在签发方记录的到期时间前不久自动刷新。若签发方提前吊销了访问令牌，被拒绝的请求会在凭据存储的锁内交换一次刷新令牌，并在新凭据上重试，因此仍可刷新的吊销无需人工介入。若交换被拒绝，流会报告需要重新登录，而不是留下提供方的原始拒绝信息。
+
+`openai` 是唯一在登录时标识应用安装实例而非路由的提供方。[OpenAI 的指南](https://developers.openai.com/siwc/token-sharing-open-source)面向开源与本地托管的 app 描述该流程：客户端动态注册、请用户授权 ChatGPT 计划用量，并为运行它的主机发送稳定的 `ext_agent_host_id`。本适配器在首次登录前将主机 ID 保存在 `$DSH_HOME/agent-host-id`，并以 `urn:uuid:<uuid>` 形式发送；该 ID 不是凭据，也不会随复制到另一台主机的凭据一同迁移。Codex 流程开头会提供免头显（headless）的设备代码登录与浏览器登录二选一；本适配器以浏览器登录回答该问题，因为本界面通过浏览器或其重定向 URL 完成，与在另一页面输入代码无关。harness 以 `deepseek-harness` 名义介绍自己，并自行命名这两个账号登录：`openai` 流程沿用 OpenAI 公布的「Continue with ChatGPT」，`openai-codex` 流程显示为「OpenAI (ChatGPT plan)」——pi-ai 自己的名称只数了它编写时的两档套餐，而 OpenAI 帮助中心为计划用量列出 Go、Plus、Pro 与 Business 订阅者。只有部署设置 `chatGptSignIn: true` 时才提供该流程，因为开启它意味着请用户在这里使用自己的 ChatGPT 计划；否则该路由改用 API key 登录。资格由 OpenAI 判定：[其帮助中心](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites)为计划用量列出 Go、Plus、Pro 与 Business 订阅者，授权流程要么授予、要么拒绝，被拒的用户、工作区或策略由请求路径以 `subscription_sharing_user_not_eligible` 回答。Business 工作区还有本适配器不读取的第二道门：Standard 与 Premium 席位在工作区自身控制下使用所含额度，按量计费席位仅在获准后使用工作区额度，因此同一次登录可能在一个工作区可推理、在另一个不行。同意页面、计划额度、用量设置，以及该集成所遵循的[「使用 ChatGPT 登录」条款](https://openai.com/policies/sign-in-with-chatgpt-terms/)均属 OpenAI，因此本适配器只陈述这些事实，不作额外声明。这些条款同时界定了集成 app 可做的事：请求来自用户自己的运行时，计划只服务签约的用户与其连接的 app，且登录本身不得向用户收费——这正是本适配器把凭据存放在运行它的主机上、绝不跨人共享计划的原因。付费或远程托管服务需先完成 OpenAI 的[Sign in with ChatGPT 流程](https://openai.com/form/sign-in-with-chatgpt-interest/)，且一个人的计划不得供多人使用。
+
 ### 解析模型目录
 
 profile 的 `models` 列表会替换而非扩展路由的已安装目录；每个条目从同 id 已安装模型取未设置字段的默认值，因此把路由收窄到两个模型、修正一个容量或添加比已安装目录更新的模型都是一行编辑。`modelOverrides` 无需该代价即可重塑个别已安装目录模型——修正一个模型，保留其余三十七个——当它与 `models` 列表并存、位于手工声明路由上、或点名目录未描述的模型时会被拒绝，因为静默不变的模型会成为别人日后寻找的拼写错误。
+
+### 在公布的高峰时段切换提供方
+
+`models` 条目可以声明 `peak`：该模型在其公布的高峰窗口内，请求改发往的目的地。时段是提供方的价格政策而非部署的偏好，因此随公布低峰价的那几个模型的目录数据一起内置，配置只说明此期间请求去往哪里。Ollama Cloud 对 `deepseek-v4.1-flash:1017` 与 `deepseek-v4-pro:0813` 在工作日 UTC 12:00 至 18:00 计高峰价，其余时刻与整个周末按低峰价计。
+
+```yaml
+providers:
+  ollama-cloud:
+    apiKeyEnv: OLLAMA_CLOUD_API_KEY
+    models:
+      - id: deepseek-v4.1-flash:1017
+        peak:
+          - provider: opencode-go
+            model: kimi-k3
+            apiKeyEnv: OPENCODE_GO_API_KEY
+```
+
+路由保留自己的提供方、端点与显示名，因此 Session 日志与所有选择器保持同一稳定身份，只有线上请求随窗口变化。
+
+目的地不必属于本适配器。已安装目录未描述的目的地会经由部署以该 id 注册的路由执行——`deepseek-official` 就是本构建与本适配器并列挂载的原生 DeepSeek 路由——LLM 服务在配置路由的身份下把请求分派到那里：
+
+```yaml
+providers:
+  ollama-cloud:
+    apiKeyEnv: OLLAMA_CLOUD_API_KEY
+    models:
+      - id: deepseek-v4.1-flash:1017
+        peak:
+          - provider: deepseek-official
+            model: deepseek-flash
+```
+
+已注册的目的地解析自己的凭据，因此其窗口不点名 `apiKeyEnv`。只使用第一个目的地。
+
+已安装目录描述的目的地在本适配器内运行，无论它是否有自己的 profile；配置会拒绝不提供它将收到的模型的目的地。本适配器无法描述的目的地运行在部署以该 id 注册的路由上，该路由拥有自己的模型与凭据；设置写入会拒绝没有适配器提供的路由，YAML 加载则会在首次需要它的请求上失败。该模型在目的地自带 `model` 时就是它，否则是被路由模型自身的 id，因此窗口可以把请求换到同一提供方或另一提供方的另一个模型。目录目的地的 `apiKeyEnv` 与路由自身的一样按请求解析；它本身也是已配置路由时，未点名凭据则沿用该路由的凭据，而仅为已安装目录所知的目的地则交由 pi-ai 提供方原生的环境发现。运行在自己路由上的目的地会拒绝 `apiKeyEnv`。
+
+在本构建未随附窗口的模型上声明 `peak` 会在加载时被拒绝，因为配置无法回答的时段是一条永远不会触发的路由规则。仍带旧形状时段的已存储条目会按其目的地读取，内置时段生效。
+
+报告的身份不变：配置的提供方、模型 id、推理强度以及 Session 日志都保持所选值，而线上的请求发往窗口点名的候选——候选项自带 `model` 时用它，否则用被路由模型自身的 id——容量取自执行路由为该候选保存的描述符。需要确知实际处理请求的后端时，应查阅该提供方自身的记录。模型目录会公布这些窗口，选择器因此可以在窗口生效时标记该模型。发往另一适配器路由的历史会从提供方中立内容开始，因为 replay 状态属于产生它的适配器。
 
 ### 带推理（reasoning）与协议兼容运行
 
@@ -124,11 +173,11 @@ profile 的 `models` 列表会替换而非扩展路由的已安装目录；每�
 
 ### 从端点发现模型
 
-插件会回答「该提供方可以提供哪些模型？」，供配置界面正在编辑或起草的路由使用。已安装目录提供的路由直接由目录回答，不发网络请求，并将其 `input` 数组保留为发现结果的 `inputModalities`；只有目录未描述的路由才会经网络询问。`openai-completions` 与 `openai-responses` 使用带 bearer 鉴权的 `GET {baseURL}/models`，`anthropic-messages` 则以 `x-api-key` 和 `anthropic-version` 使用原生 `GET /v1/models?limit=1000` 语义；其列表 URL 接受带或不带末尾 `/v1` 的 API 根地址，因为网关文档两种写法都会发布，且只有该列表 URL 会归一化这一段，模型请求收到的仍是配置原样的 `baseURL`。`google-generative-ai` 以 `x-goog-api-key` 使用 `GET {baseURL}/models?pageSize=1000`，因为其 `baseURL` 已包含 API 版本，例如 `/v1beta`。已配置且具名的路由会在 Host 内部提供已存凭据与 profile `headers`，因此通过 `cordis.patch.yml` 或 Cordis 配置设置的部署标头可以到达模型发现请求，但不会成为发现请求或 Models 页面的字段；表单中新键入的密钥仍优先于已存凭据。解析器接受标准 `data` 数组或富信息 `models` 对象，并归一化每个候选的 id、显示名、上下文窗口与最大输出 token 数；Anthropic 的 `max_input_tokens` 与 `max_tokens` 会进入相同容量字段，即使对象条目点名了另一个规范 id，对象键仍是请求 id，原始类型的对象属性会被忽略，缺失的显示名则回退到该请求 id。Gemini 的回答则是 `models` 数组：每个 `name` 去掉 `models/` 前缀后成为请求 id，`displayName`、`inputTokenLimit` 与 `outputTokenLimit` 填入相同字段，`supportedGenerationMethods` 不含 `generateContent` 的条目会被跳过。回答是界面可以提供给用户采纳的候选元数据——不存储任何内容，`cordis.patch.yml` 仍然是决定路由服务内容的唯一事实。
+插件会回答「该提供方可以提供哪些模型？」，供配置界面正在编辑或起草的路由使用。已安装目录提供的路由——或本构建内置的路由——直接由该目录回答，不发网络请求，并将其 `input` 数组保留为发现结果的 `inputModalities`；只有两者均未描述的路由才会经网络询问。`openai-completions` 与 `openai-responses` 使用带 bearer 鉴权的 `GET {baseURL}/models`，`anthropic-messages` 则以 `x-api-key` 和 `anthropic-version` 使用原生 `GET /v1/models?limit=1000` 语义；其列表 URL 接受带或不带末尾 `/v1` 的 API 根地址，因为网关文档两种写法都会发布，且只有该列表 URL 会归一化这一段，模型请求收到的仍是配置原样的 `baseURL`。`google-generative-ai` 以 `x-goog-api-key` 使用 `GET {baseURL}/models?pageSize=1000`，因为其 `baseURL` 已包含 API 版本，例如 `/v1beta`。已配置且具名的路由会在 Host 内部提供已存凭据与 profile `headers`，因此通过 `cordis.patch.yml` 或 Cordis 配置设置的部署标头可以到达模型发现请求，但不会成为发现请求或 Models 页面的字段；表单中新键入的密钥仍优先于已存凭据。解析器接受标准 `data` 数组或富信息 `models` 对象，并归一化每个候选的 id、显示名、上下文窗口与最大输出 token 数；Anthropic 的 `max_input_tokens` 与 `max_tokens` 会进入相同容量字段，即使对象条目点名了另一个规范 id，对象键仍是请求 id，原始类型的对象属性会被忽略，缺失的显示名则回退到该请求 id。Gemini 的回答则是 `models` 数组：每个 `name` 去掉 `models/` 前缀后成为请求 id，`displayName`、`inputTokenLimit` 与 `outputTokenLimit` 填入相同字段，`supportedGenerationMethods` 不含 `generateContent` 的条目会被跳过。回答是界面可以提供给用户采纳的候选元数据——不存储任何内容，`cordis.patch.yml` 仍然是决定路由服务内容的唯一事实。
 
 ### 失败与恢复
 
-pi-ai 不提供的路由需要 `api`、`baseURL` 与非空 `models` 列表；无法服务的 profile 会在写入处被拒绝，并点名路由与模型。失败携带稳定 code：无法使用的凭据以 `INVALID_CREDENTIAL` 失败并点名路由与引用，`apiKeyEnv` 引用解析为空的路由以 `MISSING_CREDENTIAL` 失败，未配置模型以 `UNKNOWN_MODEL` 失败，终止性提供方失败则区分 `QUOTA` 与暂时性 `RATE_LIMIT`。`GenerateOptions.stop` 以 `UNSUPPORTED_OPTION` 被拒绝，因为 pi-ai 的通用流式 UI 无法跨提供方保证它。
+pi-ai 不提供且本构建未内置的路由需要 `api`、`baseURL` 与非空 `models` 列表；无法服务的 profile 会在写入处被拒绝，并点名路由与模型。内置路由无需其中任何一项，仅声明凭据的 profile 即按原样可服务。失败携带稳定 code：无法使用的凭据以 `INVALID_CREDENTIAL` 失败并点名路由与引用，`apiKeyEnv` 引用解析为空的路由以 `MISSING_CREDENTIAL` 失败，未配置模型以 `UNKNOWN_MODEL` 失败，终止性提供方失败则区分 `QUOTA` 与暂时性 `RATE_LIMIT`。`GenerateOptions.stop` 以 `UNSUPPORTED_OPTION` 被拒绝，因为 pi-ai 的通用流式 UI 无法跨提供方保证它。
 
 Config 更新严格验证发生变化的 provider。初始加载将已存储的目录故障保留为可编辑的 provider 诊断；未更改的故障 provider 不阻止其他编辑。可用模型仍可选择，无法解析的模型在网络 I/O 前失败。修复或删除问题配置会清除其诊断。
 
@@ -168,6 +217,7 @@ Config 更新严格验证发生变化的 provider。初始加载将已存储的�
 | [`src/login.ts`](src/login.ts) | 面向提供登录的已安装提供方的授权流程 |
 | [`src/config.ts`](src/config.ts) | Profile schema、解析与可服务性校验 |
 | [`src/catalog.ts`](src/catalog.ts) | 已安装目录集成与漂移门禁 |
+| [`src/bundled-catalog.ts`](src/bundled-catalog.ts) | 本构建描述而 pi-ai 目录未随附的路由 |
 | [`src/provider-data.ts`](src/provider-data.ts) | 配置界面使用的认证与端点生成数据 |
 | [`src/models.ts`](src/models.ts) | 基于 pi-ai 窄入口的 model collection、静态 provider 与 reasoning level |
 | [`src/provider.ts`](src/provider.ts) | 受支持协议表与提供方构建 |
@@ -179,7 +229,7 @@ Config 更新严格验证发生变化的 provider。初始加载将已存储的�
 
 ### 注册与目录
 
-插件会在可配置提供方目录中声明它能认证的每个已安装目录提供方，并加入当前 profile 声明的每条路由，因此配置界面可以在任何路由存在之前提供完整目录。目录列出了模型却没有聊天模型的提供方（例如只有分类器模型）不进入目录，也不注册登录流程，因为本适配器只分派聊天请求。每个条目都携带 `declared`——pi-ai 是否在该键下不提供任何内容——因为只有适配器能区分手工声明路由与收窄目录路由。目录条目以 `defaultBaseURL` 表示提供方的固定端点或全部模型共用的固定端点，以 `baseURLEnv` 表示端点配置变量，以 `nativeAuth` 表示认证变量和 OAuth 可用性。不同模型的端点和未展开的 URL 模板不会显示为单一固定默认值。路由注册具有原子性：与其他适配器冲突的候选集合会让此前路由继续服务。零路由的裸挂载即休眠姿态：settings 分节提供 profile 前不注册任何内容，分节清空时路由随之消失。
+插件会在可配置提供方目录中声明它能认证的每个已安装目录提供方，并加入每条内置路由与当前 profile 声明的每条路由，因此配置界面可以在任何路由存在之前提供完整目录。目录列出了模型却没有聊天模型的提供方（例如只有分类器模型）不进入目录，也不注册登录流程，因为本适配器只分派聊天请求。每个条目都携带 `declared`——pi-ai 是否在该键下不提供任何内容——因为只有适配器能区分手工声明路由与收窄目录路由。目录条目以 `defaultBaseURL` 表示提供方的固定端点或全部模型共用的固定端点，以 `baseURLEnv` 表示端点配置变量，以 `nativeAuth` 表示认证变量和 OAuth 可用性。不同模型的端点和未展开的 URL 模板不会显示为单一固定默认值。内置路由不是 `declared`：pi-ai 同样不为它提供任何内容，但本适配器描述了它，因此它的行为等同随附路由，而不是部署自创的路由。路由注册具有原子性：与其他适配器冲突的候选集合会让此前路由继续服务。零路由的裸挂载即休眠姿态：settings 分节提供 profile 前不注册任何内容，分节清空时路由随之消失。
 
 <a id="generated-provider-metadata"></a>
 ### 生成的提供方元数据
@@ -239,7 +289,7 @@ Anthropic 可以将每个已签名 thinking 块绑定到生成它时的请求前
 
 #### KV Cache 影响
 
-传给适配器的后续系统消息不会进入初始提示词，从而保留此前的请求前缀。这不改变 Agent loop 的提示词纳入行为；它仍在不支持原生系统更新的路由上合并更新。转换保持逻辑请求顺序，图片句柄与卸载占位符则会添加模型可见文本。即使附件身份与请求字节保持稳定，执行世界路径变化也会改写历史句柄，并可能从该图片起阻止复用。更换适配器实例、提供方、模型或其他上游 token 具有相同的后缀影响。省略过期的 Anthropic thinking 发生在前缀变化之后，而该变化已在变化的消息处结束复用。第一个省略无摘要记录的 thinking 的请求会在第一条此类消息处结束复用，且仅发生一次。一次省略决策会把较早图片换成占位文本，因此复用在该消息处结束；省略永不回退，在下一次决策前前缀保持稳定。数量超限时一次省略 `imageOffloadCountQuantum` 张图片，因此饱和路由每新增这么多张图片才让复用在最老的保留图片处结束一次。 修改字节预算配置可能缩放历史请求图片并影响前缀复用；仅新增图片不会改变单图分配额度。
+传给适配器的后续系统消息不会进入初始提示词，从而保留此前的请求前缀。这不改变 Agent loop 的提示词纳入行为；它仍在不支持原生系统更新的路由上合并更新。转换保持逻辑请求顺序，图片句柄与卸载占位符则会添加模型可见文本。即使附件身份与请求字节保持稳定，执行世界路径变化也会改写历史句柄，并可能从该图片起阻止复用。更换适配器实例、提供方、模型或其他上游 token 具有相同的后缀影响，而 peak 窗口的替代提供方在这一点上就是一次提供方更换：每个窗口的首个请求都会开启新前缀。省略过期的 Anthropic thinking 发生在前缀变化之后，而该变化已在变化的消息处结束复用。第一个省略无摘要记录的 thinking 的请求会在第一条此类消息处结束复用，且仅发生一次。一次省略决策会把较早图片换成占位文本，因此复用在该消息处结束；省略永不回退，在下一次决策前前缀保持稳定。修改字节预算配置可能缩放历史请求图片并影响前缀复用；仅新增图片不会改变单图分配额度。数量超限时一次省略 `imageOffloadCountQuantum` 张图片，因此饱和路由每新增这么多张图片才让复用在最老的保留图片处结束一次。
 
 ### 提供方响应
 
@@ -262,10 +312,13 @@ pi-ai 事件变成 harness 的推理、文本、工具调用、用量与 finish 
 
 这些限制说明适配器在哪里停止、由未来工作接续。它们是当前包约束，不是通用 pi-ai 对比或任务积压。
 
+- **内置路由的事实是该服务的快照**——Ollama Cloud 的模型可能在本构建之外变化；内置目录未命名的模型会依据路由容量解析且不提供推理等级，直到它被加入此处，而被服务下线的模型在此之前仍会列出。
+- **内置条目的输出上限取决于其来源**——存在供应商文档化上限时使用该值（GLM 5.3 与 GLM 5.3 Flash 为 131,072）；否则条目携带 Ollama 端点接受的最大 `max_tokens`，那是上界而非模型自身的真实上限。此处每个值都会被端点接受，因此未核实来源的条目是夸大了能力，而不是让请求失败。
 - **`maxRequestImageBytes` 只计算 base64 图片载荷**，文本、工具、描述符与 JSON 结构在该上限之外，因此它必须留有余量地低于网关请求体上限。
 - **字节上限没有移除量子**：达到 `maxRequestImageBytes` 后，每张新图片都只省略最少的最老前缀，因此每个新增图片的请求都会让提示词缓存复用从该位置重新开始。
 - **登录只存在于发起它的进程中**——授权尝试不持久，因此登录中途刷新页面会放弃它，用户需要重新开始。退出登录是对已存储记录执行 `deleteRecord`，只在本地忘记它，不会告知签发方。
-- **OpenAI 不提供 ChatGPT 登录**——pi-ai 的 Sign in with ChatGPT 用应用提供的稳定 UUID 向 OpenAI 标识安装实例，而 harness 没有用于第三方账号登录的安装 ID；`openai` 路由改用 API key 登录。
+- **ChatGPT 登录是需要显式开启的应用标识流程**——pi-ai 的 Sign in with ChatGPT 通过 harness 保存在 `$DSH_HOME/agent-host-id` 的主机 ID 告诉 OpenAI 是哪个应用安装实例在申请；该流程保持在 `chatGptSignIn: true` 之后，未开启的部署让 `openai` 路由继续使用 API key。
+- **pi-ai 重新注册而不是重新授权**——每次登录都以 OpenAI 的动态注册客户端 ID 开始，发回的客户端 ID 仅用于刷新令牌，因此回访用户会注册新的客户端，而 OpenAI 指南要求复用已保存的客户端；pi-ai 也只检查 ID token 是否存在而不验证签名，并按提供方保存一份凭据而不是按 ChatGPT 账号或工作区分别保存。harness 依赖签发方的同意页面和存储中的单一记录。
 - **提供方原生发现经本插件的 ambient context 回答**——不点名凭据的路由交由目录提供方自身解析，它会询问环境值（`AZURE_OPENAI_API_KEY`、`AWS_PROFILE` 及各提供方自有集合）与本地凭据文件。两个问题都在这里得到回答：凭据 seam 先于进程环境被查询，文件存在性则针对宿主进程的文件系统以 `~` 展开后检查。它做不到的是*读取*凭据文件内容——自行解析 `~/.aws/credentials` 的提供方会直接读取，不经该 seam。
 - **重置恢复继承配置**——重置下层 profile 提供的路由会恢复该路由。
 - **完整替换 Config 可以移除继承的字典条目**——字段重置则恢复其继承值。
@@ -273,15 +326,19 @@ pi-ai 事件变成 harness 的推理、文本、工具调用、用量与 finish 
 - **发现操作不更改已配置模型**——需显式将发现结果采纳到路由配置中。
 - **Anthropic 与 Gemini 模型发现最多读取 1,000 个模型**——请求使用 API 的最大页大小，但不会遍历 `has_more` 或 `nextPageToken`；第一页之外的条目需要手工添加。
 - **目录外模型需要明确的协议**——目录路由保留每个模型的协议，包括 `azure` 下的两种 Azure API。混合协议目录中不存在的模型需要显式设置路由级 `api`；该设置覆盖路由上的所有模型，且必须属于受支持的自定义协议。Azure 部署名称应通过 `AZURE_OPENAI_DEPLOYMENT_NAME_MAP` 设置，模型 ID 保持为目录中的 ID。
+- **内置路由不携带登录**——`ollama-cloud` 像手工声明路由一样通过 `apiKeyEnv` 或进程环境认证，因为这里不为它提供任何授权流程。
 - **模态声明不受校验**——声明 `image` 而其网关不支持的模型会在提示词准入后被提供方拒绝。持久图片仍留在历史中，同一误声明模型可能再次失败；切换到纯文本模型仍然可行，因为共享 LLM 运行时会针对该请求把图片引用投影为稳定文本。
 - **未认证路由取决于其协议**——不点名凭据的路由解析为已配置但无密钥，但 pi-ai 的 OpenAI 兼容实现仍要求 API 密钥或 `Authorization` 标头，因此无密钥本地服务器需要由 `apiKeyEnv` 引用或 `headers` 中的 `Authorization` 条目提供的占位凭据。pi-ai 的 Gemini 实现会拒绝没有 API 密钥的请求，因此 `google-generative-ai` 路由始终需要 `apiKeyEnv`，其值以 `x-goog-api-key` 发送。
 - **Gemini 只接受四个推理等级**——在 `google-generative-ai` 上，pi-ai 的 Gemini 实现只发送 `minimal`、`low`、`medium` 或 `high`（不区分大小写），`reasoningEfforts` 的值为其他名称时请求失败；[模型页](../../client/ui-settings-models/README.zh.md)只为 `api` 指定该协议的路由提供这些档位。不带等级的请求（包括 `off`）会发送 pi-ai 的关闭思考配置，无法关闭思考的模型（例如 Gemini 2.5 Pro）可能拒绝该请求。
+- **peak 路由不记录它实际使用的后端**——窗口内处理的请求仍记录配置路由，因此具体提供方只能在该提供方自身的用量记录中看到。
+- **另一适配器路由上的目的地不会复用 replay 状态**——执行适配器收到的是提供方中立历史，因此该窗口内的每次请求都开启新的前缀。
+- **高峰时段是目录数据**——部署无法设置高峰窗口的小时与星期几，因为它们属于提供方公布的价格政策；本构建未随附其政策的模型不能被路由。
 - **不支持 `GenerateOptions.stop`**——pi-ai 的通用流式选项无法跨提供方保证停止序列行为。
 - **对话更新支持只来自已安装的 pi-ai 目录**——原生系统与工具更新需要目录模型的对话中 compat 标志，profile 不能设置这些标志。手工声明的路由与未标记的模型会以用户角色提醒接收后续系统文本，并在每次请求开头接收完整的当前工具列表。
 - **图片只在 user 与工具结果消息中被接受**——system、developer 或 assistant 历史中的图片在两条转换路径上都会以 `UNSUPPORTED_CONTENT` 失败。
 - **提供方 HTTP 状态不可用**——pi-ai 错误事件不跨提供方暴露稳定 HTTP 状态，失败按错误文本分类。信息以 4xx 或 5xx 状态码开头时（Anthropic 与 OpenAI SDK 的错误即如此），状态码规则只读取该状态码。其他格式（如 `Mistral API error (<status>): <body>`）仍会匹配信息中任意位置引用的状态码；配额、限流与无效请求的措辞规则读取整条信息，因此网关在 5xx 响应体中转述上游的 `insufficient_quota` 或 `invalid_request_error` 时，会分类为不重试的 `QUOTA` 或 `INVALID_REQUEST`。
 - **重试策略由提供方自有，而非 SDK 重试**——pi-ai SDK 重试保持禁用，因此持久 agent（智能体）步骤与 `llm/retry` 事件拥有每个可见尝试，直接 `ctx.llm.stream()` 调用仍是单次尝试。
-- **流式 JSON 工具调用参数避免逐 delta 重复解析**——安装的 pi-ai 带有 [`patches/@earendil-works__pi-ai@1.3.0.patch`](../../../patches/@earendil-works__pi-ai@1.3.0.patch)，它移除了每个流适配器中对整段累计参数 JSON 的逐 delta 重新解析（上游 [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)）；未打补丁时，数 MB 的参数流会在事件循环上消耗 O(n²) CPU，并使进程内所有会话停滞。完成事件提供解析后的参数；Responses 可能在参数完成和输出项完成时分别解析。本适配器只读取 delta 字符串与最终参数。每次升级 pi-ai 时都要重新应用或撤销该补丁。
+- **流式 JSON 工具调用参数的耗时与其长度线性相关**——pi-ai 1.6.0 通过一个增量解析器读取每个 delta，因此部分参数显示已到达的部分，数 MB 的参数流不再产生早先逐 delta 重新解析带来的 O(n²) CPU 开销（上游 [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)）。1.3.0 中移除该重新解析的补丁随本次升级一并退役；完成事件仍提供最终参数，本适配器只读取 delta 字符串与最终参数。每次升级 pi-ai 时都要重新应用或撤销剩余的补丁。
 - **即使端点会接受，过期的 Anthropic thinking 也会被省略**——前缀检查取决于模型、账户和请求，而适配器无法观测这些因素，因此每次前缀变化以及每个不含 `prefixDigest` 的回放状态都会让模型失去这部分推理，Anthropic 会以输出 token 重新生成它。摘要覆盖 pi-ai 上下文对象，而不是线上请求体：对话中途切换认证或会改变线上请求的 compat 设置不会被检测到；改变 Anthropic 消息序列化的 pi-ai 升级需要在 [`src/prefix-binding.ts`](src/prefix-binding.ts) 中使用新的 `DIGEST_SEED`；本包构建这些对象的方式发生任何变化，都会使已记录的 thinking 被丢弃一次。
 - **跨越前缀变化的手动思考工具轮次仍可能被拒绝**——其未结束的 assistant 消息必须保留过期的 thinking 以满足手动思考要求，因此执行前缀检查的端点会拒绝每个请求，直到一条用户消息结束该轮次。在已安装的目录中，执行此检查的模型使用自适应思考。
 - **Chat Completions 中的 Gemini 工具调用思考签名由补丁保留**——同一补丁把 OpenAI 兼容流式响应里的 `tool_calls[].extra_content.google.thought_signature` 读入工具调用的重放签名，并在同一模型继续时以 `extra_content` 发回（上游 [earendil-works/pi#10157](https://github.com/earendil-works/pi/issues/10157)）；未打补丁时，Gemini 会以 HTTP 400 拒绝工具调用轮次的下一步。OpenRouter 的加密推理详情仍通过 `reasoning_details` 重放。
